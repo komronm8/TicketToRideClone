@@ -1,5 +1,10 @@
 package entity
 
+/**
+ * This class represents a ferry route.
+ * @param ferries The amount of locomotive cards required to claim this route.
+ * The requirements specified in [Route] still apply
+ */
 class Ferry(
     val ferries: Int,
     length: Int,

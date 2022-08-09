@@ -1,5 +1,12 @@
 package entity
 
+/**
+ * A Route connecting two cities
+ *
+ * @param length The length of the route, meaning the amount of [WagonCards][WagonCard] required to claim it
+ * @param color The color of the route
+ * @param cities The two connected cities
+ */
 open class Route(val length: Int, val color: Color, val cities: Pair<City, City>) {
 
     override fun equals(other: Any?): Boolean {

@@ -1,5 +1,8 @@
 package entity
 
+/**
+ * A tunnel route
+ */
 class Tunnel(length: Int, color: Color, cities: Pair<City, City>) : Route(length, color, cities) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
