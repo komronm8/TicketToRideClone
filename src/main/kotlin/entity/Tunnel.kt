@@ -3,7 +3,14 @@ package entity
 /**
  * A tunnel route
  */
-class Tunnel(length: Int, color: Color, cities: Pair<City, City>) : Route(length, color, cities) {
+class Tunnel(
+    length: Int,
+    color: Color,
+    cities: Pair<City, City>,
+    claimedBy: Player? = null
+) : Route(length, color, cities, claimedBy) {
+    override fun asClaimedBy(player: Player): Route = Tunnel(length, color, cities, player)
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Tunnel) return false

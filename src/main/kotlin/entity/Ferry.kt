@@ -9,8 +9,15 @@ class Ferry(
     val ferries: Int,
     length: Int,
     color: Color,
-    cities: Pair<City, City>
-): Route(length, color, cities) {
+    cities: Pair<City, City>,
+    claimedBy: Player? = null
+): Route(length, color, cities, claimedBy) {
+    override val completeLength: Int
+        get() = super.completeLength + ferries
+
+    override fun asClaimedBy(player: Player): Route {
+        return Ferry(ferries, length, color, cities, player)
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
