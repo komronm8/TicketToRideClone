@@ -1,29 +1,48 @@
 package entity
 
-import tools.aqua.bgw.util.Stack
-
 /**
- * The game state at a given point in time.
- *
- * @param destinationCards The destination card draw stack
- * @param openCards The openly visible drawable wagon cards
- * @param wagonCardsStack The hidden wagon card draw stack
- * @param discardStack The discard stack for wagon cards
- * @param players The players
- * @param currentPlayer The index of the current player
- * @param endPlayer The first player whose [Player.trainCarsAmount] is less than two
- * @param cities The cities involved in the game
+ * The states a game assumed
  */
-data class Game(
-    val destinationCards: Stack<DestinationCard>,
+class Game(state: State) {
+    private val states: ArrayList<State> = arrayListOf(state)
+    private var currentStateIndex: Int = 0
+        set(index) {
+            assert(index in states.indices)
+            field = index
+        }
 
-    val openCards: List<WagonCard>,
-    val wagonCardsStack: Stack<WagonCard>,
-    val discardStack: Stack<WagonCard> = Stack(),
+    /**
+     * The current game state
+     */
+    val currentState: State
+        get() = states[currentStateIndex]
 
-    val players: List<Player>,
-    val currentPlayer: Int = 0,
-    val endPlayer: Player? = null,
+    /**
+     * Reverts the game state to the round before.
+     */
+    fun undo() {
+        currentStateIndex = if (currentStateIndex > 0) currentStateIndex - 1 else 0
+    }
 
-    val cities: List<City>
-)
+    /**
+     * Recovers game states undone by [undo]
+     */
+    fun redo() {
+        currentStateIndex = if (currentStateIndex < states.size - 1) currentStateIndex + 1 else currentStateIndex
+    }
+
+    /**
+     * Inserts the new game state as the current game state.
+     * Any record of [undone][undo] game states will be destroyed and won't be recoverable by [redo]
+     *
+     * @param state The game to insert
+     */
+    fun insert(state: State) {
+        //the range is reversed in order to delete from the back since this is more efficient
+        for (index in (currentStateIndex + 1 until states.size).reversed()) {
+            states.removeAt(index)
+        }
+        states.add(state)
+        currentStateIndex += 1
+    }
+}
