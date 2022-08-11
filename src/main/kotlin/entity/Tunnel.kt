@@ -5,12 +5,9 @@ package entity
  */
 class Tunnel(
     length: Int,
-    color: Color,
+    color: List<Color>,
     cities: Pair<City, City>,
-    claimedBy: Player? = null
-) : Route(length, color, cities, claimedBy) {
-    override fun asClaimedBy(player: Player): Route = Tunnel(length, color, cities, player)
-
+) : Route(length, color, cities) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Tunnel) return false

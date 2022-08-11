@@ -14,5 +14,6 @@ data class Player(
     val name: String,
     val destinationCards: List<DestinationCard>,
     val wagonCards: List<WagonCard>,
-    val trainCarsAmount: Int
+    val trainCarsAmount: Int,
+    val claimedRoutes: List<Pair<Route, Color>>
 )

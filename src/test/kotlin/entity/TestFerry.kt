@@ -15,23 +15,20 @@ class TestFerry {
         val city1 = City(name = "", emptyList())
         val city2 = City(name = "asdad", emptyList())
         val city3 = City(name = "asda1312313", emptyList())
-        val player = Player(1, "asds", emptyList(), emptyList(), 42)
-        val ferry1 = Ferry(ferries = 3, 10, Color.BLACK, city1 to city2, null)
+        val ferry1 = Ferry(ferries = 3, 10, listOf(Color.BLACK), city1 to city2)
         testEqualsHash(ferry1, ferry1)
-        val ferry2 = Ferry(ferries = 3, 10, Color.BLACK, city1 to city2, null)
+        val ferry2 = Ferry(ferries = 3, 10, listOf(Color.BLACK), city1 to city2)
         testEqualsHash(ferry1, ferry2)
-        val route1 = Route(10, Color.BLACK, city1 to city2, null)
+        val route1 = Route(10, listOf(Color.BLACK), city1 to city2)
         testNotEqualsHash(ferry1, route1)
-        val ferry3 = Ferry(ferries = 44, 10, Color.BLACK, city1 to city2, null)
+        val ferry3 = Ferry(ferries = 44, 10, listOf(Color.BLACK), city1 to city2)
         testNotEqualsHash(ferry1, ferry3)
-        val ferry4 = Ferry(ferries = 3, 11, Color.BLACK, city1 to city2, null)
+        val ferry4 = Ferry(ferries = 3, 11, listOf(Color.BLACK), city1 to city2)
         testNotEqualsHash(ferry1, ferry4)
-        val ferry5 = Ferry(ferries = 3, 10, Color.RED, city1 to city2, null)
+        val ferry5 = Ferry(ferries = 3, 10, listOf(Color.RED), city1 to city2)
         testNotEqualsHash(ferry1, ferry5)
-        val ferry6 = Ferry(ferries = 3, 10, Color.BLACK, city1 to city3, null)
+        val ferry6 = Ferry(ferries = 3, 10, listOf(Color.BLACK), city1 to city3)
         testNotEqualsHash(ferry1, ferry6)
-        val ferry7 = Ferry(ferries = 3, 10, Color.BLACK, city1 to city2, player)
-        testNotEqualsHash(ferry1, ferry7)
     }
 
     /**
@@ -40,10 +37,10 @@ class TestFerry {
     @Test
     fun testToString() {
         val city1 = City(name = "asdad", emptyList())
-        val ferry = Ferry(3, 13, Color.Joker, city1 to city1, null)
+        val ferry = Ferry(3, 13, listOf(Color.Joker), city1 to city1)
         assertEquals(
             "Ferry(City(name=asdad, routes=[]) to City(name=asdad, routes=[])," +
-            " length=13, color=Joker, claimed by=null, ferries: 3)",
+            " length=13, color=[Joker], ferries: 3)",
             ferry.toString()
         )
     }
@@ -54,19 +51,7 @@ class TestFerry {
     @Test
     fun testCompleteLength() {
         val city1 = City(name = "asdad", emptyList())
-        val ferry = Ferry(3, 5, Color.BLACK, city1 to city1, null)
+        val ferry = Ferry(3, 5, listOf(Color.BLACK), city1 to city1)
         assertEquals(8, ferry.completeLength)
-    }
-
-    /**
-     * Tests [Ferry.asClaimedBy]
-     */
-    @Test
-    fun testAsClaimedBy() {
-        val city1 = City(name = "asdad", emptyList())
-        val player = Player(3,  "wsda", emptyList(), emptyList(),4 )
-        val ferry = Ferry(3, 5, Color.BLACK, city1 to city1, null).asClaimedBy(player)
-        val ferry2 = Ferry(3, 5, Color.BLACK, city1 to city1, player)
-        assertEquals(ferry, ferry2)
     }
 }

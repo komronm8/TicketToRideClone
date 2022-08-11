@@ -15,23 +15,20 @@ class TestTunnel {
         val city1 = City(name = "", emptyList())
         val city2 = City(name = "asdad", emptyList())
         val city3 = City(name = "asda1312313", emptyList())
-        val player = Player(1, "asds", emptyList(), emptyList(), 42)
-        val tunnel1 = Tunnel(10, Color.BLACK, city1 to city2, null)
+        val tunnel1 = Tunnel(10, listOf(Color.BLACK), city1 to city2)
         testEqualsHash(tunnel1, tunnel1)
-        val tunnel2 = Tunnel(10, Color.BLACK, city1 to city2, null)
+        val tunnel2 = Tunnel(10, listOf(Color.BLACK), city1 to city2)
         testEqualsHash(tunnel1, tunnel2)
-        val ferry1 = Ferry(ferries = 3, 10, Color.BLACK, city1 to city2, null)
+        val ferry1 = Ferry(ferries = 3, 10, listOf(Color.BLACK), city1 to city2)
         testNotEqualsHash(tunnel1, ferry1)
-        val route1 = Route(10, Color.BLACK, city1 to city2, null)
+        val route1 = Route(10, listOf(Color.BLACK), city1 to city2)
         testNotEqualsHash(tunnel1, route1)
-        val tunnel3 = Tunnel(11, Color.BLACK, city1 to city2, null)
+        val tunnel3 = Tunnel(11, listOf(Color.BLACK), city1 to city2)
         testNotEqualsHash(tunnel1, tunnel3)
-        val tunnel4 = Tunnel(10, Color.RED, city1 to city2, null)
+        val tunnel4 = Tunnel(10, listOf(Color.RED), city1 to city2)
         testNotEqualsHash(tunnel1, tunnel4)
-        val tunnel5 = Tunnel(10, Color.BLACK, city1 to city3, null)
+        val tunnel5 = Tunnel(10, listOf(Color.BLACK), city1 to city3)
         testNotEqualsHash(tunnel1, tunnel5)
-        val tunnel6 = Tunnel( 10, Color.BLACK, city1 to city2, player)
-        testNotEqualsHash(tunnel1, tunnel6)
     }
 
     /**
@@ -40,10 +37,10 @@ class TestTunnel {
     @Test
     fun testToString() {
         val city1 = City(name = "asdad", emptyList())
-        val tunnel = Tunnel(13, Color.Joker, city1 to city1, null)
+        val tunnel = Tunnel(13, listOf(Color.Joker), city1 to city1)
         assertEquals(
             "Tunnel(City(name=asdad, routes=[]) to City(name=asdad, routes=[])," +
-                    " length=13, color=Joker, claimed by=null)",
+                    " length=13, color=[Joker])",
             tunnel.toString()
         )
     }
@@ -54,19 +51,7 @@ class TestTunnel {
     @Test
     fun testCompleteLength() {
         val city1 = City(name = "asdad", emptyList())
-        val tunnel = Tunnel(5, Color.BLACK, city1 to city1, null)
+        val tunnel = Tunnel(5, listOf(Color.BLACK), city1 to city1)
         assertEquals(5, tunnel.completeLength)
-    }
-
-    /**
-     * Tests [Tunnel.asClaimedBy]
-     */
-    @Test
-    fun testAsClaimedBy() {
-        val city1 = City(name = "asdad", emptyList())
-        val player = Player(3,  "wsda", emptyList(), emptyList(),4 )
-        val tunnel = Tunnel(5, Color.BLACK, city1 to city1, null).asClaimedBy(player)
-        val tunnel2 = Tunnel(5, Color.BLACK, city1 to city1, player)
-        assertEquals(tunnel, tunnel2)
     }
 }

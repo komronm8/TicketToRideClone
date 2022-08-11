@@ -14,7 +14,7 @@ class TestPlayer {
     fun testEquals() {
         val city1 = City("aasd", emptyList())
         val destCard = DestinationCard(4, city1 to city1)
-        val player1 = Player(1, "abc", emptyList(), emptyList(), 13)
+        val player1 = Player(1, "abc", emptyList(), emptyList(), 13, emptyList())
         testEqualsHash(player1, player1)
         val player2 = player1.copy()
         testEqualsHash(player1, player2)
@@ -30,6 +30,9 @@ class TestPlayer {
         testNotEqualsHash(player1, player7)
         val player8 = player1.copy(trainCarsAmount = 1313)
         testNotEqualsHash(player1, player8)
+        val player9 =
+            player1.copy(claimedRoutes = listOf(Route(12, listOf(Color.BLACK), city1 to city1) to Color.BLACK))
+        testNotEqualsHash(player1, player9)
     }
 
     /**
@@ -37,10 +40,10 @@ class TestPlayer {
      */
     @Test
     fun testToString() {
-        val player = Player(123, "asasd", emptyList(), listOf(WagonCard(Color.BLACK)), 3)
+        val player = Player(123, "asasd", emptyList(), listOf(WagonCard(Color.BLACK)), 3,  emptyList())
         assertEquals(
             "Player(points=123, name=asasd, destinationCards=[]," +
-                    " wagonCards=[WagonCard(color=BLACK)], trainCarsAmount=3)",
+                    " wagonCards=[WagonCard(color=BLACK)], trainCarsAmount=3, claimedRoutes=[])",
             player.toString()
         )
     }
