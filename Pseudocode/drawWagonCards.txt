@@ -1,0 +1,12 @@
+drawWagonCards(chosenCard){
+    if(currentPlayer.state == Default)
+        add chosen card to player hand
+        refill open cards if one is missing
+        currentPlayer.state = drewOneWagonCard
+        refreshAfterDrawWagonCards(drewOneWagonCard) // should disable other options for the player
+    else if (currentPlayer.state == drewOneWagonCard)
+        add chosen card to player hand
+        refill open cards if one is missing
+        refreshAfterDrawWagonCards(done)
+        next player
+}
