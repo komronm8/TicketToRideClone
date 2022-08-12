@@ -1,7 +1,5 @@
 package entity
 
-import tools.aqua.bgw.util.Stack
-
 /**
  * The game state at a given point in time.
  *
@@ -10,20 +8,23 @@ import tools.aqua.bgw.util.Stack
  * @param wagonCardsStack The hidden wagon card draw stack
  * @param discardStack The discard stack for wagon cards
  * @param players The players
- * @param currentPlayer The index of the current player
+ * @param currentPlayerIndex The index of the current player
  * @param endPlayer The first player whose [Player.trainCarsAmount] is less than two
  * @param cities The cities involved in the game
  */
 data class State(
-    val destinationCards: Stack<DestinationCard>,
+    val destinationCards: List<DestinationCard>,
 
     val openCards: List<WagonCard>,
-    val wagonCardsStack: Stack<WagonCard>,
-    val discardStack: Stack<WagonCard> = Stack(),
+    val wagonCardsStack: List<WagonCard>,
+    val discardStack: List<WagonCard> = emptyList(),
 
     val players: List<Player>,
-    val currentPlayer: Int = 0,
+    val currentPlayerIndex: Int = 0,
     val endPlayer: Player? = null,
 
-    val cities: List<City>
-)
+    val cities: List<City>,
+) {
+    val currentPlayer: Player
+        get() = players[currentPlayerIndex]
+}

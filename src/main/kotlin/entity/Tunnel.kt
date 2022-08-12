@@ -5,9 +5,10 @@ package entity
  */
 class Tunnel(
     length: Int,
-    color: List<Color>,
+    color: Color,
     cities: Pair<City, City>,
-) : Route(length, color, cities) {
+    sibling: Route? = null,
+) : Route(length, color, cities, sibling) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Tunnel) return false
@@ -19,6 +20,8 @@ class Tunnel(
         //Additional multiplication to generate unique hashcode
         return super.hashCode() * 31 + 13
     }
+
+    override fun reducedToString(): String = "Tunnel(length = $length, color = $length)"
 
     override fun toString(): String {
         return "Tunnel(${toStringCore()})"

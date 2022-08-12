@@ -1,14 +1,20 @@
 package entity
 
 import kotlin.test.Test
-import tools.aqua.bgw.util.Stack
 import kotlin.test.assertEquals
 
 /**
  * Tests the [Game] class
  */
 class TestGame {
-    private fun game() = State(Stack(), emptyList(), Stack(), Stack(), emptyList(), cities = emptyList())
+    private fun game() = State(
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        emptyList(),
+        cities = emptyList(),
+    )
 
     /**
      * Tests [Game.insert], [Game.undo] and [Game.redo]
@@ -16,9 +22,9 @@ class TestGame {
     @Test
     fun testStatesProcedure() {
         val game = game()
-        val game2 = game.copy(currentPlayer = 1)
-        val game3 = game.copy(currentPlayer = 2)
-        val game4 = game.copy(currentPlayer = 3)
+        val game2 = game.copy(currentPlayerIndex = 1)
+        val game3 = game.copy(currentPlayerIndex = 2)
+        val game4 = game.copy(currentPlayerIndex = 3)
         val states = Game(game)
         states.insert(game2)
         assertEquals(game2, states.currentState)

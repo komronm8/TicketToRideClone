@@ -9,11 +9,55 @@ package entity
  * @param wagonCards The wagon cards this player has available
  * @param trainCarsAmount The amount of train cars, which are used to mark a route as claimed, left
  */
-data class Player(
+open class Player(
     val points: Int,
     val name: String,
     val destinationCards: List<DestinationCard>,
     val wagonCards: List<WagonCard>,
     val trainCarsAmount: Int,
-    val claimedRoutes: List<Pair<Route, Color>>
-)
+    val claimedRoutes: List<Route>
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Player
+
+        if (points != other.points) return false
+        if (name != other.name) return false
+        if (destinationCards != other.destinationCards) return false
+        if (wagonCards != other.wagonCards) return false
+        if (trainCarsAmount != other.trainCarsAmount) return false
+        if (claimedRoutes != other.claimedRoutes) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = points
+        result = 31 * result + name.hashCode()
+        result = 31 * result + destinationCards.hashCode()
+        result = 31 * result + wagonCards.hashCode()
+        result = 31 * result + trainCarsAmount
+        result = 31 * result + claimedRoutes.hashCode()
+        return result
+    }
+
+    /**
+     * Copies this Player object
+     */
+    open fun copy(
+        points: Int = this.points,
+        destinationCards: List<DestinationCard> = this.destinationCards,
+        wagonCards: List<WagonCard> = this.wagonCards,
+        trainCarsAmount: Int = this.trainCarsAmount,
+        claimedRoutes: List<Route> = this.claimedRoutes
+    ): Player = Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes)
+
+    override fun toString(): String {
+        return "Player(points=$points, name='$name', destinationCards=$destinationCards," +
+                " wagonCards=$wagonCards, trainCarsAmount=$trainCarsAmount, claimedRoutes=$claimedRoutes)"
+    }
+
+
+}

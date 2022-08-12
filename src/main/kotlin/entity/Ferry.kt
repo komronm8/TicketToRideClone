@@ -8,28 +8,15 @@ package entity
 class Ferry(
     val ferries: Int,
     length: Int,
-    color: List<Color>,
+    color: Color,
     cities: Pair<City, City>,
-): Route(length, color, cities) {
+    sibling: Route? = null,
+): Route(length, color, cities, sibling) {
     override val completeLength: Int
         get() = super.completeLength + ferries
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Ferry) return false
-        if (!super.equals(other)) return false
-
-        if (ferries != other.ferries) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = super.hashCode()
-        result = 31 * result + ferries
-        return result
-    }
     override fun toString(): String {
         return "Ferry(${toStringCore()}, ferries: $ferries)"
     }
+
+    override fun reducedToString(): String = "Ferry(length = $length, color = $length, ferries = $ferries)"
 }

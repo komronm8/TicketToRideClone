@@ -1,10 +1,11 @@
 package entity
 
 /**
- * The states a game assumed
+ * The game containing a series a states
  */
 class Game(state: State) {
     private val states: ArrayList<State> = arrayListOf(state)
+    var gameState: GameState = GameState.DEFAULT
     private var currentStateIndex: Int = 0
         set(index) {
             assert(index in states.indices)
