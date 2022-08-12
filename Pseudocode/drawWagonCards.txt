@@ -1,6 +1,9 @@
 drawWagonCards(chosenCard){
     add chosen card to player hand
     refill open cards if one is missing
+    if draw stack is empty
+        shuffle discard stack and swap with draw stack
+    update state
     if game.gameState is GameState.DEFAULT
         game.gameState = GameState.DREWONEWAGONCARD
         refreshAfterDrawWagonCards() // should disable other options for the player

@@ -1,5 +1,6 @@
 endGame {
     calculate points
+    update state
     refreshAfterEndGame
 }
 
@@ -16,7 +17,6 @@ calculatePoints {
                 player.points += destinationCard.points
             else
                 player.points -= destinationCard.points
-        player.points = points
     for player in players
         if player.points equals maxRoutes
             player.points += 10
