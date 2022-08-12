@@ -1,0 +1,23 @@
+endGame {
+    calculate points
+    refreshAfterEndGame
+}
+
+calculatePoints {
+    initialize maxRoutes with zero
+    for player in players
+        set player.points to zero
+        if player.claimed.size > maxRoutes
+            maxRoutes = player.routes.size
+        for route in player.claimed
+            player.points += routeLengthToPoints(route.length)
+        for destinationCard in destinationCards
+            if requirements are met
+                player.points += destinationCard.points
+            else
+                player.points -= destinationCard.points
+        player.points = points
+    for player in players
+        if player.points equals maxRoutes
+            player.points += 10
+}
