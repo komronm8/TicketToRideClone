@@ -10,12 +10,13 @@ package entity
  * @param trainCarsAmount The amount of train cars, which are used to mark a route as claimed, left
  */
 open class Player(
-    val points: Int,
+    val points: Int = 0,
     val name: String,
     val destinationCards: List<DestinationCard>,
     val wagonCards: List<WagonCard>,
-    val trainCarsAmount: Int,
-    val claimedRoutes: List<Route>
+    val trainCarsAmount: Int = 40,
+    val claimedRoutes: List<Route> = emptyList(),
+    val isRemote: Boolean
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -52,7 +53,7 @@ open class Player(
         wagonCards: List<WagonCard> = this.wagonCards,
         trainCarsAmount: Int = this.trainCarsAmount,
         claimedRoutes: List<Route> = this.claimedRoutes
-    ): Player = Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes)
+    ): Player = Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, isRemote)
 
     override fun toString(): String {
         return "Player(points=$points, name='$name', destinationCards=$destinationCards," +

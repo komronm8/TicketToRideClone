@@ -10,4 +10,5 @@ class AIPlayer(
     wagonCards: List<WagonCard>,
     trainCarsAmount: Int,
     claimedRoutes: List<Route>,
-): Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes)
+    isRemote: Boolean,
+): Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, isRemote, )

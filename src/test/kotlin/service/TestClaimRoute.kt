@@ -65,8 +65,8 @@ class TestClaimRoute {
             emptyList(),
             emptyList(),
             listOf(
-                Player(0, "abc", emptyList(),  listOf(WagonCard(Color.RED)), 40, emptyList()),
-                Player(0, "abv", emptyList(),  emptyList(), 40, emptyList())
+                Player(0, "abc", emptyList(),  listOf(WagonCard(Color.RED)), 40, emptyList(), false),
+                Player(0, "abv", emptyList(),  emptyList(), 40, emptyList(), false)
             ),
             cities = constructGraph(),
         )
@@ -136,7 +136,7 @@ class TestClaimRoute {
             listOf(
                 Player(0, "abc", emptyList(),
                     wagonCards = cards,
-                    40, emptyList())
+                    40, emptyList(), false)
             ),
             cities = constructGraph(),
         )
@@ -144,7 +144,7 @@ class TestClaimRoute {
         val cities = state1.cities.associateBy { it.name }
         val tal = checkNotNull(cities["Tallinn"])
         val sto = checkNotNull(cities["Stockholm"])
-        //Just greens
+        //4x Green
         root.playerActionService.assertFailedClaim(tal.findRoute(sto), state1.currentPlayer.wagonCards.subList(0, 4))
         //3x green + 1x locomotive
         root.playerActionService.assertFailedClaim(tal.findRoute(sto), state1.currentPlayer.wagonCards.subList(1, 5))
@@ -171,7 +171,7 @@ class TestClaimRoute {
             emptyList(),
             emptyList(),
             listOf(
-                Player(0, "abc", emptyList(),  List(3) { WagonCard(Color.RED) }, 2, emptyList())
+                Player(0, "abc", emptyList(),  List(3) { WagonCard(Color.RED) }, 2, emptyList(), false)
             ),
             cities = constructGraph(),
         )
@@ -192,8 +192,8 @@ class TestClaimRoute {
             emptyList(),
             emptyList(),
             listOf(
-                Player(0, "abc", emptyList(),  List(3) { WagonCard(Color.RED) }, 40, emptyList()),
-                Player(0, "avg", emptyList(), emptyList(), 40, emptyList())
+                Player(0, "abc", emptyList(),  List(3) { WagonCard(Color.RED) }, 40, emptyList(), false),
+                Player(0, "avg", emptyList(), emptyList(), 40, emptyList(), false)
             ),
             cities = constructGraph(),
         )
@@ -229,7 +229,9 @@ class TestClaimRoute {
         val state2 = state1.updatedPlayer(1) { copy(claimedRoutes = listOf(umeBodWhite)) }
         root.insert(state2)
         root.playerActionService.assertFailedClaim(umeBodRed, state1.currentPlayer.wagonCards)
-        val state3 = state2.copy(players = state2.players + Player(0, "jk", emptyList(), emptyList(), 2,  emptyList()))
+        val state3 = state2.copy(
+            players = state2.players + Player(0, "jk", emptyList(), emptyList(), 2,  emptyList(), false)
+        )
         root.insert(state3)
         assertClaimRouteSuccess()
         val state4 = state3.updatedPlayer(1) { copy(claimedRoutes = emptyList()) }
@@ -255,7 +257,7 @@ class TestClaimRoute {
             emptyList(),
             emptyList(),
             listOf(
-                Player(0, "abc", emptyList(), playerCards, 40, emptyList())
+                Player(0, "abc", emptyList(), playerCards, 40, emptyList(), false)
             ),
             cities = constructGraph(),
         )
@@ -303,7 +305,7 @@ class TestClaimRoute {
             emptyList(),
             emptyList(),
             listOf(
-                Player(0, "abc", emptyList(), playerCards, 40, emptyList())
+                Player(0, "abc", emptyList(), playerCards, 40, emptyList(), false)
             ),
             cities = constructGraph(),
         )
@@ -322,5 +324,30 @@ class TestClaimRoute {
         root.undo()
         // 3x Red, 8x Locomotive
         root.playerActionService.assertFailedClaim(mur.findRoute(lie), playerCards.subList(6, 17))
+    }
+
+    fun testTunnel() {
+        val playerCards = List(6) { WagonCard(Color.BLUE) } + List(6) { WagonCard(Color.JOKER) }
+        val state = State(
+            emptyList(), emptyList(), listOf(), emptyList(),
+            listOf(),
+            cities = constructGraph()
+        )
+        val cities = state.cities.associateBy { it.name }
+        val root = RootService()
+        root.game = Game(state)
+        val route = kotlin.run {
+            val route = checkNotNull(cities["Bergen"]).findRoute(checkNotNull(cities["Oslo"]))
+            if (route.color == Color.BLUE) {
+                route
+            } else {
+                checkNotNull(route.sibling)
+            }
+        }
+
+        // 4x Blue
+        root.playerActionService.assertClaimRouteSuccess(route, playerCards.subList(0, 4), 7, 36)
+        root.undo()
+
     }
 }

@@ -22,4 +22,6 @@ enum class GameState {
      * while the required cards are on top of the draw stack
      */
     AFTER_CLAIM_TUNNEL,
+
+    CHOOSE_DESTINATION_CARD
 }

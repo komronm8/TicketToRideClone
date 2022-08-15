@@ -2,6 +2,7 @@ package service
 
 import entity.Game
 import entity.State
+import view.Refreshable
 
 class RootService {
     lateinit var game: Game
@@ -37,5 +38,14 @@ class RootService {
         }
         game.states.add(state)
         game.currentStateIndex += 1
+    }
+
+    fun addRefreshable(newRefreshable: Refreshable) {
+        gameService.addRefreshable(newRefreshable)
+        playerActionService.addRefreshable(newRefreshable)
+    }
+
+    fun addRefreshables(vararg newRefreshables: Refreshable) {
+        newRefreshables.forEach { addRefreshable(it) }
     }
 }

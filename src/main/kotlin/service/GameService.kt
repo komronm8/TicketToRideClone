@@ -1,14 +1,75 @@
 package service
 
 import entity.*
-import java.util.IdentityHashMap
+import view.Refreshable
+import java.util.*
 
-class GameService(val root:  RootService) {
+
+class GameService(val root: RootService) : AbstractRefreshingService() {
+    data class PlayerData(val name: String, val isRemote: Boolean)
+    enum class AIStrategy
+
     private var state: State
         get() = root.game.currentState
         set(value) {
             root.insert(value)
         }
+    private val refreshables = mutableListOf<Refreshable>()
+    fun startNewGame(playerNames: List<PlayerData>) {
+        fun <T> MutableList<T>.popAll(count: Int): List<T> {
+            val retain = subList(size - count, size).toList()
+            repeat(count) { removeLast() }
+            return retain
+        }
+
+        val cities = constructGraph()
+        val destinations = destinationPool(cities.associateBy { it.name }).shuffled().toMutableList()
+        val wagonCards = (Color.values().flatMap { color -> List(12) { WagonCard(color) } } +
+                List(2) { WagonCard(Color.JOKER) }).shuffled().toMutableList()
+        val players = playerNames.map {
+            Player(
+                name = it.name,
+                destinationCards = destinations.popAll(5),
+                wagonCards = wagonCards.popAll(4),
+                isRemote = it.isRemote
+            )
+        }
+        state = State(
+            cities = cities,
+            openCards = wagonCards.popAll(3),
+            wagonCardsStack = wagonCards,
+            players = players,
+            destinationCards = destinations,
+        )
+
+        root.game.gameState = GameState.CHOOSE_DESTINATION_CARD
+        onAllRefreshables(Refreshable::refreshAfterStartNewGame)
+    }
+
+    fun chooseDestinationCard(cards: List<List<Int>>) {
+        if (root.game.gameState != GameState.CHOOSE_DESTINATION_CARD) {
+            throw IllegalStateException("game is not in the right state for choose destination card")
+        }
+        cards.forEach {
+            assert(it.size in 2..5)
+            assert(cards.distinct().size == 1)
+            it.forEach { index -> assert(index in 0..5) }
+        }
+        val newPlayers = state.players.zip(cards).map {
+            it.first.copy(destinationCards = it.second.map(it.first.destinationCards::get))
+        }
+        root.game.states[0] = state.copy(players = newPlayers)
+        onAllRefreshables(Refreshable::refreshAfterChooseDestinationCard)
+    }
+
+    fun endGame() {
+        updateWithFinalScore()
+        onAllRefreshables(Refreshable::refreshAfterEndGame)
+    }
+
+    fun nextGame() {
+        startNewGame(state.players.map { PlayerData(it.name, it.isRemote) })
+    }
 
     private fun updateWithFinalScore() {
         val scores = state.players.map(this::calcDestinationScore)
@@ -21,10 +82,10 @@ class GameService(val root:  RootService) {
         state = state.copy(players = newPlayers)
     }
 
-    private fun calcDestinationScore(player: Player): Pair<Int, Int> {
+    fun calcDestinationScore(player: Player): Pair<Int, Int> {
         val cities = state.cities
         val claimedRoutes = IdentityHashMap<Route, Unit>(player.claimedRoutes.size)
-        player.claimedRoutes.forEach { claimedRoutes.put(it, Unit)}
+        player.claimedRoutes.forEach { claimedRoutes.put(it, Unit) }
         val connectivity = IdentityHashMap<City, Int>()
         fun calcConnectivity(
             city: City,
@@ -44,6 +105,7 @@ class GameService(val root:  RootService) {
                 }
             }
         }
+
         var groupIds = 0
         for (city in cities) {
             if (!connectivity.containsKey(city)) {
@@ -61,12 +123,22 @@ class GameService(val root:  RootService) {
     }
 
     fun nextPlayer() {
+        if (state.currentPlayer == state.endPlayer) {
+            endGame()
+        }
         val oldState = state
         root.undo()
-        //...
+        val endPlayer = if (oldState.currentPlayer.trainCarsAmount <= 2) {
+            oldState.currentPlayer
+        } else {
+            null
+        }
         val newState = oldState.copy(
-            currentPlayerIndex = oldState.run { (currentPlayerIndex + 1) % players.size }
+            currentPlayerIndex = oldState.run { (currentPlayerIndex + 1) % players.size },
+            endPlayer = oldState.endPlayer ?: endPlayer
         )
         root.insert(newState)
+        onAllRefreshables(Refreshable::refreshAfterNextPlayer)
     }
+
 }
