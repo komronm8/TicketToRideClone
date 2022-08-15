@@ -6,4 +6,6 @@ package entity
  * @param name The name of the city
  * @param routes The connections to other cities
  */
-data class City(val name: String, val routes: List<Route>)
+class City(val name: String, val routes: List<Route>) {
+    override fun toString(): String = "City(name = $name)"
+}

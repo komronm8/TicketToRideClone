@@ -33,7 +33,7 @@ class TestDestinationCard {
         val city1 = City(name = "abc", emptyList())
         val card = DestinationCard(42, city1 to city1)
         assertEquals(
-            "DestinationCard(points=42, cities=(City(name=abc, routes=[]), City(name=abc, routes=[])))",
+            "DestinationCard(points=42, cities=(City(name = abc), City(name = abc)))",
             card.toString()
         )
     }
