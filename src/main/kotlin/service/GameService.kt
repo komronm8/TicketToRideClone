@@ -34,13 +34,13 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
                 isRemote = it.isRemote
             )
         }
-        state = State(
+        root.game = Game(State(
             cities = cities,
             openCards = wagonCards.popAll(3),
             wagonCardsStack = wagonCards,
             players = players,
             destinationCards = destinations,
-        )
+        ))
 
         root.game.gameState = GameState.CHOOSE_DESTINATION_CARD
         onAllRefreshables(Refreshable::refreshAfterStartNewGame)
