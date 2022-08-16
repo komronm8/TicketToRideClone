@@ -21,7 +21,7 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
      * every item after and at [atIndex] will be put into the second list
      */
     fun <T> List<T>.splitAt(atIndex: Int): Pair<List<T>, List<T>> {
-        check(atIndex in indices)
+        check(atIndex in 0..size)
         return subList(0, atIndex) to subList(atIndex, size)
     }
 
@@ -41,12 +41,12 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
             else -> throw IllegalStateException("illegal state for draw destination card")
         }
         val drawAmount = min(state.destinationCards.size, 3)
-        assert(drawAmount >= cards.size)
-        assert(cards.isNotEmpty())
+        check(drawAmount >= cards.size)
+        check(cards.isNotEmpty())
         cards.forEach { it in 0 until drawAmount }
         cards.forEachIndexed { index, i ->
             cards.forEachIndexed { index2, i2 ->
-                assert(i != i2 || index == index2)
+                check(i != i2 || index == index2)
             }
         }
         val (newDestinationStack, drawnCards) =
@@ -119,7 +119,7 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
             GameState.DEFAULT -> {}
             else -> throw IllegalStateException("Illegal state for claim route")
         }
-        assert(state.currentPlayer.trainCarsAmount >= route.completeLength)
+        check(state.currentPlayer.trainCarsAmount >= route.completeLength)
         val doubleRoute = state.players.size > 2
         state.players.forEach { player ->
             player.claimedRoutes.forEach {
@@ -130,13 +130,13 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
             }
         }
         val currentPlayer = state.currentPlayer
-        assert(usedCards.all { card -> currentPlayer.wagonCards.any { it === card } })
+        check(usedCards.all { card -> currentPlayer.wagonCards.any { it === card } })
         usedCards.forEachIndexed { index, wagonCard ->
             usedCards.forEachIndexed { index2, wagonCard2 ->
-                assert(wagonCard !== wagonCard2 || index == index2)
+                check(wagonCard !== wagonCard2 || index == index2)
             }
         }
-        assert(canClaimRoute(route, usedCards))
+        check(canClaimRoute(route, usedCards))
         val newPlayerCard = currentPlayer.wagonCards.filter { card -> usedCards.none { it === card } }
         if (route is Tunnel && state.wagonCardsStack.size + state.discardStack.size > 0) {
             var newDiscardStack = state.discardStack
@@ -178,12 +178,12 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
         onAllRefreshables(Refreshable::refreshAfterClaimRoute)
     }
 
-    fun afterClaimTunnel(route: Tunnel, cards: MutableList<WagonCard>?) {
+    fun afterClaimTunnel(route: Tunnel, cards: List<WagonCard>?) {
         cards?.also {
-            assert(cards.all { given -> state.currentPlayer.wagonCards.any { it === given } })
+            check(cards.all { given -> state.currentPlayer.wagonCards.any { it === given } })
             cards.forEachIndexed { index1, card1 ->
                 cards.forEachIndexed { index2, card2 ->
-                    assert(card1 !== card2 || index1 == index2)
+                    check(card1 !== card2 || index1 == index2)
                 }
             }
         }
@@ -201,18 +201,19 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
                 discardStack = newDiscard + requiredCards,
                 wagonCardsStack = newDraw
             )
+            root.game.gameState = GameState.DEFAULT
             root.gameService.nextPlayer()
             return
         }
         if (usedCards.all { it.color == Color.JOKER }) {
             val locomotives = requiredCards.count { it.color == Color.JOKER }
-            assert(cards.all { it.color == Color.JOKER } && locomotives == cards.size)
+            check(cards.all { it.color == Color.JOKER } && locomotives == cards.size)
         } else {
             assert(route.color != Color.JOKER) { "Tunnel should not be gray!" }
             val required = requiredCards.count { it.color == route.color || it.color == Color.JOKER }
             val given = cards.count { it.color == route.color || it.color == Color.JOKER }
-            assert(required == given)
-            assert(given == cards.size)
+            check(required == given)
+            check(given == cards.size)
         }
         val newPlayerHand = newState.currentPlayer.wagonCards.filter { card -> cards.none { it === card } }
         val newPlayers = newState.updateCurrentPlayer {
@@ -224,10 +225,11 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
             )
         }
         state = newState.copy(
-            discardStack = newDiscard + requiredCards,
+            discardStack = newState.discardStack + requiredCards,
             wagonCardsStack = newDraw,
             players = newPlayers
         )
+        root.game.gameState = GameState.DEFAULT
         onAllRefreshables(Refreshable::refreshAfterAfterClaimTunnel)
         root.gameService.nextPlayer()
     }
