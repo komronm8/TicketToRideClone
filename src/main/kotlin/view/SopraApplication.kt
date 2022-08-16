@@ -1,14 +1,20 @@
 package view
 
+import service.GameService
+import service.RootService
 import tools.aqua.bgw.core.BoardGameApplication
 
-class SopraApplication : BoardGameApplication("SoPra Game") {
+class SopraApplication : BoardGameApplication("Zug um Zug"), Refreshable {
+    private val rootService: RootService = RootService()
 
-   private val helloScene = HelloScene()
+    private var gameScene: GameScene
 
-   init {
-        this.showGameScene(helloScene)
+    init {
+        rootService.gameService.startNewGame(listOf(
+            GameService.PlayerData("a", false),
+            GameService.PlayerData("b", false),
+            GameService.PlayerData("c", false)))
+        gameScene = GameScene(rootService)
+        this.showGameScene(gameScene)
     }
-
 }
-
