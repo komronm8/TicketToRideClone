@@ -1,8 +1,11 @@
 package service
 
+import service.message.*
+import java.io.File
+import java.io.InputStream
 
 
-class NetworkService {
+class NetworkService(private val rootService: RootService): AbstractRefreshingService() {
     companion object {
         /** URL of the BGW net server hosted for SoPra participants */
         const val SERVER_ADDRESS = "sopra.cs.tu-dortmund.de:80/bgw-net/connect"
@@ -108,5 +111,74 @@ class NetworkService {
         */
     }
 
+    /**
+     * Disconnects the [client] from the server, nulls it and updates the
+     * [connectionState] to [ConnectionState.DISCONNECTED]. Can safely be called
+     * even if no connection is currently active.
+     */
+    fun disconnect() {
+        client?.apply {
+            if (sID != null) leaveGame("Goodbye!")
+            if (isOpen) disconnect()
+        }
+        client = null
+        updateConnectionState(ConnectionState.DISCONNECTED)
+    }
 
+    /**
+     * set up the game using [GameService.startNewGame] and send the game init message
+     * to the guest player. [connectionState] needs to be [ConnectionState.WAITING_FOR_GUEST].
+     * This method should be called from the [WarNetworkClient] when the guest joined notification
+     * arrived. See [WarNetworkClient.onPlayerJoined].
+     *
+     * @param hostPlayerName player name of the host player
+     * @param guestPlayerName player name of the guest player
+     *
+     * @throws IllegalStateException if [connectionState] != [ConnectionState.WAITING_FOR_GUEST]
+     */
+    fun startNewHostedGame(playerNames: List<String>) {
+        check(connectionState == ConnectionState.WAIT_FOR_PLAYERS)
+        { "currently not prepared to start a new hosted game." }
+
+        val playerData: MutableList<GameService.PlayerData> = mutableListOf()
+        playerNames.forEach {name ->
+            playerData.add(GameService.PlayerData(name,true))
+        }
+
+        rootService.gameService.startNewGame(playerData.toList())
+        val game = rootService.game
+        /**
+        val message = GameInitMessage(
+
+        )
+        **/
+        updateConnectionState(ConnectionState.PLAY_TURN)
+        //client?.sendGameActionMessage(message)
+    }
+
+    data class cityMapping(
+        val identifier: String,
+        val cityName: String
+    )
+    private fun readCsvAndSearch(inputStream: InputStream, cityNameToFind: String): String?{
+        val reader = inputStream.bufferedReader()
+        val values = reader.lineSequence()
+            .filter { it.isNotBlank() }
+            .map {
+                val (cityCode, cityName) = it.split(',', ignoreCase = false, limit = 2)
+                cityMapping(cityCode,cityName)
+            }.toList()
+        val filt_val = values.filter { it.cityName == cityNameToFind }
+        if(filt_val.isEmpty()){
+            return null
+        }else {
+            return filt_val[0].identifier
+        }
+    }
+    private fun readIdentifierFromCSV(cityName: String): String?{
+        var fileName = "/City_Enum_Zuordnung_1.csv"
+        println(NetworkService::class.java.getResource(fileName))
+        var file = File(NetworkService::class.java.getResource(fileName).file)
+        return readCsvAndSearch(file.inputStream(), cityName)
+    }
 }
