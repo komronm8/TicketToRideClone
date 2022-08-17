@@ -22,6 +22,8 @@ application {
 dependencies {
     testImplementation(kotlin("test-junit5"))
     implementation(group = "tools.aqua", name = "bgw-gui", version = "0.7")
+    implementation(group = "tools.aqua", name = "bgw-net-common", version = "0.7")
+    implementation(group = "tools.aqua", name = "bgw-net-client", version = "0.7")
 }
 
 tasks.distZip {
@@ -49,7 +51,7 @@ tasks.jacocoTestReport {
 
     classDirectories.setFrom(files(classDirectories.files.map {
         fileTree(it) {
-            exclude(listOf("view/**", "entity/**", "Main*.*"))
+            exclude(listOf("view/**", "entity/serializer.", "Main*.*"))
         }
     }))
 }
