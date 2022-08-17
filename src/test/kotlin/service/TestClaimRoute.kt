@@ -1,10 +1,17 @@
 package service
 
 import entity.*
-import java.lang.Integer.min
+import java.lang.Integer.max
 import java.util.*
-import kotlin.test.*
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFails
+import kotlin.test.assertSame
 
+/**
+ * Tests the [PlayerActionService.claimRoute] and [PlayerActionService.afterClaimTunnel]
+ * methods
+ */
 class TestClaimRoute {
     private fun PlayerActionService.assertFailedClaim(route: Route, cards: List<WagonCard>) {
         val state = root.game.currentState
@@ -52,7 +59,7 @@ class TestClaimRoute {
             route1, usedCards1 -> claimRoute(route1, usedCards1)
     }
 
-    fun PlayerActionService.assertClaimTunnelSuccess(
+    private fun PlayerActionService.assertClaimTunnelSuccess(
         route: Route,
         usedCards: List<WagonCard>,
         requiredCards: List<WagonCard>,
@@ -62,8 +69,8 @@ class TestClaimRoute {
         assert(root.game.currentState.run { wagonCardsStack.size >= 3 || discardStack.isEmpty() }) {
             "Method does not test redrawing"
         }
-        val (reqCards, newDraw) = root.game.currentState.wagonCardsStack.run {
-            subList(0, min(0, size - 3)) to subList(min(3, size), size)
+        val (newDraw, reqCards) = root.game.currentState.wagonCardsStack.run {
+            subList(0, max(0, size - 3)) to subList(max(0, size - 3), size)
         }
         val oldIdx = root.game.currentState.currentPlayerIndex
         val oldCards = root.game.currentState.currentPlayer.wagonCards
@@ -92,7 +99,7 @@ class TestClaimRoute {
         assert(newDraw.zip(newDrawStack).all { it.first === it.second })
     }
 
-    fun PlayerActionService.assertClaimRouteSuccess(
+    private fun PlayerActionService.assertClaimRouteSuccess(
         route: Route,
         usedCards: List<WagonCard>,
         newPoints: Int,
@@ -121,6 +128,9 @@ class TestClaimRoute {
         root.game.currentState.discardStackContains(oldDiscard + usedCards, true)
     }
 
+    /**
+     * Tests whether [PlayerActionService.claimRoute] fails when it is supposed to on a normal route
+     */
     @Test
     fun testClaimRouteFail() {
         val root = RootService()
@@ -187,6 +197,9 @@ class TestClaimRoute {
         root.playerActionService.assertFailedClaim(hel.findRoute(ima), newPlayerCards.subList(1, 3))
     }
 
+    /**
+     * Tests whether [PlayerActionService.claimRoute] fails when it is supposed to on a ferry route
+     */
     @Test
     fun testClaimFerryFail() {
         val root = RootService()
@@ -229,6 +242,9 @@ class TestClaimRoute {
         root.playerActionService.assertFailedClaim(tal.findRoute(sto), state1.currentPlayer.wagonCards.subList(0, 5))
     }
 
+    /**
+     * Tests whether [PlayerActionService.claimRoute] fails on insufficient [Player.trainCarsAmount]
+     */
     @Test
     fun testInsufficientTrainCars() {
         val root = RootService()
@@ -250,6 +266,9 @@ class TestClaimRoute {
         root.playerActionService.assertFailedClaim(hel.findRoute(ima), state1.currentPlayer.wagonCards)
     }
 
+    /**
+     * Tests whether [PlayerActionService.claimRoute] works correctly with double routes
+     */
     @Test
     fun testDoubleRoute() {
         val root = RootService()
@@ -312,6 +331,10 @@ class TestClaimRoute {
         root.playerActionService.assertFailedClaim(umeBodRed, state1.currentPlayer.wagonCards)
     }
 
+    /**
+     * Tests whether [PlayerActionService.claimRoute] works correctly when it is supposed to
+     */
+
     @Test
     fun testClaimRouteSuccess() {
         val root = RootService()
@@ -358,9 +381,30 @@ class TestClaimRoute {
         //4x Locomotive
         root.playerActionService.assertClaimRouteSuccess(vaa.findRoute(kou), playerCards.subList(9, 13), 7, 36)
         root.undo()
-
     }
 
+    @Test
+    fun testFerrySuccess() {
+        val root = RootService()
+        val playerCards = List(3) { WagonCard(Color.RED) } +
+                List(6) { WagonCard(Color.BLACK) } +
+                List(5) { WagonCard(Color.JOKER) }
+        val state1 = State(emptyList(), emptyList(), emptyList(), emptyList(),
+            listOf(
+                Player(0, "abc", emptyList(), playerCards, 40, emptyList(), false)
+            ),
+            cities = constructGraph(),
+        )
+        root.game = Game(state1)
+        val cities = state1.cities.associateBy { it.name }
+        val got = checkNotNull(cities["Göteborg"])
+        val aal = checkNotNull(cities["Ålborg"])
+        root.playerActionService.assertClaimRouteSuccess(got.findRoute(aal), playerCards.subList(9, 11), 2, 38)
+    }
+
+    /**
+     * Tests whether the murmansk lieksa route works correctly
+     */
     @Test
     fun testMurmanskLieksa() {
         val root = RootService()
@@ -393,6 +437,10 @@ class TestClaimRoute {
         root.playerActionService.assertFailedClaim(mur.findRoute(lie), playerCards.subList(6, 17))
     }
 
+    /**
+     * Tests whether [PlayerActionService.claimRoute] and [PlayerActionService.afterClaimTunnel] works correctly with
+     * a route
+     */
     @Test
     fun testTunnel() {
         val playerCards = List(7) { WagonCard(Color.BLUE) } +
@@ -431,6 +479,12 @@ class TestClaimRoute {
         root.playerActionService.assertFailedClaim(route, playerCards.subList(5, 11))
         // 4x Blue, Pay with 3x Blue
         root.setsDrawStack(List(3) { WagonCard(Color.BLUE) })
+        root.playerActionService.assertClaimTunnelSuccess(
+            route, playerCards.subList(0, 4), playerCards.subList(4, 7), 7, 36
+        )
+        root.undo()
+        // 4x Blue, Pay with 3x Blue
+        root.setsDrawStack(List(3) { WagonCard(Color.BLACK) } + List(3) { WagonCard(Color.BLUE) })
         root.playerActionService.assertClaimTunnelSuccess(
             route, playerCards.subList(0, 4), playerCards.subList(4, 7), 7, 36
         )
@@ -491,7 +545,7 @@ class TestClaimRoute {
         root.setsDrawStack(List(3) { WagonCard(Color.YELLOW) } )
         root.playerActionService.assertFailedTunnelClaim(route, playerCards.subList(7, 11), playerCards.subList(0, 1))
         root.undo()
-        //4x Locomotive, Pay with 3x Locomotive
+        //4x Locomotive, no pay
         root.setsDrawStack(List(3) { WagonCard(Color.YELLOW) } )
         root.playerActionService.assertClaimTunnelSuccess(
             route, playerCards.subList(7, 11), emptyList()  , 7, 36
@@ -499,6 +553,9 @@ class TestClaimRoute {
         root.undo()
     }
 
+    /**
+     * Tests the tunnel special cases
+     */
     @Test
     fun testTunnelSpecialCases() {
         val playerCards = List(7) { WagonCard(Color.BLUE) } +
@@ -554,5 +611,22 @@ class TestClaimRoute {
         assert(newState.discardStack.zip(playerCards.subList(0, 4)).all { it.first === it.second })
     }
 
-
+    @Test
+    fun testNonExhaustive() {
+        val playerCard = List(4) { WagonCard(Color.ORANGE) } + List(4) { WagonCard(Color.RED) }
+        val state = State(
+            emptyList(), emptyList(), emptyList(), emptyList(),
+            listOf(
+                Player(0, "asdasd", emptyList(), playerCard, isRemote = false),
+                Player(0, " ufhgiot", emptyList(), emptyList(), isRemote = false)
+            ),
+            cities = constructGraph()
+        )
+        val root = RootService()
+        root.game = Game(state)
+        val cities = state.cities.associateBy { it.name }
+        val ore = checkNotNull(cities["Örebro"])
+        val sun = checkNotNull(cities["Sundsvall"])
+        root.playerActionService.validateClaimRoute(state.currentPlayer, ore.findRoute(sun), playerCard, false)
+    }
 }
