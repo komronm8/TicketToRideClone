@@ -8,18 +8,16 @@ import kotlin.math.min
 /**
  * The service responsible for actions performed by the player
  */
-class PlayerActionService(val root: RootService): AbstractRefreshingService() {
-    private var state: State
+class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
+    private val state: State
         get() = root.game.currentState
-        set(value) {
-            root.insert(value)
-        }
 
     private inline fun State.updateCurrentPlayer(update: Player.() -> Player): List<Player> {
         return players.toMutableList().also {
             it[currentPlayerIndex] = it[currentPlayerIndex].update()
         }
     }
+
     /**
      * Splits the receiving list at [atIndex]. Everything before [atIndex] will be put into the first list,
      * every item after and at [atIndex] will be put into the second list
@@ -56,10 +54,9 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
             else -> throw IllegalStateException("illegal state for draw destination card")
         }
         val drawAmount = min(state.destinationCards.size, 3)
-        println("$drawAmount/${cards.size}|$cards")
         check(drawAmount >= cards.size)
         check(cards.isNotEmpty())
-        cards.forEach {check(it in 0 until drawAmount) }
+        cards.forEach { check(it in 0 until drawAmount) }
         cards.forEachIndexed { index, i ->
             cards.forEachIndexed { index2, i2 ->
                 check(i != i2 || index == index2)
@@ -69,7 +66,7 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
             state.destinationCards.splitAt(state.destinationCards.size - drawAmount)
         val newDestinationCards = state.currentPlayer.destinationCards + cards.map(drawnCards::get)
         val newPlayer = state.updateCurrentPlayer { copy(destinationCards = newDestinationCards) }
-        state = state.copy(destinationCards = newDestinationStack, players = newPlayer)
+        root.insert(state.copy(destinationCards = newDestinationStack, players = newPlayer))
         onAllRefreshables(Refreshable::refreshAfterDrawDestinationCards)
         root.gameService.nextPlayer()
     }
@@ -124,13 +121,13 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
         )
         when (root.game.gameState) {
             GameState.DEFAULT -> {
-                state = newState
+                root.insert(newState)
                 root.game.gameState = GameState.DREW_WAGON_CARD
             }
 
             GameState.DREW_WAGON_CARD -> {
                 root.undo()
-                state = newState
+                root.insert(newState)
                 root.game.gameState = GameState.DEFAULT
                 root.gameService.nextPlayer()
             }
@@ -180,11 +177,11 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
                 copy(wagonCards = newPlayerCard)
             }
             newDiscardStack = newDiscardStack + usedCards
-            state = state.copy(
+            root.insert(state.copy(
                 wagonCardsStack = newDrawStack,
                 discardStack = newDiscardStack,
                 players = newPlayers,
-            )
+            ))
             root.game.gameState = GameState.AFTER_CLAIM_TUNNEL
         } else {
             val newPlayer = state.updateCurrentPlayer {
@@ -196,7 +193,7 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
                 )
             }
             val newDiscardStack = state.discardStack + usedCards
-            state = state.copy(discardStack = newDiscardStack, players = newPlayer)
+            root.insert(state.copy(discardStack = newDiscardStack, players = newPlayer))
             onAllRefreshables(Refreshable::refreshAfterClaimRoute)
             root.gameService.nextPlayer()
             return
@@ -234,20 +231,24 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
                 }
             }
         }
-        val newState = root.game.currentState
+        val betweenState = root.game.currentState
         root.undo()
         val previousState = root.game.currentState
-        val prevPlayerHand = previousState.currentPlayer.wagonCards
-        val afterPlayerHand = newState.currentPlayer.wagonCards
-        val handDiff = prevPlayerHand.count { oldCard -> afterPlayerHand.none { newCard -> oldCard === newCard } }
-        val (newDiscard, usedCards) = newState.discardStack.run { splitAt(size - handDiff) }
-        val (newDraw, requiredCards) = newState.wagonCardsStack.run { splitAt(max(0, size - 3)) }
+        val prevPlayerHand = previousState.players[betweenState.currentPlayerIndex].wagonCards
+        val betweenPlayerHand = betweenState.currentPlayer.wagonCards
+        val handDiff = prevPlayerHand.count { oldCard -> betweenPlayerHand.none { newCard -> oldCard === newCard } }
+        val (newDiscard, usedCards) = try {
+             betweenState.discardStack.run { splitAt(size - handDiff) }
+        } catch (e: Exception) {
+            throw e
+        }
+        val (newDraw, requiredCards) = betweenState.wagonCardsStack.run { splitAt(max(0, size - 3)) }
 
         if (cards == null) {
-            state = previousState.copy(
+            root.insert(previousState.copy(
                 discardStack = newDiscard + requiredCards,
                 wagonCardsStack = newDraw
-            )
+            ))
             root.game.gameState = GameState.DEFAULT
             root.gameService.nextPlayer()
             return
@@ -262,8 +263,8 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
             check(required == given)
             check(given == cards.size)
         }
-        val newPlayerHand = newState.currentPlayer.wagonCards.filter { card -> cards.none { it === card } }
-        val newPlayers = newState.updateCurrentPlayer {
+        val newPlayerHand = betweenState.currentPlayer.wagonCards.filter { card -> cards.none { it === card } }
+        val newPlayers = betweenState.updateCurrentPlayer {
             copy(
                 points = points + route.pointValue(),
                 trainCarsAmount = trainCarsAmount - route.completeLength,
@@ -271,11 +272,11 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
                 wagonCards = newPlayerHand
             )
         }
-        state = newState.copy(
-            discardStack = newState.discardStack + requiredCards,
+        root.insert(betweenState.copy(
+            discardStack = betweenState.discardStack + requiredCards,
             wagonCardsStack = newDraw,
             players = newPlayers
-        )
+        ))
         root.game.gameState = GameState.DEFAULT
         onAllRefreshables(Refreshable::refreshAfterAfterClaimTunnel)
         root.gameService.nextPlayer()
@@ -312,7 +313,7 @@ class PlayerActionService(val root: RootService): AbstractRefreshingService() {
             route is Tunnel -> {
                 val required = route.length + -locomotiveCount - colorCardCount
                 return if (exhaustive)
-                    required == 0&& otherCardCount == 0
+                    required == 0 && otherCardCount == 0
                 else
                     required <= 0
             }
