@@ -4,7 +4,9 @@ import entity.*
 import view.Refreshable
 import java.util.*
 
-
+/**
+ * A service responsible for performing the system actions
+ */
 class GameService(val root: RootService) : AbstractRefreshingService() {
     data class PlayerData(val name: String, val isRemote: Boolean)
     enum class AIStrategy
@@ -14,7 +16,11 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         set(value) {
             root.insert(value)
         }
-    private val refreshables = mutableListOf<Refreshable>()
+
+    /**
+     * Starts a game with the given player data. At the end, the game is in a valid state, but the player still needs
+     * to select which cards can be kept and which discarded, to perform that decision call [chooseDestinationCard]
+     */
     fun startNewGame(playerNames: List<PlayerData>) {
         fun <T> MutableList<T>.popAll(count: Int): List<T> {
             val retain = subList(size - count, size).toList()
@@ -46,6 +52,9 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         onAllRefreshables(Refreshable::refreshAfterStartNewGame)
     }
 
+    /**
+     * Is called after all players decided which of their cards to keep
+     */
     fun chooseDestinationCard(cards: List<List<Int>>) {
         if (root.game.gameState != GameState.CHOOSE_DESTINATION_CARD) {
             throw IllegalStateException("game is not in the right state for choose destination card")
@@ -58,6 +67,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         val newPlayers = state.players.zip(cards).map {
             it.first.copy(destinationCards = it.second.map(it.first.destinationCards::get))
         }
+        root.game.gameState = GameState.DEFAULT
         root.game.states[0] = state.copy(players = newPlayers)
         onAllRefreshables(Refreshable::refreshAfterChooseDestinationCard)
     }
@@ -123,7 +133,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     }
 
     fun nextPlayer() {
-        if (state.currentPlayer == state.endPlayer) {
+        if (state.currentPlayer.name == state.endPlayer?.name) {
             endGame()
         }
         val oldState = state

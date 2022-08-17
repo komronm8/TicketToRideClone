@@ -7,7 +7,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertSame
 
+/**
+ * Tests the [PlayerActionService]
+ */
 class TestPlayerActionService {
+    /**
+     * Tests the [PlayerActionService.drawWagonCard] method
+     */
     @Test
     fun testDrawWagonCard() {
         val discardStack = listOf(WagonCard(Color.YELLOW), WagonCard(Color.BLACK))
@@ -52,6 +58,9 @@ class TestPlayerActionService {
         assertFails { root.playerActionService.drawWagonCard(1) }
     }
 
+    /**
+     * Tests the [PlayerActionService.drawDestinationCards] method
+     */
     @Test
     fun testDrawDestinationCards() {
         fun PlayerActionService.assertDrawDestinationSuccess(cards: List<Int>) {
