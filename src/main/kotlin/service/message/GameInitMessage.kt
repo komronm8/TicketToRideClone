@@ -23,8 +23,6 @@ data class GameInitMessage (
         return "[GameInit] $trainCardStack, $players, $destinationTickets"
     }
 
-
-
     init{
         require(destinationTickets.size == 31 || destinationTickets.size == 36){ "invalid number of Destination Tickets" }
         require(players.size == 2 || players.size == 3){ "invalid Number of Players" }
