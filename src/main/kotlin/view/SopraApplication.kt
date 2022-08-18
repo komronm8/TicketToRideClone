@@ -3,11 +3,9 @@ package view
 import service.GameService
 import service.RootService
 import tools.aqua.bgw.core.BoardGameApplication
-//import tools.aqua.bgw.core.WindowMode(for fullscreen)
+import tools.aqua.bgw.core.WindowMode
 
-class SopraApplication : BoardGameApplication("Zug um Zug"), Refreshable {
-
-    //If wanted, we can make window fullscreen, by adding "windowMode = WindowMode.FULLSCREEN"
+class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowMode.FULLSCREEN), Refreshable{
 
     private var gameScene: GameScene
 
@@ -48,7 +46,7 @@ class SopraApplication : BoardGameApplication("Zug um Zug"), Refreshable {
         gameScene = GameScene(rootService)
         this.showGameScene(gameScene)
 
-//        this.showMenuScene(mainMenuScene)
+        this.showMenuScene(mainMenuScene)
     }
 
     private fun goBack(){
