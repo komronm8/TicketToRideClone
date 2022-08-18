@@ -11,10 +11,12 @@ class AIPlayer(
     trainCarsAmount: Int = 40,
     claimedRoutes: List<Route> = emptyList(),
     val strategy: Strategy
-): Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, false) {
-    enum class Strategy {
-        RANDOM, MONTE_CARLO,
+) : Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, false) {
+    sealed interface Strategy {
+        object Random : Strategy
+        data class MonteCarlo(val c: Double, val timeLimit: Int): Strategy
     }
+
     override fun copy(
         points: Int,
         destinationCards: List<DestinationCard>,
@@ -22,6 +24,6 @@ class AIPlayer(
         trainCarsAmount: Int,
         claimedRoutes: List<Route>
     ): Player {
-        return AIPlayer(this.name, destinationCards, wagonCards, trainCarsAmount, points, claimedRoutes, this.strategy)
+        return AIPlayer(this.name, destinationCards, wagonCards, points, trainCarsAmount, claimedRoutes, this.strategy)
     }
 }

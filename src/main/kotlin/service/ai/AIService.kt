@@ -11,6 +11,7 @@ import java.util.concurrent.LinkedBlockingQueue
 import kotlin.collections.ArrayList
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sqrt
 import kotlin.random.Random.Default.nextInt
 
 class AIService(private val root: RootService) {
@@ -210,39 +211,41 @@ class AIService(private val root: RootService) {
         fun randomAIGame() {
             playGame(AIService::randomNextTurn)
         }
+
         fun minMaxAIGame() {
             playGame(AIService::minMaxMove)
         }
 
-        fun runAppropriate() {
+        fun runWithAI(players: List<GameService.PlayerData>): Player {
             val root = RootService()
-            root.gameService.startNewGame(
-                listOf(
-                    GameService.PlayerData("monty", false, AIPlayer.Strategy.MONTE_CARLO),
-                    GameService.PlayerData("randy", false, AIPlayer.Strategy.RANDOM),
-                    GameService.PlayerData("random", false, AIPlayer.Strategy.RANDOM)
-                )
-            )
+            root.gameService.startNewGame(players)
             root.gameService.chooseDestinationCard(List(3) { (0..4).toList() })
             val refreshable = object : Refreshable {
-                var ended = false
+                var ended: Player? = null
                 override fun refreshAfterEndGame(winner: Player) {
                     println("winner: ${winner.name}")
-                    ended = true
+                    ended = winner
                 }
             }
             root.addRefreshable(refreshable)
             val aiService = AIService(root)
-            while (!refreshable.ended) {
+            while (refreshable.ended == null) {
                 val player = root.game.currentState.currentPlayer
                 player as AIPlayer
-                println(player.strategy)
                 when (player.strategy) {
-                    AIPlayer.Strategy.RANDOM -> aiService.randomNextTurn()
-                    AIPlayer.Strategy.MONTE_CARLO -> aiService.monteCarloMove()
+                    AIPlayer.Strategy.Random -> aiService.randomNextTurn()
+                    is AIPlayer.Strategy.MonteCarlo -> root.monteCarloMove(player.strategy.c, player.strategy.timeLimit)
                 }
             }
+            return checkNotNull(refreshable.ended)
         }
+
+        fun runAppropriate(): Player = runWithAI(
+            listOf(
+                GameService.PlayerData("monty", false, AIPlayer.Strategy.MonteCarlo(sqrt(2.0), 1000)),
+                GameService.PlayerData("randy", false, AIPlayer.Strategy.Random),
+            )
+        )
 
         fun playGame(ai: AIService.() -> Unit) {
             val root = RootService()
@@ -266,10 +269,6 @@ class AIService(private val root: RootService) {
                 aiService.ai()
             }
         }
-    }
-
-    fun monteCarloMove() {
-        root.monteCarloMove()
     }
 
     fun minMaxMove() {

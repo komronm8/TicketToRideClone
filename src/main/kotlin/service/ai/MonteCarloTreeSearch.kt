@@ -3,12 +3,12 @@ package service.ai
 import entity.*
 import service.RootService
 import view.Refreshable
-import java.time.Duration
-import java.time.Instant
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
+import kotlin.math.ln
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.sqrt
 
 private data class GameTree(
     val parent: GameTree?,
@@ -17,6 +17,7 @@ private data class GameTree(
     val winner: Player?,
     var children: List<GameTree>? = null,
     var wonCount: AtomicInteger = AtomicInteger(0),
+    var visited: AtomicInteger = AtomicInteger(0)
 )
 
 private class WinnerReporter(private var winner: Player? = null): Refreshable {
@@ -211,14 +212,23 @@ private inline fun State.destinationIndices(emit: (List<Int>) -> Unit) {
     if (drawAmount == 3) emit(listOf(0, 2))
 }
 
-private fun playoff(rootNode: GameTree, claimableRoutes: List<Route>, mainPlayer: Player) {
+private fun playoff(c: Double, rootNode: GameTree, claimableRoutes: List<Route>, mainPlayer: Player) {
     var current = rootNode
     while (current.winner == null) {
-        current = current.children(claimableRoutes, mainPlayer).random()
+        current.visited.incrementAndGet()
+        val parentVisited = ln(current.visited.get().toDouble())
+        val child = current.children(claimableRoutes, mainPlayer).selectNext(c, parentVisited)
+        current = checkNotNull(child)
     }
 }
 
-fun RootService.monteCarloMove() {
+private fun List<GameTree>.selectNext(c: Double, parentVisited: Double) = maxByOrNull {
+    val exploitation = (it.wonCount.get().toDouble() / (it.visited.get() + 1).toDouble() )
+    val exploration = c * sqrt(parentVisited / it.visited.get().plus(1).toDouble())
+    exploitation + exploration
+}
+
+fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
     val unclaimedRoutes = run {
         val routes = IdentityHashMap<Route, Unit>(79)
         game.currentState.cities.flatMap { it.routes }.forEach { routes[it] = Unit }
@@ -238,23 +248,14 @@ fun RootService.monteCarloMove() {
         executeMove(winningMove.move)
         return
     }
-    val operationCounter = AtomicInteger(0)
-    val timeLimit = 4000
-    val start = Instant.now()
-    val threads = (1..Runtime.getRuntime().availableProcessors()).map {
-        Thread {
-            val start = System.currentTimeMillis()
-            for (i in 0..500)  {// langsam oder?
-                playoff(options.random(), unclaimedRoutes, mainPlayer)
-                operationCounter.incrementAndGet()
-            }
-        }.apply { start() }
+    val start = System.currentTimeMillis()
+    var operations = 0
+    while (System.currentTimeMillis() - start < timeLimit) {
+        val selected = checkNotNull(options.selectNext(c, ln(operations.toDouble())))
+        playoff(c, selected, unclaimedRoutes, mainPlayer)
+        operations++
     }
-    threads.forEach { it.join() }
-    println(Duration.between(start, Instant.now()).toMillis())
-    println(operationCounter.get())
-
-    println(checkNotNull(options.maxByOrNull { it.wonCount.get() }).move)
+    println(operations)
     executeMove(checkNotNull(options.maxByOrNull { it.wonCount.get() }).move)
 }
 
