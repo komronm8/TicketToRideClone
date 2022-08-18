@@ -1,6 +1,6 @@
-import service.AIService
+import service.ai.AIService
 
 fun main() {
-    AIService.minMaxAIGame()
+    AIService.playGame(AIService::monteCarloMove)
     println("Application ended. Goodbye")
 }

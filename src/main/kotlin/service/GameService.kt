@@ -73,15 +73,16 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     }
 
     fun endGame() {
-        updateWithFinalScore()
-        onAllRefreshables(Refreshable::refreshAfterEndGame)
+        val winner = updateWithFinalScore()
+
+        onAllRefreshables { refreshAfterEndGame(winner) }
     }
 
     fun nextGame() {
         startNewGame(state.players.map { PlayerData(it.name, it.isRemote) })
     }
 
-    private fun updateWithFinalScore() {
+    private fun updateWithFinalScore(): Player {
         val scores = state.players.map(this::calcDestinationScore)
         val maxFulfilled = scores.maxOf { it.second }
         val newPlayers = state.players.mapIndexed { index, player ->
@@ -90,6 +91,18 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             player.copy(points = player.points + additional)
         }
         state = state.copy(players = newPlayers)
+        val sorted = state.players.sortedByDescending { it.points }
+        val winner = if (sorted[0].points != sorted[1].points)
+            sorted[0]
+        else {
+            val mostFulfilled = newPlayers.filterIndexed { index, _ -> scores[index].second == maxFulfilled }
+            if (mostFulfilled.size == 1) {
+                mostFulfilled[0]
+            } else {
+                checkNotNull(newPlayers.maxByOrNull { it.claimedRoutes.maxOfOrNull { it.completeLength } ?: 0 })
+            }
+        }
+        return winner
     }
 
     fun calcDestinationScore(player: Player): Pair<Int, Int> {

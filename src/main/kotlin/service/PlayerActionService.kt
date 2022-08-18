@@ -207,9 +207,9 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         state.players.forEach { player ->
             player.claimedRoutes.forEach {
                 if (it === route)
-                    throw IllegalStateException("Route already claimed")
+                    throw IllegalStateException("Route $route already claimed")
                 if (it.sibling === route && (!doubleRoute || player === state.currentPlayer))
-                    throw IllegalStateException("Cannot claim double route")
+                    throw IllegalStateException("Cannot claim double route: $route")
             }
         }
         check(usedCards.all { card -> currentPlayer.wagonCards.any { it === card } })
@@ -282,17 +282,31 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         root.gameService.nextPlayer()
     }
 
-    private fun canClaimRoute(route: Route, cards: List<WagonCard>, exhaustive: Boolean): Boolean {
-        val jokerGuard = if (route is Ferry) Color.JOKER else null
-        val counts = cards.groupBy { it.color }.mapValues { it.value.count() }
-        val maxCountColor = counts.filter { it.key != jokerGuard }.maxByOrNull { it.value }?.key ?: Color.PURPLE
-
-        val (locomotiveCount, colorCardCount) = if (route.color != Color.JOKER) {
-            (counts[Color.JOKER] ?: 0) to (counts[route.color] ?: 0)
-        } else if (maxCountColor == Color.JOKER) {
-            0 to (counts[Color.JOKER] ?: 0)
+    fun canClaimRoute(route: Route, cards: List<WagonCard>, exhaustive: Boolean): Boolean {
+        val counts = IntArray(9) { 0 }
+        for (card in cards) {
+            counts[card.color.ordinal] += 1
+        }
+        val locomotiveCount: Int
+        val colorCardCount: Int
+        if (route.color != Color.JOKER) {
+            locomotiveCount = counts[Color.JOKER.ordinal]
+            colorCardCount = counts[route.color.ordinal]
         } else {
-            (counts[Color.JOKER] ?: 0) to (counts[maxCountColor] ?: 0)
+            val jokerGuard = if (route is Ferry) Color.JOKER else null
+            var maxCountColor = Color.GREEN
+            for (color in Color.values()) {
+                if (color != jokerGuard && counts[color.ordinal] > counts[maxCountColor.ordinal]) {
+                    maxCountColor = color
+                }
+            }
+            if (maxCountColor == Color.JOKER) {
+                locomotiveCount = 0
+                colorCardCount = counts[maxCountColor.ordinal]
+            } else {
+                locomotiveCount = counts[Color.JOKER.ordinal]
+                colorCardCount = counts[maxCountColor.ordinal]
+            }
         }
         var otherCardCount = cards.size - locomotiveCount - colorCardCount
         when {

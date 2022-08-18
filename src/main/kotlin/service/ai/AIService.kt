@@ -1,6 +1,8 @@
-package service
+package service.ai
 
 import entity.*
+import service.GameService
+import service.RootService
 import view.Refreshable
 import java.time.Duration
 import java.time.Instant
@@ -25,7 +27,8 @@ class AIService(private val root: RootService) {
     sealed interface Move {
         data class DrawWagonCard(val firstDraw: Int, val secondDraw: Int) : Move
         data class DrawDestinationCard(val destinationCards: List<Int>) : Move
-        data class ClaimRoute(val route: Route, val usedCards: List<WagonCard>, val tunnelCards: List<WagonCard>?) : Move
+        data class ClaimRoute(val route: Route, val usedCards: List<WagonCard>, val tunnelCards: List<WagonCard>?) :
+            Move
     }
 
     class DecisionTree(val parent: DecisionTree?, val value: State, val move: Move, val level: Int, val score: Int) {
@@ -91,7 +94,6 @@ class AIService(private val root: RootService) {
 //        }
 //        val actionSpace = drawWagonCards + validRoutes + destinationDrawAction
         val actionSpace = getPossibleMoves(state)
-        val unique = uniqueDrawWagonCard(RootService().apply { game = Game(state) })
         val action = actionSpace.random()
         when (action) {
             is AIMove.ClaimRoute -> {
@@ -109,17 +111,7 @@ class AIService(private val root: RootService) {
                 }
             }
         }
-//        val action = nextInt(0 ,3)
-//        when (action) {
-//            0 -> randomDrawWagonCard()
-//            1 -> randomDrawDestinationCard()
-//            2 -> {}
-//        }
     }
-    /*fun randomDrawWagonCard(){
-        root.playerActionService.drawWagonCard(nextInt(0,6))
-        root.playerActionService.drawWagonCard(nextInt(0,6))
-    }*/
 
     private fun randomDrawDestinationCard() {
         val valid = (0 until min(state.destinationCards.size, 3)).toMutableList().apply { shuffle() }
@@ -216,28 +208,13 @@ class AIService(private val root: RootService) {
 
     companion object {
         fun randomAIGame() {
-            val root = RootService()
-            root.gameService.startNewGame(
-                listOf(
-                    GameService.PlayerData("dnaida", false),
-                    GameService.PlayerData("dnaidasd", false),
-                    GameService.PlayerData("asdsasda", false)
-                )
-            )
-            root.gameService.chooseDestinationCard(List(3) { (0..4).toList() })
-            val refreshable = object : Refreshable {
-                var ended = false
-                override fun refreshAfterEndGame() {
-                    ended = true
-                }
-            }
-            root.addRefreshable(refreshable)
-            val aiService = AIService(root)
-            while (!refreshable.ended) {
-                aiService.randomNextTurn()
-            }
+            playGame(AIService::randomNextTurn)
         }
         fun minMaxAIGame() {
+            playGame(AIService::minMaxMove)
+        }
+
+        fun playGame(ai: AIService.() -> Unit) {
             val root = RootService()
             root.gameService.startNewGame(
                 listOf(
@@ -249,30 +226,46 @@ class AIService(private val root: RootService) {
             root.gameService.chooseDestinationCard(List(3) { (0..4).toList() })
             val refreshable = object : Refreshable {
                 var ended = false
-                override fun refreshAfterEndGame() {
+                override fun refreshAfterEndGame(winner: Player) {
                     ended = true
                 }
             }
             root.addRefreshable(refreshable)
             val aiService = AIService(root)
             while (!refreshable.ended) {
-                aiService.minMaxMove()
+                aiService.ai()
             }
         }
     }
 
+    fun monteCarloMove() {
+        root.monteCarloMove()
+    }
+
     fun minMaxMove() {
         val playerIndex = state.currentPlayerIndex
+        val unclaimedRoutes = run {
+            val routes = IdentityHashMap<Route, Unit>(79)
+            root.game.currentState.cities.flatMap { it.routes }.forEach { routes[it] = Unit }
+            val doubleClaimAllowed = root.game.currentState.players.size > 2
+            root.game.currentState.players.flatMap { it.claimedRoutes }.forEach {
+                routes.remove(it)
+                if (it.sibling != null && !doubleClaimAllowed) {
+                    routes.remove(it.sibling)
+                }
+            }
+            routes.keys.toList()
+        }
         var bestRoute: DecisionTree? = null
         val moves = LinkedBlockingQueue<DecisionTree>()
-        computeMinMaxMoves(state) { move, state ->
+        computeMinMaxMoves(unclaimedRoutes, null, state) { move, state ->
             moves.add(DecisionTree(null, state, move, 0, computeScore(state, state.players[playerIndex])))
         }
         val start = Instant.now()
-        for (i in 0..500) {
+        for (i in 0..50000) {
             val node = moves.poll()
             var bestChild: DecisionTree? = null
-            computeMinMaxMoves(node.value) { move, state ->
+            computeMinMaxMoves(unclaimedRoutes, node, node.value) { move, state ->
                 val score = computeScore(state, state.players[node.value.currentPlayerIndex])
                 val newChild = DecisionTree(node, state, move, level = node.level + 1, score)
                 moves.add(newChild)
@@ -280,44 +273,62 @@ class AIService(private val root: RootService) {
                     bestChild = newChild
                 }
             }
+
             val malus = node.parent?.let {
                 it.score + if (state.players.size > 2 && it.parent != null) it.parent.score else 0
             } ?: 0
             val bestRouteNow = bestRoute
-            if (bestRouteNow == null ||
-                (bestRouteNow.score < ((bestChild?.score ?: 0) - malus)) ||
-                (bestRouteNow.level < (bestChild?.level ?: -1))
-            ) {
-                bestRoute = bestChild
+            val bestChildNow = bestChild
+            if (bestChildNow != null && bestChildNow.value.currentPlayerIndex == state.currentPlayerIndex) {
+                if (bestRouteNow == null ||
+                    (bestRouteNow.score < (bestChildNow.score - malus)) ||
+                    (bestRouteNow.level < (bestChildNow.level))
+                ) {
+                    bestRoute = bestChild
+                }
             }
         }
         val time = Duration.between(start, Instant.now())
         println(time.toMillis())
         checkNotNull(bestRoute)
+        println("${bestRoute.level / 3}")
         var head: DecisionTree = bestRoute
         while (head.parent != null) {
             head = head.parent ?: break
         }
-        when(val move = head.move) {
-            is Move.ClaimRoute -> {
-                root.playerActionService.claimRoute(move.route, move.usedCards.toList())
-                if (root.game.gameState == GameState.AFTER_CLAIM_TUNNEL) {
-                    //TODO
-                    root.playerActionService.afterClaimTunnel(move.route as Tunnel, move.tunnelCards)
-                }
+        root.executeMove(head.move)
+    }
+}
+
+fun RootService.executeMove(move: AIService.Move) {
+    when(move) {
+        is AIService.Move.ClaimRoute -> {
+            playerActionService.claimRoute(move.route, move.usedCards.toList())
+            if (game.gameState == GameState.AFTER_CLAIM_TUNNEL) {
+                playerActionService.afterClaimTunnel(move.route as Tunnel, move.tunnelCards)
             }
-            is Move.DrawDestinationCard -> {
-                root.playerActionService.drawDestinationCards(move.destinationCards.toList())
-            }
-            is Move.DrawWagonCard -> {
-                root.playerActionService.drawWagonCard(move.firstDraw)
-                root.playerActionService.drawWagonCard(move.secondDraw)
-            }
+        }
+        is AIService.Move.DrawDestinationCard -> {
+            playerActionService.drawDestinationCards(move.destinationCards.toList())
+        }
+        is AIService.Move.DrawWagonCard -> {
+            playerActionService.drawWagonCard(move.firstDraw)
+            playerActionService.drawWagonCard(move.secondDraw)
         }
     }
 }
-private inline fun computeMinMaxMoves(state: State, emit: (AIService.Move, State) -> Unit) {
-    withAllMinMaxMoves(RootService().apply { game = Game(state) }) {
+
+private inline fun computeMinMaxMoves(
+    claimableRoute: List<Route>,
+    parent: AIService.DecisionTree?,
+    state: State,
+    emit: (AIService.Move, State) -> Unit
+) {
+    val root = RootService().apply { game = Game(state) }
+    allClaimableRoutes(claimableRoute, parent, root) {
+        minMaxConvertAIMoveToMove(RootService().apply { game = Game(state) }, AIService.AIMove.ClaimRoute(it), emit)
+    }
+    withAllMinMaxMoves(root) {
         minMaxConvertAIMoveToMove(RootService().apply { game = Game(state) }, it, emit)
     }
 }
@@ -325,20 +336,12 @@ private inline fun computeMinMaxMoves(state: State, emit: (AIService.Move, State
 private inline fun withAllMinMaxMoves(exploreRoot: RootService, with: (AIService.AIMove) -> Unit) {
     val state = exploreRoot.game.currentState
     val drawWagonCards = uniqueDrawWagonCard(exploreRoot)
-    val routes = IdentityHashMap<Route, Unit>(79)
-    state.cities.flatMap { it.routes }.forEach { routes[it] = Unit }
-    val currentPlayer = state.currentPlayer
-    val validRoutes = routes.keys.filter {
-        runCatching {
-            exploreRoot.playerActionService.validateClaimRoute(currentPlayer, it, currentPlayer.wagonCards, false)
-        }.isSuccess
-    }.map(AIService.AIMove::ClaimRoute)
     val destinationDrawAction = if (state.destinationCards.isNotEmpty()) {
         listOf(AIService.AIMove.DrawDestinationCard)
     } else {
         emptyList()
     }
-    val validMoves = drawWagonCards + validRoutes + destinationDrawAction
+    val validMoves = drawWagonCards + destinationDrawAction
     validMoves.forEach(with)
 }
 private inline fun minMaxConvertAIMoveToMove(exploreRoot: RootService, move: AIService.AIMove, emit: (AIService.Move, State) -> Unit) {
@@ -371,7 +374,42 @@ private val wagonCardMoves = ArrayList<AIService.AIMove.DrawWagonCard>(3).apply 
     }
 }
 
-private fun uniqueDrawWagonCard(exploreRoot: RootService): List<AIService.AIMove.DrawWagonCard> {
+inline fun allClaimableRoutes(
+    claimableRoute: List<Route>,
+    node: AIService.DecisionTree?,
+    exploreRoot: RootService,
+    with: (Route) -> Unit
+) {
+    val currentPlayer = exploreRoot.game.currentState.currentPlayer
+    val allowClaimDouble = exploreRoot.game.currentState.players.size > 2
+    for (route in claimableRoute) {
+        var canClaim = true
+        var head: AIService.DecisionTree? = node
+        while (head != null) {
+            val move = head.move
+            if (move is AIService.Move.ClaimRoute) {
+                if (move.route === route) {
+                    canClaim = false
+                    break
+                }
+                if (!allowClaimDouble && move.route.sibling === route) {
+                    canClaim = false
+                    break
+                }
+            }
+            head = head.parent
+        }
+        if (route.sibling != null && currentPlayer.claimedRoutes.any { it === route.sibling }) {
+            continue
+        }
+        if (!canClaim) continue
+        if (currentPlayer.trainCarsAmount < route.completeLength) continue
+        if (!exploreRoot.playerActionService.canClaimRoute(route, currentPlayer.wagonCards, false)) continue
+        with(route)
+    }
+}
+
+fun uniqueDrawWagonCard(exploreRoot: RootService): List<AIService.AIMove.DrawWagonCard> {
     val canDraw = exploreRoot.game.currentState.run { wagonCardsStack.size + discardStack.size } >= 2
     val drawWagonCards = if (canDraw) {
         wagonCardMoves
