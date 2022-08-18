@@ -13,8 +13,10 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
 
     private var configScene = ConfigPlayerScene(rootService).apply {
         goBackButton.onMouseClicked = {
-            goBack()
-            this.remove()
+            if(backCount == 0){
+                goBack()
+            }
+            this.remove(backCount)
         }
     }
 
@@ -51,6 +53,14 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
 
     private fun goBack(){
         this.showMenuScene(mainMenuScene)
+    }
+
+    override fun refreshAfterStartNewGame() {
+        this.hideMenuScene()
+    }
+
+    override fun refreshAfterEndGame() {
+        this.showMenuScene(endScene)
     }
 
 }

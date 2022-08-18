@@ -14,11 +14,13 @@ class ConfigPlayerScene(private val rootService: RootService):
     MenuScene(1920, 1080, ImageVisual("\\ConfigScene\\configBackground.png")), Refreshable{
 
     private var playerCount = 2
-    private var player1Bot = false
-    private var player2Bot = false
-    private var player3Bot = false
+    private var player1Type = arrayOf("Human", "RandomAI", "UnfairAI")
+    private var player2Type = player1Type
+    private var player3Type = player1Type
+    private var onlinePlayerType = player1Type
+    var backCount = 0
 
-    //Solo(Hotseat) menu
+    //Solo menu
     //Player1
     private val player1Label = Label(
         posX = 800, posY = 350, width = 177, height = 55, text = "Player1",
@@ -36,16 +38,7 @@ class ConfigPlayerScene(private val rootService: RootService):
         visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
     ).apply {
         onMouseClicked = {
-            if(player1Bot){
-                visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
-                player1TypeLabel.text = "Human"
-                player1Bot = false
-            }
-            else{
-                visual = ImageVisual("\\ConfigScene\\changeToHumanButton.png")
-                player1TypeLabel.text = "AI"
-                player1Bot = true
-            }
+            changeTypeButton(this, player1TypeLabel, player1Type)
         }
     }
 
@@ -77,16 +70,7 @@ class ConfigPlayerScene(private val rootService: RootService):
         visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
     ).apply {
         onMouseClicked = {
-            if(player2Bot){
-                visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
-                player2TypeLabel.text = "Human"
-                player2Bot = false
-            }
-            else{
-                visual = ImageVisual("\\ConfigScene\\changeToHumanButton.png")
-                player2TypeLabel.text = "AI"
-                player2Bot = true
-            }
+            changeTypeButton(this, player2TypeLabel, player2Type)
         }
     }
 
@@ -118,16 +102,7 @@ class ConfigPlayerScene(private val rootService: RootService):
         visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
     ).apply{
         onMouseClicked = {
-            if(player3Bot){
-                visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
-                player3TypeLabel.text = "Human"
-                player3Bot = false
-            }
-            else{
-                visual = ImageVisual("\\ConfigScene\\changeToHumanButton.png")
-                player3TypeLabel.text = "AI"
-                player3Bot = true
-            }
+            changeTypeButton(this, player3TypeLabel, player3Type)
         }
     }
 
@@ -142,10 +117,30 @@ class ConfigPlayerScene(private val rootService: RootService):
         visual = ImageVisual("\\ConfigScene\\redPlayerIcon.png")
     )
 
+    private val playerInputs = arrayOf(player1Input, player2Input, player3Input)
+    private val playerTypeLabels = arrayOf(player1TypeLabel, player2TypeLabel, player3TypeLabel)
+    private val botButtons = arrayOf(bot1Button, bot2Button, bot3Button)
+
     private val startButton = Button(
         posX = 850, posY = 720, width = 401, height = 83,
         visual = ImageVisual("\\ConfigScene\\startGameButton.png")
-    )
+    ).apply {
+        onMouseClicked = {
+            val playerList = mutableListOf<GameService.PlayerData>()
+            var checked = false
+            for(i in 0 until playerCount){
+                if(playerInputs[i].text != ""){
+                    playerList.add( GameService.PlayerData(playerInputs[i].text, false) )
+                    checked = true
+                }
+                else{
+                    checked = false
+                    break
+                }
+            }
+            if(checked){ rootService.gameService.startNewGame(playerList) }
+        }
+    }
 
     private val removeButton = Button(
         posX = 1350, posY = 735, width = 66, height = 67,
@@ -188,23 +183,31 @@ class ConfigPlayerScene(private val rootService: RootService):
         visual = ImageVisual("\\ConfigScene\\joinButton.png")
     ).apply {
         onMouseClicked = {
-            removeComponents(this, hostButton)
+            backCount++
+            removeOnlineComponents()
             addComponents(sessionLabel, sessionTextField, joinSessionButton, playerNameLabel,
-                playerNameInput, joinBotButton, joinPlayerTypeLabel)
+                playerNameInput, onlinePlayerTypeButton, onlinePlayerTypeLabel)
         }
     }
 
     private val hostButton = Button(
         posX = 1180, posY = 450, width = 212.5, height = 170,
         visual = ImageVisual("\\ConfigScene\\createButton.png")
-    )
+    ).apply {
+        onMouseClicked = {
+            backCount++
+            removeOnlineComponents()
+            addComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel,
+                playerNameInput, onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton)
+        }
+    }
 
     private val garryOnlineIcon = Label(
         posX = 95, posY = 175, width = 600, height = 911,
         visual = ImageVisual("\\ConfigScene\\GarryOnline.png")
     )
 
-    //Join components
+    //Join/Host components
     private val sessionLabel = Label(
         posX = 930, posY = 350, width = 418, height = 85,
         visual = ImageVisual("\\ConfigScene\\textBg.png")
@@ -232,31 +235,32 @@ class ConfigPlayerScene(private val rootService: RootService):
         font = Font(color = Color.BLACK, fontWeight = Font.FontWeight.BOLD, size = 26)
     )
 
-    private val joinBotButton = Button(
+    private val onlinePlayerTypeButton = Button(
         posX = 1325, posY = 495, width = 45, height = 45,
         visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
     ).apply {
-        var bot = false
         onMouseClicked = {
-            if(bot){
-                visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
-                joinPlayerTypeLabel.text = "Human"
-                bot = false
-            }
-            else{
-                visual = ImageVisual("\\ConfigScene\\changeToHumanButton.png")
-                joinPlayerTypeLabel.text = "AI"
-                bot = true
-            }
+            changeTypeButton(this, onlinePlayerTypeLabel, onlinePlayerType)
         }
     }
 
-    private val joinPlayerTypeLabel = Label(
+    private val onlinePlayerTypeLabel = Label(
         posX = 1040, posY = 550, width = 200, height = 50, text = "Human",
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24),
         visual = ImageVisual("\\ConfigScene\\smallWoodBg.png")
     )
 
+    private val hostSessionButton = Button(
+        posX = 1015, posY = 650, width = 250, height = 84,
+        visual = ImageVisual("\\ConfigScene\\hostSessionButton.png")
+    )
+
+    private val hostRandomSessionIDButton = Button(
+        posX = 1320, posY = 352, width = 100, height = 83,
+        visual = ImageVisual("\\ConfigScene\\randomButton.png")
+    )
+
+    //Methods
     fun addSoloComponents(){
         addComponents(
             player1Label, player2Label,
@@ -272,9 +276,50 @@ class ConfigPlayerScene(private val rootService: RootService):
         )
     }
 
-    fun remove(){
-        playerCount = 2
-        clearComponents()
+    fun remove(i: Int){
+        when(i){
+            0 -> {
+                playerCount = 2
+                for(x in 0 until 3){
+                    playerInputs[x].text = ""
+                    playerTypeLabels[x].text = "Human"
+                    botButtons[x].visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+                }
+                bot3Button.apply {
+                }
+                clearComponents()
+            }
+            1 -> {
+                removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
+                    onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
+                addComponents(joinButton, hostButton)
+                sessionTextField.text = ""
+                playerNameInput.text = ""
+                onlinePlayerTypeButton.visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+                onlinePlayerTypeLabel.text = "Human"
+                backCount--
+            }
+        }
     }
 
+    private fun removeOnlineComponents(){
+        removeComponents(joinButton, hostButton)
+    }
+
+    private fun changeTypeButton( button: Button, label: Label, typeArray: Array<String> ){
+        when(label.text){
+            "Human" -> {
+                button.visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+                label.text = typeArray[1]
+            }
+            "RandomAI" -> {
+                button.visual = ImageVisual("\\ConfigScene\\changeToHumanButton.png")
+                label.text = typeArray[2]
+            }
+            "UnfairAI" -> {
+                button.visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+                label.text = typeArray[0]
+            }
+        }
+    }
 }
