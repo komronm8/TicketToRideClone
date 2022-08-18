@@ -8,8 +8,7 @@ import java.util.*
  * A service responsible for performing the system actions
  */
 class GameService(val root: RootService) : AbstractRefreshingService() {
-    data class PlayerData(val name: String, val isRemote: Boolean)
-    enum class AIStrategy
+    data class PlayerData(val name: String, val isRemote: Boolean, val aiStrategy: AIPlayer.Strategy? = null)
 
     private var state: State
         get() = root.game.currentState
@@ -33,12 +32,21 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         val wagonCards = (Color.values().flatMap { color -> List(12) { WagonCard(color) } } +
                 List(2) { WagonCard(Color.JOKER) }).shuffled().toMutableList()
         val players = playerNames.map {
-            Player(
-                name = it.name,
-                destinationCards = destinations.popAll(5),
-                wagonCards = wagonCards.popAll(4),
-                isRemote = it.isRemote
-            )
+            if (it.aiStrategy != null) {
+                AIPlayer(
+                    name = it.name,
+                    destinationCards = destinations.popAll(5),
+                    wagonCards = wagonCards.popAll(4),
+                    strategy = it.aiStrategy
+                )
+            } else {
+                Player(
+                    name = it.name,
+                    destinationCards = destinations.popAll(5),
+                    wagonCards = wagonCards.popAll(4),
+                    isRemote = it.isRemote
+                )
+            }
         }
         root.game = Game(State(
             cities = cities,

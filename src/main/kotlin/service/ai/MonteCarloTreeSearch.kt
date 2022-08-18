@@ -6,6 +6,7 @@ import view.Refreshable
 import java.time.Duration
 import java.time.Instant
 import java.util.*
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.max
 import kotlin.math.min
 
@@ -15,7 +16,7 @@ private data class GameTree(
     val state: State,
     val winner: Player?,
     var children: List<GameTree>? = null,
-    var wonCount: Int = 0,
+    var wonCount: AtomicInteger = AtomicInteger(0),
 )
 
 private class WinnerReporter(private var winner: Player? = null): Refreshable {
@@ -29,11 +30,13 @@ private fun GameTree.children(claimableRoutes: List<Route>, mainPlayer: Player):
     val children1 = children
     if (children1 != null) return children1
     val children2 = this.state.monteCarloChildren(this, claimableRoutes, mainPlayer)
-    val childrenWon = children2.count { it.wonCount > 0 }
-    var head: GameTree? = this
-    while(head != null) {
-        head.wonCount += childrenWon
-        head = head.parent
+    val childrenWon = children2.count { it.wonCount.get() > 0 }
+    if (childrenWon > 0) {
+        var head: GameTree? = this
+        while (head != null) {
+            head.wonCount.addAndGet(childrenWon)
+            head = head.parent
+        }
     }
     return children2
 }
@@ -72,7 +75,7 @@ private fun State.monteCarloChildren(parent: GameTree?, claimableRoutes: List<Ro
     val children = mutableListOf<GameTree>()
     RootService().also { it.game = Game(this) }.monteCarloMove(parent, claimableRoutes) { move, state, winner ->
         val wonCount = if (winner != null && winner.name === mainPlayer.name) 1 else 0
-        children += GameTree(parent, move, state, winner, wonCount = wonCount)
+        children += GameTree(parent, move, state, winner, wonCount = AtomicInteger(wonCount))
     }
     return children
 }
@@ -235,13 +238,23 @@ fun RootService.monteCarloMove() {
         executeMove(winningMove.move)
         return
     }
-
+    val operationCounter = AtomicInteger(0)
+    val timeLimit = 4000
     val start = Instant.now()
-    for (i in 0 until 200) {
-        playoff(options.random(), unclaimedRoutes, mainPlayer)
+    val threads = (1..Runtime.getRuntime().availableProcessors()).map {
+        Thread {
+            val start = System.currentTimeMillis()
+            for (i in 0..500)  {// langsam oder?
+                playoff(options.random(), unclaimedRoutes, mainPlayer)
+                operationCounter.incrementAndGet()
+            }
+        }.apply { start() }
     }
-    val end = Duration.between(start, Instant.now())
-    println("d${end.toMillis()}")
-    executeMove(checkNotNull(options.maxByOrNull { it.wonCount }).move)
+    threads.forEach { it.join() }
+    println(Duration.between(start, Instant.now()).toMillis())
+    println(operationCounter.get())
+
+    println(checkNotNull(options.maxByOrNull { it.wonCount.get() }).move)
+    executeMove(checkNotNull(options.maxByOrNull { it.wonCount.get() }).move)
 }
 

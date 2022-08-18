@@ -214,6 +214,36 @@ class AIService(private val root: RootService) {
             playGame(AIService::minMaxMove)
         }
 
+        fun runAppropriate() {
+            val root = RootService()
+            root.gameService.startNewGame(
+                listOf(
+                    GameService.PlayerData("monty", false, AIPlayer.Strategy.MONTE_CARLO),
+                    GameService.PlayerData("randy", false, AIPlayer.Strategy.RANDOM),
+                    GameService.PlayerData("random", false, AIPlayer.Strategy.RANDOM)
+                )
+            )
+            root.gameService.chooseDestinationCard(List(3) { (0..4).toList() })
+            val refreshable = object : Refreshable {
+                var ended = false
+                override fun refreshAfterEndGame(winner: Player) {
+                    println("winner: ${winner.name}")
+                    ended = true
+                }
+            }
+            root.addRefreshable(refreshable)
+            val aiService = AIService(root)
+            while (!refreshable.ended) {
+                val player = root.game.currentState.currentPlayer
+                player as AIPlayer
+                println(player.strategy)
+                when (player.strategy) {
+                    AIPlayer.Strategy.RANDOM -> aiService.randomNextTurn()
+                    AIPlayer.Strategy.MONTE_CARLO -> aiService.monteCarloMove()
+                }
+            }
+        }
+
         fun playGame(ai: AIService.() -> Unit) {
             val root = RootService()
             root.gameService.startNewGame(
