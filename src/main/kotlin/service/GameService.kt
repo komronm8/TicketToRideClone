@@ -50,7 +50,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         }
         root.game = Game(State(
             cities = cities,
-            openCards = wagonCards.popAll(3),
+            openCards = wagonCards.popAll(5),
             wagonCardsStack = wagonCards,
             players = players,
             destinationCards = destinations,

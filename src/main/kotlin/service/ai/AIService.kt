@@ -447,13 +447,43 @@ fun uniqueDrawWagonCard(exploreRoot: RootService): List<AIService.AIMove.DrawWag
     }
     val moves: HashMap<Long, AIService.AIMove.DrawWagonCard> = HashMap(20)
     val countArray = IntArray(9) { 0 }
+    val drawStack = exploreRoot.game.currentState.wagonCardsStack
+    val openCards = exploreRoot.game.currentState.openCards
+
+    if (drawStack.size < 2) {
+        return drawWagonCards
+    }
+
     for (move in drawWagonCards) {
-        val currentPlayerIndex = exploreRoot.game.currentState.currentPlayerIndex
-        exploreRoot.playerActionService.drawWagonCard(move.firstDraw)
-        exploreRoot.playerActionService.drawWagonCard(move.secondDraw)
-        for (card in exploreRoot.game.currentState.openCards) {
+        val firstDrawCard = drawStack[drawStack.size - 1]
+        val secondDrawCard = drawStack[drawStack.size - 2]
+
+        for (card in openCards) {
             countArray[card.color.ordinal] += 1
         }
+
+        var firstCard: Color
+        var secondCard: Color
+
+        if (move.firstDraw in 0..4) {
+            firstCard = openCards[move.firstDraw].color
+            countArray[firstCard.ordinal] -= 1
+            countArray[firstDrawCard.color.ordinal] += 1
+        } else {
+            firstCard = firstDrawCard.color
+        }
+        if (move.secondDraw in 0..4) {
+            secondCard = if (move.secondDraw == move.firstDraw) {
+                firstDrawCard.color
+            } else {
+                openCards[move.secondDraw].color
+            }
+            countArray[secondCard.ordinal] -= 1
+            countArray[secondDrawCard.color.ordinal] += 1
+        } else {
+            secondCard = secondDrawCard.color
+        }
+
         var hash: Long = 0
         var factor: Long = 1
         for (i in 0 until 9) {
@@ -461,9 +491,6 @@ fun uniqueDrawWagonCard(exploreRoot: RootService): List<AIService.AIMove.DrawWag
             factor *= 9
             countArray[i] = 0
         }
-        val oldPlayer = exploreRoot.game.currentState.players[currentPlayerIndex]
-        var firstCard = oldPlayer.wagonCards[oldPlayer.wagonCards.size - 1].color
-        var secondCard = oldPlayer.wagonCards[oldPlayer.wagonCards.size - 2].color
         if (firstCard.ordinal < secondCard.ordinal) {
             val tmp = firstCard
             firstCard = secondCard

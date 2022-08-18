@@ -3,7 +3,6 @@ import service.ai.AIService
 import service.ai.Optimizer
 
 fun main() {
-    /*
     var montyWon = 0
     repeat(10) {
         try {
@@ -15,7 +14,6 @@ fun main() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }**/
-    println(Optimizer().optimizeC(30))
+    }
     println("Application ended. Goodbye")
 }

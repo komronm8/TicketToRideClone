@@ -15,6 +15,6 @@ class Game(state: State) {
     /**
      * The current game state
      */
-    val currentState: State
+    inline val currentState: State
         get() = states[currentStateIndex]
 }

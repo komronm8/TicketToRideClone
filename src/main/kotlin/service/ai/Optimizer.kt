@@ -31,6 +31,6 @@ class Optimizer {
         return startValue
     }
     fun timeLimitStamps() {
-        
+        (1..19).map { 0.5 * it.toDouble() }
     }
 }
