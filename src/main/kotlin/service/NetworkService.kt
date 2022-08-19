@@ -5,7 +5,7 @@ import java.io.File
 import java.io.InputStream
 
 
-class NetworkService(private val rootService: RootService): AbstractRefreshingService() {
+class NetworkService(val rootService: RootService): AbstractRefreshingService() {
     companion object {
         /** URL of the BGW net server hosted for SoPra participants */
         const val SERVER_ADDRESS = "sopra.cs.tu-dortmund.de:80/bgw-net/connect"
@@ -180,5 +180,9 @@ class NetworkService(private val rootService: RootService): AbstractRefreshingSe
         println(NetworkService::class.java.getResource(fileName))
         var file = File(NetworkService::class.java.getResource(fileName).file)
         return readCsvAndSearch(file.inputStream(), cityName)
+    }
+
+    fun sendChatMessage(text: String){
+        client?.sendGameActionMessage(ChatMessage(text))
     }
 }

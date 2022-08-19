@@ -1,5 +1,7 @@
 package service.message
 
+import entity.DestinationCard
+
 /**
  * Object used to represent a single destination ticket,
  * used in [GameInitMessage], [GameInitResponseMessage]
@@ -11,5 +13,5 @@ package service.message
 data class DestinationTicket (
     val score: Int,
     val start: City,
-    val end: City
+    val end: City,
 )
