@@ -16,5 +16,6 @@ fun main() {
 fun mainNetwork(){
     val root = RootService()
     val game = NetworkService(root)
-    game.hostGame("net22c", "TestGroup06", "GROUP6FTW")
+    //game.hostGame("net22c", "TestGroupHOST", "TEST2223")
+    //game.joinGame("net22c", "TestGrouPLAYER", "TEST2223")
 }
