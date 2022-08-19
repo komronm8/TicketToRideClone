@@ -248,6 +248,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         val (newDraw, requiredCards) = betweenState.wagonCardsStack.run { splitAt(max(0, size - 3)) }
 
         if (cards == null) {
+            root.undo()
             root.insert(
                 previousState.copy(
                     discardStack = newDiscard + requiredCards,
