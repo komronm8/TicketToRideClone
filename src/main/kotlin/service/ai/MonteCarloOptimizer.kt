@@ -5,15 +5,21 @@ import service.GameService
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 
-class Optimizer {
+/**
+ * A class responsible for optimizing the parameters of the monte carlo algorithm
+ */
+object MonteCarloOptimizer {
+    /**
+     * optimises for the [AIPlayer.Strategy.MonteCarlo.c] property
+     */
     fun optimizeC(iterationsPerChange: Int): Double {
         val executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors())
         var startValue = 5.0
         var change = 2.5
         while (change > 0.005) {
             val runData = listOf(
-                GameService.PlayerData("1", false, AIPlayer.Strategy.MonteCarlo(startValue - change, 2000)),
-                GameService.PlayerData("2", false, AIPlayer.Strategy.MonteCarlo(startValue + change, 2000)),
+                GameService.PlayerData("1", false, AIPlayer.Strategy.MonteCarlo(2000, startValue - change, )),
+                GameService.PlayerData("2", false, AIPlayer.Strategy.MonteCarlo(2000, startValue + change)),
             )
             val tasks = List(iterationsPerChange) { Callable {
                 val winner = AIService.runWithAI(runData)
@@ -30,8 +36,5 @@ class Optimizer {
         }
         executor.shutdown()
         return startValue
-    }
-    fun timeLimitStamps() {
-        (1..19).map { 0.5 * it.toDouble() }
     }
 }
