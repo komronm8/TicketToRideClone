@@ -124,33 +124,54 @@ private inline fun RootService.monteCarloClaimRoute(route: Route, emit: (AIServi
         is Ferry -> {
             val currentPlayer = game.currentState.currentPlayer
             val counts = currentPlayer.wagonCards.groupBy { it.color }.mapValues { it.value.count() }.toMutableMap()
-            val primaryColor = if (route.color == Color.JOKER) {
-                val max = counts.maxByOrNull { if (it.key == Color.JOKER) -1 else it.value }?.key ?: Color.BLUE
-                if (max == Color.JOKER) Color.BLUE else max
+            if (route.color == Color.JOKER) {
+                for (primaryColor in counts.keys) {
+                    if (primaryColor == Color.JOKER) continue
+                    val allPrimaryCards = currentPlayer.wagonCards.filter { it.color == primaryColor }
+                    val primaryCards = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
+                    val locomotiveCards = currentPlayer.wagonCards.filter { it.color == Color.JOKER }
+                        .take(route.ferries + (route.length - primaryCards.size))
+                    var cards = primaryCards + locomotiveCards
+                    if (cards.size < route.completeLength) {
+                        val rest = currentPlayer.wagonCards.filter { it.color != Color.JOKER && it.color != primaryColor } +
+                                allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
+                        cards = cards + rest.shuffled().take((route.completeLength - cards.size) * 3)
+                    }
+                    if (playerActionService.canClaimRoute(route, cards, true)) {
+                        emit(AIService.Move.ClaimRoute(route, cards, null))
+                    }
+                }
             } else {
-                route.color
+                val primaryColor = route.color
+                val allPrimaryCards = currentPlayer.wagonCards.filter { it.color == primaryColor }
+                val primaryCards = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
+                val locomotiveCards = currentPlayer.wagonCards.filter { it.color == Color.JOKER }
+                    .take(route.ferries + (route.length - primaryCards.size))
+                var cards = primaryCards + locomotiveCards
+                if (cards.size < route.completeLength) {
+                    val rest = currentPlayer.wagonCards.filter { it.color != Color.JOKER && it.color != primaryColor } +
+                            allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
+                    cards = cards + rest.shuffled().subList(0, (route.completeLength - cards.size) * 3)
+                }
+                emit(AIService.Move.ClaimRoute(route, cards, null))
             }
-            val allPrimaryCards = currentPlayer.wagonCards.filter { it.color == primaryColor }
-            val primaryCards = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
-            val locomotiveCards = currentPlayer.wagonCards.filter { it.color == Color.JOKER }
-                .take(route.ferries + (route.length - primaryCards.size))
-            var cards = primaryCards + locomotiveCards
-            if (cards.size < route.completeLength) {
-                val rest = currentPlayer.wagonCards.filter { it.color != Color.JOKER && it.color != primaryColor } +
-                        allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
-                cards = cards + rest.shuffled().subList(0, (route.completeLength - cards.size) * 3)
-            }
-            playerActionService.claimRoute(route, cards)
-            emit(AIService.Move.ClaimRoute(route, cards, null))
         }
 
         is Tunnel -> {
-            val used = game.currentState.currentPlayer.wagonCards
-                .filter { it.color == route.color || it.color == Color.JOKER }
-                .shuffled().take(route.length)
+
+            var used = game.currentState.currentPlayer.wagonCards
+                .filter { it.color == route.color}
+                .take(route.length)
+            if (used.size < route.length) {
+               used = used + game.currentState.currentPlayer.wagonCards
+                   .filter { it.color == Color.JOKER }
+                   .take(route.length - used.size)
+            }
             playerActionService.claimRoute(route, used)
-            if (game.gameState != GameState.AFTER_CLAIM_TUNNEL)
+            if (game.gameState != GameState.AFTER_CLAIM_TUNNEL) {
                 emit(AIService.Move.ClaimRoute(route, used, null))
+                return
+            }
             val required = game.currentState.wagonCardsStack.run { subList(max(0, size - 3), size) }
             val used2 = if (used.all { it.color == Color.JOKER }) {
                 val requiredCount = required.count { it.color == Color.JOKER }
@@ -173,7 +194,8 @@ private inline fun RootService.monteCarloClaimRoute(route: Route, emit: (AIServi
                 emit(AIService.Move.ClaimRoute(route, cards, null))
             } else {
                 val counts = game.currentState.currentPlayer.wagonCards
-                    .groupBy { it.color }.mapValues { it.value.count() }
+                    .groupBy { it.color }
+                    .mapValues { it.value.count() }
                 val maxFittingCount = counts.filterValues { it >= route.length }
                 if (maxFittingCount.isNotEmpty()) {
                     for (color in maxFittingCount.keys) {
