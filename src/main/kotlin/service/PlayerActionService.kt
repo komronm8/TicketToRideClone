@@ -202,6 +202,13 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         onAllRefreshables(Refreshable::refreshAfterClaimRoute)
     }
 
+    /**
+     * Checks whether a route can be claimed with the given cards and train cards of the player
+     * @param currentPlayer The player who attempts to claim the route
+     * @param route the route to be claimed
+     * @param usedCards the cards which are used to claim the route
+     * @param exhaustive sets whether the [usedCards] must suffice exactly to claim the route
+     */
     fun validateClaimRoute(currentPlayer: Player, route: Route, usedCards: List<WagonCard>, exhaustive: Boolean) {
         check(currentPlayer.trainCarsAmount >= route.completeLength)
         val doubleRoute = state.players.size > 2
@@ -232,17 +239,12 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 }
             }
         }
-        val betweenState = root.game.currentState
-        root.undo()
-        val previousState = root.game.currentState
+        val betweenState = root.game.run { states[currentStateIndex] }
+        val previousState = root.game.run { states[currentStateIndex - 1] }
         val prevPlayerHand = previousState.players[betweenState.currentPlayerIndex].wagonCards
         val betweenPlayerHand = betweenState.currentPlayer.wagonCards
         val handDiff = prevPlayerHand.count { oldCard -> betweenPlayerHand.none { newCard -> oldCard === newCard } }
-        val (newDiscard, usedCards) = try {
-            betweenState.discardStack.run { splitAt(size - handDiff) }
-        } catch (e: Exception) {
-            throw e
-        }
+        val (newDiscard, usedCards) = betweenState.discardStack.run { splitAt(size - handDiff) }
         val (newDraw, requiredCards) = betweenState.wagonCardsStack.run { splitAt(max(0, size - 3)) }
 
         if (cards == null) {
@@ -275,6 +277,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 wagonCards = newPlayerHand
             )
         }
+        root.undo()
         root.insert(
             betweenState.copy(
                 discardStack = betweenState.discardStack + requiredCards,
@@ -287,6 +290,12 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         root.gameService.nextPlayer()
     }
 
+    /**
+     * Checks whether the route can be claimed with the cards given
+     * @param route The route which should be claimed
+     * @param cards The cards which are used to claim the route
+     * @param exhaustive Sets whether the cards suffice exactly
+     */
     fun canClaimRoute(route: Route, cards: List<WagonCard>, exhaustive: Boolean): Boolean {
         val counts = IntArray(9) { 0 }
         for (card in cards) {

@@ -28,6 +28,7 @@ class Optimizer {
             }
             change /= 2
         }
+        executor.shutdown()
         return startValue
     }
     fun timeLimitStamps() {

@@ -12,8 +12,10 @@ fun main() {
             }
             println("wr: ${montyWon / (it.toDouble()  + 1)}")
         } catch (e: Exception) {
-            e.printStackTrace()
+            throw e
         }
     }
+    println(montyWon)
+    //println(Optimizer().optimizeC(25))
     println("Application ended. Goodbye")
 }

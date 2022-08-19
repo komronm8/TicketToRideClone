@@ -242,7 +242,7 @@ class AIService(private val root: RootService) {
 
         fun runAppropriate(): Player = runWithAI(
             listOf(
-                GameService.PlayerData("monty", false, AIPlayer.Strategy.MonteCarlo(sqrt(2.0), 1000)),
+                GameService.PlayerData("monty", false, AIPlayer.Strategy.MonteCarlo(0.517578125, 1000)),
                 GameService.PlayerData("randy", false, AIPlayer.Strategy.Random),
             )
         )
@@ -329,7 +329,7 @@ class AIService(private val root: RootService) {
     }
 }
 
-fun RootService.executeMove(move: AIService.Move) {
+private fun RootService.executeMove(move: AIService.Move) {
     when(move) {
         is AIService.Move.ClaimRoute -> {
             playerActionService.claimRoute(move.route, move.usedCards.toList())
