@@ -1,15 +1,21 @@
 package view
 
+import entity.City
 import entity.Player
+import entity.Route
+import entity.WagonCard
 import service.RootService
 import tools.aqua.bgw.components.container.LinearLayout
 import tools.aqua.bgw.components.gamecomponentviews.CardView
 import tools.aqua.bgw.components.layoutviews.Pane
 import tools.aqua.bgw.components.uicomponents.*
 import tools.aqua.bgw.core.*
+import tools.aqua.bgw.event.ScrollDirection
+import tools.aqua.bgw.util.CoordinatePlain
 import tools.aqua.bgw.util.Font
 import tools.aqua.bgw.visual.*
 import java.awt.Color
+import javax.xml.crypto.dsig.Transform
 import kotlin.math.*
 
 const val TRAIN_CARDS: String = "GameScene/Cards/Train/"
@@ -19,6 +25,7 @@ const val DEST_CARDS: String = "GameScene/Cards/Destination/"
  * Manages Game UI and service calls
  * @param root Grants access to service-layer
  */
+@Suppress("UNCHECKED_CAST")
 class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Refreshable {
     private val playerBanner: Pane<UIComponent> = Pane( 0, 480, 1920, 600 )
 
@@ -87,6 +94,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     private var trainCardsToView: Array<CardView> = arrayOf()
     private var trainCardIndex: Int = 0
 
+    private val selectedTrainCards: MutableList<Int> = mutableListOf()
+
     private fun setTrainCards(cards: Collection<CardView>): Unit {
         trainCardsToView = cards.toTypedArray();
         setTrainCardIndex(0)
@@ -100,15 +109,34 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         showTrainCards.clear()
         for(count in trainCardIndex..min (trainCardIndex + 4, trainCardsToView.size - 1)) {
             trainCardsToView[count].onMouseClicked = {
-                println("Ja")
+                val me = trainCardsToView[count]
+
+                if(me.opacity == 1.0) {
+                    me.opacity = 0.5
+                    selectedTrainCards.add(count)
+                } else {
+                    me.opacity = 1.0
+                    selectedTrainCards.remove(count)
+                }
             }
+
             showTrainCards.add(trainCardsToView[count])
         }
     }
 
     private val showTrainCards: LinearLayout<CardView> = LinearLayout<CardView>(
         posX = 725, posY = 350, width = 850, height = 248, spacing = 2, alignment = Alignment.CENTER
-    )
+    ).apply {
+        onScroll = {
+            if(it.direction == ScrollDirection.UP) {
+                setTrainCardIndex(trainCardIndex + 5)
+            } else {
+                setTrainCardIndex(trainCardIndex - 5)
+            }
+
+            setCardsScrollable(trainCardsToView, trainCardIndex, trainScrollLeft, trainScrollRight)
+        }
+    }
 
     private val trainScrollLeft: Button = Button(
         width = 89, height = 89, posX = 725, posY = 430,
@@ -156,7 +184,17 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
     private val showDestCards: LinearLayout<CardView> = LinearLayout<CardView>(
         posX = 725, posY = 600, width = 850, height = 248, spacing = 2, alignment = Alignment.CENTER
-    )
+    ).apply {
+        onScroll = {
+            if(it.direction == ScrollDirection.UP) {
+                setDestCardIndex(destCardIndex + 5)
+            } else {
+                setDestCardIndex(destCardIndex - 5)
+            }
+
+            setCardsScrollable(destCardsToView, destCardIndex, destScrollLeft, destScrollRight)
+        }
+    }
 
     private val destScrollLeft: Button = Button(
         width = 89, height = 89, posX = 725, posY = 680,
@@ -209,9 +247,58 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             destCardDeck, openTrainCards, trainCardDeck
         )
 
-        showCards(root.game.currentState.currentPlayer);
+        buildMapButtons()
+        showCards(root.game.currentState.currentPlayer)
         initializeOtherPlayerUI()
         updateDecks()
+    }
+
+    private fun City.findRoute(to: City): Route = checkNotNull(routes.find {
+        (it.cities.first === this && it.cities.second === to)
+                || (it.cities.first === to && it.cities.second === this)
+    })
+
+    private fun buildMapButtons() {
+        for(route in mapRouteButtons) {
+            for(fieldIndex in 0..route.size-3) {
+                val transform = route[fieldIndex] as Pair<Triple<Int, Int, Double>, Boolean>
+
+                map.add(Button(
+                    posX = transform.first.first, posY = transform.first.second, width = 36, height = 13,
+                ).apply {
+                    rotation = transform.first.third
+
+                    val stations = route.last() as Pair<String, String>
+                    name = stations.first + " - " + stations.second
+
+                    onMouseClicked = {
+                        val cities = root.game.currentState.cities.associateBy { it.name }
+                        val gameRoute = checkNotNull(cities[stations.first])
+                            .findRoute(checkNotNull(cities[stations.second]))
+
+                        try {
+                            root.playerActionService.claimRoute(gameRoute,
+                                root.game.currentState.currentPlayer.wagonCards.slice(selectedTrainCards))
+                        } catch (e: Exception) {
+                            //TODO ROUTE CANNOT BE CLAIMED (VIELLEICHT)
+                        }
+
+                        val routeStart = route[route.size - 2] as Int
+                        for(mapIndex in routeStart..routeStart + route.size - 3)
+                            map.elementAt(mapIndex).visual = ImageVisual(
+                                path = getBoardFieldPath((route[mapIndex - routeStart] as Pair<Any, Boolean>).second)
+                            )
+                    }
+                })
+            }
+        }
+    }
+
+    private fun getBoardFieldPath(isTrain: Boolean): String {
+        return when(isTrain) {
+            false -> getPlayerFolder(root.game.currentState.currentPlayerIndex) + "wagon.png"
+            true -> getPlayerFolder(root.game.currentState.currentPlayerIndex) + "train.png"
+        }
     }
 
     private fun getPlayerFolder(index: Int): String {
@@ -226,8 +313,17 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         val trainCards: MutableList<CardView> = mutableListOf()
         val destCards: MutableList<CardView> = mutableListOf()
 
-        for(wagon in playerToExpose.wagonCards) {
-            trainCards.add(CardView(front = ImageVisual(TRAIN_CARDS + wagon.color.toString() + ".png")))
+        for(wagonIndex in playerToExpose.wagonCards.indices) {
+            trainCards.add(CardView(
+                front = ImageVisual(TRAIN_CARDS + playerToExpose.wagonCards[wagonIndex].color.toString() + ".png")
+            ).apply {
+                if(playerToExpose != root.game.currentState.currentPlayer)
+                    isDisabled = true
+                else {
+                    if(selectedTrainCards.contains(wagonIndex))
+                        opacity = 0.5
+                }
+            })
         }
         for(dest in playerToExpose.destinationCards) {
             val start: String = dest.cities.first.name.lowercase().
@@ -332,5 +428,10 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                     onMouseClicked = { println("Nein") }
             })
         }
+    }
+
+    override fun refreshAfterNextPlayer() {
+
+        selectedTrainCards.clear()
     }
 }
