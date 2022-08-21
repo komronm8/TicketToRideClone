@@ -223,7 +223,11 @@ class ConfigPlayerScene(private val rootService: RootService):
     private val joinSessionButton = Button(
         posX = 1015, posY = 650, width = 250, height = 84,
         visual = ImageVisual("\\ConfigScene\\joinSessionButton.png")
-    )
+    ).apply {
+        onMouseClicked = {
+            showJoinLobby()
+        }
+    }
 
     private val playerNameLabel = Label(
         posX = 840, posY = 450, width = 600, height = 119,
@@ -253,11 +257,26 @@ class ConfigPlayerScene(private val rootService: RootService):
     private val hostSessionButton = Button(
         posX = 1015, posY = 650, width = 250, height = 84,
         visual = ImageVisual("\\ConfigScene\\hostSessionButton.png")
-    )
+    ).apply {
+        onMouseClicked = {
+            showHostLobby()
+        }
+    }
 
     private val hostRandomSessionIDButton = Button(
         posX = 1320, posY = 352, width = 100, height = 83,
         visual = ImageVisual("\\ConfigScene\\randomButton.png")
+    )
+
+    //OnlineSessionLobby
+    private val statusLabel = Label(
+        posX = 790, posY = 250, width = 700, height = 570,
+        visual = ImageVisual("\\ConfigScene\\lobbyBg.png")
+    )
+
+    private val statusLobbyLabel = Label(
+        posX = 830, posY = 350, width = 600, height = 70, text = "WAITING FOR HOST TO START THE GAME",
+        font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24), alignment = Alignment.CENTER
     )
 
     //Methods
@@ -291,7 +310,8 @@ class ConfigPlayerScene(private val rootService: RootService):
             }
             1 -> {
                 removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
-                    onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
+                    onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton,
+                    statusLabel, statusLobbyLabel)
                 addComponents(joinButton, hostButton)
                 sessionTextField.text = ""
                 playerNameInput.text = ""
@@ -322,4 +342,19 @@ class ConfigPlayerScene(private val rootService: RootService):
             }
         }
     }
+
+    private fun showJoinLobby(){
+        removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
+            onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
+        statusLobbyLabel.text = "WAITING FOR HOST TO START THE GAME"
+        addComponents(statusLabel, statusLobbyLabel)
+    }
+
+    private fun showHostLobby(){
+        removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
+            onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
+        statusLobbyLabel.text = "WAITING FOR PLAYERS TO CONNECT TO LOBBY"
+        addComponents(statusLabel, statusLobbyLabel)
+    }
+
 }

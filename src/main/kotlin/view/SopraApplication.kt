@@ -20,7 +20,14 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
         }
     }
 
-    private var endScene = EndGameScene(rootService)
+    private var endScene = EndGameScene(rootService).apply {
+        exitButton.onMouseClicked = {
+            exit()
+        }
+        startButton.onMouseClicked = {
+            this@SopraApplication.showMenuScene(mainMenuScene)
+        }
+    }
 
     private var mainMenuScene = NewGameScene(rootService).apply {
         soloButton.onMouseClicked = {
