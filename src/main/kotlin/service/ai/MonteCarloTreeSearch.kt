@@ -249,11 +249,18 @@ private inline fun RootService.claimRoutesMoves(
     val counts = currentPlayer.wagonCards.counts()
     var maxWithoutLocomotive = Color.BLUE
     var maxWithLocomotive = Color.BLUE
+
     for (color in Color.values()) {
         if (counts[color.ordinal] > counts[maxWithLocomotive.ordinal])
             maxWithLocomotive = color
         if (color != Color.JOKER && counts[color.ordinal] > counts[maxWithoutLocomotive.ordinal])
             maxWithoutLocomotive = color
+    }
+    val coloredCards = Color.values().map { color ->
+        if (counts[color.ordinal] > 0)
+            currentPlayer.wagonCards.filterTo(ArrayList(counts[color.ordinal])) { it.color == color }
+        else
+            emptyList()
     }
     val locomotiveCount = if (maxWithLocomotive == Color.JOKER) 0 else counts[Color.JOKER.ordinal]
     for (route in unclaimedRoutes) {
@@ -275,10 +282,114 @@ private inline fun RootService.claimRoutesMoves(
             }
         }
         if (!canClaim || (doubleRoutes && currentPlayer.claimedRoutes.any { route === it })) continue
-        monteCarloClaimRoute(route) {
+        monteCarloClaimRoute(route, coloredCards) {
             emit(it)
             game.gameState = GameState.DEFAULT
             game.currentStateIndex = 0
+        }
+    }
+}
+/**
+* Claims a route with behavior specific to monte-carlo search's strength
+*/
+private inline fun RootService.monteCarloClaimRoute(
+    route: Route,
+    colorLists: List<List<WagonCard>>,
+    emit: (AIMove.ClaimRoute) -> Unit
+) {
+    when (route) {
+        is Ferry -> {
+            val currentPlayer = game.currentState.currentPlayer
+            // if the ferry is gray, try all possible colors as main colors of the cards used to pay the route
+            if (route.color == Color.JOKER) {
+                val allLocomotiveCards = colorLists[Color.JOKER.ordinal]
+                for (primaryColor in Color.values()) {
+                    if (primaryColor == Color.JOKER) continue
+                    val allPrimaryCards = colorLists[primaryColor.ordinal]
+                    val primaryCards = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
+                    val locomotiveCards = allLocomotiveCards
+                        .subList(0, min(route.ferries + (route.length - primaryCards.size), allLocomotiveCards.size))
+                    var cards = primaryCards + locomotiveCards
+                    if (cards.size < route.completeLength) {
+                        val remainingPrimaries = allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
+                        val rest = currentPlayer.wagonCards.filterOther(
+                            remainingPrimaries, primaryColor, allPrimaryCards.size, allLocomotiveCards.size
+                        )
+                        cards = cards + rest.shuffled().take((route.completeLength - cards.size) * 3)
+                    }
+                    // if the route cannot be claimed with the cards given, do not emit the move
+                    if (playerActionService.canClaimRoute(route, cards, true)) {
+                        emit(AIMove.ClaimRoute(route, cards, null))
+                    }
+                }
+            } else {
+                val primaryColor = route.color
+                val allPrimaryCards = colorLists[primaryColor.ordinal]
+                val primaryCards = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
+                val allLocomotiveCards = colorLists[Color.JOKER.ordinal]
+                val locomotiveCards = allLocomotiveCards
+                    .subList(0, min(allLocomotiveCards.size, route.ferries + (route.length - primaryCards.size)))
+                var cards = primaryCards + locomotiveCards
+                if (cards.size < route.completeLength) {
+                    val remainingPrimaries = allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
+                    val rest = currentPlayer.wagonCards
+                        .filterOther(remainingPrimaries, primaryColor, allPrimaryCards.size, allLocomotiveCards.size)
+                    cards = cards + rest.shuffled().subList(0, (route.completeLength - cards.size) * 3)
+                }
+                emit(AIMove.ClaimRoute(route, cards, null))
+            }
+        }
+
+        is Tunnel -> {
+            //prioritise using colored cards over using locomotives
+            val allPrimaryCards = colorLists[route.color.ordinal]
+            var used = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
+            if (used.size < route.length) {
+                val allLocomotive = colorLists[Color.JOKER.ordinal]
+                used = used + allLocomotive.subList(0, min(route.length - used.size, allLocomotive.size))
+            }
+            playerActionService.claimRoute(route, used)
+            if (game.gameState != GameState.AFTER_CLAIM_TUNNEL) {
+                emit(AIMove.ClaimRoute(route, used, null))
+                return
+            }
+            val used2 = game.currentState.monteCarloPayTunnel(route, used)
+            emit(AIMove.ClaimRoute(route, used, used2))
+        }
+
+        else -> {
+            //if the route is not gray, then simply use the viable cards
+            if (route.color != Color.JOKER) {
+                val allPrimaryCards = colorLists[route.color.ordinal]
+                val cards = allPrimaryCards.subList(0, route.length)
+                emit(AIMove.ClaimRoute(route, cards, null))
+            } else {
+                //if the route is gray, try all colors to see if they can be used, if they can be used, emit them
+                var hasFitting = false
+                for (color in Color.values()) {
+                    val primaryCards = colorLists[color.ordinal]
+                    if (primaryCards.size < route.length) continue
+                    emit(AIMove.ClaimRoute(route, primaryCards.subList(0, route.length), null))
+                    hasFitting = true
+                }
+                if (!hasFitting) {
+                    if (route.isMurmanskLieksa()) {
+                        /*val cardCount = game.currentState.currentPlayer.wagonCards.size
+                    val viableValues = counts.filterValues { (cardCount - it) / 4 + it >= 9 }
+                    for ((color, count) in viableValues.entries) {
+                        val required = 9 - count
+                        val state = game.currentState
+                        val used = state.currentPlayer.wagonCards.filter { it.color == color }.toMutableList()
+                        val left = state.currentPlayer.wagonCards.filter { it.color != color }.shuffled()
+                        used.addAll(left.subList(0, required * 4))
+                        playerActionService.claimRoute(route, used)
+                        emit(AIMove.ClaimRoute(route, used, null))
+                    }*/
+                    } else {
+                        throw AssertionError("Invalid claim")
+                    }
+                }
+            }
         }
     }
 }

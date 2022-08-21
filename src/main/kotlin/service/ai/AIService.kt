@@ -38,7 +38,7 @@ class AIService(private val root: RootService) {
          */
         fun runAppropriate(): Player = runWithAI(
             listOf(
-                GameService.PlayerData("monty", false, AIPlayer.Strategy.MonteCarlo(50)),
+                GameService.PlayerData("monty", false, AIPlayer.Strategy.MonteCarlo(2000)),
                 GameService.PlayerData("randy", false, AIPlayer.Strategy.Random),
             )
         )
