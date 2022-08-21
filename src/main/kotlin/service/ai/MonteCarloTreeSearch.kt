@@ -5,7 +5,10 @@ import service.RootService
 import view.Refreshable
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.*
+import kotlin.math.ln
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.sqrt
 
 private data class GameTree(
     val parent: GameTree?,
@@ -43,13 +46,18 @@ private class WinnerReporter(private var winner: Player? = null) : Refreshable {
  * @param timeLimit the time limit for the calculation
  */
 fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
+    val move = game.currentState.findMoveMonteCarlo(c, timeLimit)
+    executeMontyMove(move)
+}
+
+private fun State.findMoveMonteCarlo(c: Double, timeLimit: Int): AIMove {
     // pre-compute all claimed routes since this speeds up the computation for the routes, claimable by each player,
     // considerably
     val startingChoices = run {
         val routes = IdentityHashMap<Route, Unit>(79)
-        game.currentState.cities.flatMap { it.routes }.forEach { routes[it] = Unit }
-        val doubleClaimAllowed = game.currentState.players.size > 2
-        game.currentState.players.flatMap { it.claimedRoutes }.forEach {
+        cities.flatMap { it.routes }.forEach { routes[it] = Unit }
+        val doubleClaimAllowed = players.size > 2
+        players.flatMap { it.claimedRoutes }.forEach {
             routes.remove(it)
             if (it.sibling != null && !doubleClaimAllowed) {
                 routes.remove(it.sibling)
@@ -57,24 +65,23 @@ fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
         }
         val unclaimedRoutes = routes.keys.toList()
         val destinationIndices = ArrayList<AIMove.DrawDestinationCard>(7)
-        game.currentState.destinationIndices {
+        destinationIndices {
             destinationIndices.add(AIMove.DrawDestinationCard(it))
         }
         val drawableWagonCards = uniqueDrawWagonCard(this)
         PrecomputedChoices(destinationIndices, drawableWagonCards, unclaimedRoutes)
     }
-    val mainPlayer = game.currentState.currentPlayer
+    val mainPlayer = currentPlayer
     // the playable moves, aka. the moves whose effectiveness should be evaluated
-    val options = this.game.currentState.monteCarloChildren(null, startingChoices)
+    val options = monteCarloChildren(null, startingChoices)
     options.forEach {
-        val state = it.state(this.game.currentState, mainPlayer)
+        val state = it.state(this)
         it.precomputedChoices(state, startingChoices)
     }
     // if one of the starting moves leads to victory, use it without further evalutation
     val winningMove = options.firstOrNull { it.winner?.name === mainPlayer.name }
     if (winningMove != null) {
-        executeMontyMove(winningMove.move)
-        return
+        return winningMove.move
     }
     //play as many games as the time allows
     val start = System.currentTimeMillis()
@@ -85,7 +92,7 @@ fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
         operations++
     }
     println(operations)
-    executeMontyMove(checkNotNull(options.maxByOrNull { it.wonCount.get() }).move)
+    return checkNotNull(options.maxByOrNull { it.wonCount.get() }).move
 }
 
 /**
@@ -97,13 +104,22 @@ private fun playoff(c: Double, operations: Int, rootNode: GameTree, mainPlayer: 
     while (current.winner == null) {
         current.visited.incrementAndGet()
         // Select the next move the visit
-        val child = current.children(mainPlayer).selectNext()
+        val child = current.children().selectNext()
         checkNotNull(child)
         // if the move has not been visited, calculate the resulting state
-        if (child.state == null) child.state(checkNotNull(current.state), mainPlayer)
+        if (child.state == null) child.state(checkNotNull(current.state))
         // recalculate the score
         current.renewScore(c, current.parent?.visited?.get() ?: operations)
         current = child
+    }
+    if (current.winner?.name == mainPlayer.name) {
+        while (true) {
+            val parent = current.parent
+            current.wonCount.incrementAndGet()
+            val parentVisited = parent?.visited?.get() ?: operations
+            current.renewScore(c, parentVisited)
+            if (parent != null) current = parent else break
+        }
     }
 }
 
@@ -119,20 +135,13 @@ private fun List<GameTree>.selectNext() = maxByOrNull { it.score }
 /**
 computes the state resulting from the [GameTree.move], increases wonCount if necessary
  */
-private fun GameTree.state(parentState: State, mainPlayer: Player): State {
+private fun GameTree.state(parentState: State): State {
     val exploreRoot = RootService()
     val reporter = WinnerReporter()
     exploreRoot.game = Game(parentState)
     exploreRoot.gameService.addRefreshable(reporter)
     exploreRoot.executeMontyMove(move)
     winner = reporter.report()
-    if (winner?.name == mainPlayer.name) {
-        var head: GameTree? = this
-        while (head != null) {
-            head.wonCount.incrementAndGet()
-            head = head.parent
-        }
-    }
     return exploreRoot.game.currentState.also { this.state = it }
 }
 
@@ -157,7 +166,6 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
         is AIMove.ClaimRoute -> {
             var newUnclaimed = parentChoices.unclaimedRoutes
             var newDraw = parentChoices.drawableWagonCards
-            val exploreRoot = RootService().also { it.game = Game(state) }
             if (move.route !is Tunnel || (currentPlayer.claimedRoutes.any { it === move.route })) {
                 val allowDoubleRoutes = state.players.size > 2
                 newUnclaimed = if (move.route.sibling == null || allowDoubleRoutes) {
@@ -172,7 +180,7 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
                 }
             }
             if (move.route is Tunnel) {
-                newDraw = uniqueDrawWagonCard(exploreRoot)
+                newDraw = uniqueDrawWagonCard(state)
             }
             parentChoices.copy(
                 drawableWagonCards = newDraw,
@@ -191,8 +199,7 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
         }
 
         is AIMove.DrawWagonCard -> {
-            val exploreRoot = RootService().also { it.game = Game(state) }
-            val newDrawableCards = uniqueDrawWagonCard(exploreRoot)
+            val newDrawableCards = uniqueDrawWagonCard(state)
             parentChoices.copy(drawableWagonCards = newDrawableCards)
         }
     }
@@ -205,50 +212,14 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
  * returns [GameTree.children] if not null, otherwise calculates children using [monteCarloChildren]. Calculates the
  * state if necessary
  */
-private fun GameTree.children(mainPlayer: Player): List<GameTree> {
+private fun GameTree.children(): List<GameTree> {
     val children1 = children
     if (children1 != null) return children1
-    val state = state ?: state(checkNotNull(parent?.state), mainPlayer)
+    val state = state ?: state(checkNotNull(parent?.state))
     val precomputedChoices = precomputedChoices ?: precomputedChoices(state, checkNotNull(parent?.precomputedChoices))
     val children2 = state.monteCarloChildren(this, precomputedChoices)
     children = children2
     return children2
-}
-
-/**
- * Calculates all routes, that can be claimed by the current player in [exploreRoot] and executes [with] with them
- * @param claimableRoutes all routes that are not claimed and could be claimed with the right cards
- */
-private inline fun GameTree?.allClaimableRoutes(
-    exploreRoot: RootService,
-    claimableRoutes: List<Route>,
-    with: (Route) -> Unit
-) {
-    val currentPlayer = exploreRoot.game.currentState.currentPlayer
-    val allowClaimDouble = exploreRoot.game.currentState.players.size > 2
-    for (route in claimableRoutes) {
-        var canClaim = true
-        var head: GameTree? = this
-        // claimable routes is not updated as we go further down the game tree which is why we go up the tree
-        // to check if the route has been claimed in the meantime
-        while (head != null) {
-            val move = head.move
-            if (move is AIMove.ClaimRoute &&
-                (move.route === route || (!allowClaimDouble && move.route.sibling === route))
-            ) {
-                canClaim = false
-                break
-            }
-            head = head.parent
-        }
-        if (route.sibling != null && currentPlayer.claimedRoutes.any { it === route.sibling }) {
-            continue
-        }
-        if (!canClaim) continue
-        if (currentPlayer.trainCarsAmount < route.completeLength) continue
-        if (!exploreRoot.playerActionService.canClaimRoute(route, currentPlayer.wagonCards, false)) continue
-        with(route)
-    }
 }
 
 // computes the possible actions to take from the current state and adds them to list
@@ -256,7 +227,7 @@ private fun State.monteCarloChildren(
     parent: GameTree?,
     choices: PrecomputedChoices,
 ): List<GameTree> {
-    val children = ArrayList<GameTree>(choices.choiceCount())
+    val children = ArrayList<GameTree>(parent?.children?.size ?: choices.choiceCount())
     choices.destinationCards.forEach {
         children += GameTree(parent, it, null, null, null, wonCount = AtomicInteger(0))
     }
@@ -265,46 +236,58 @@ private fun State.monteCarloChildren(
     }
     val exploreRoot = RootService().also { it.game = Game(this) }
     val currentPlayer = currentPlayer
-    val doubleRoutes = players.size >= 2
-    for (route in choices.unclaimedRoutes) {
-        val canBeClaimed = currentPlayer.trainCarsAmount >= route.completeLength &&
-                exploreRoot.playerActionService.canClaimRoute(route, currentPlayer.wagonCards, false) &&
-                (doubleRoutes || currentPlayer.claimedRoutes.none { route === it })
-        if (!canBeClaimed) continue
-        exploreRoot.monteCarloClaimRoute(route) {
-            children += GameTree(parent, it, null, null, null, wonCount = AtomicInteger(0))
-            exploreRoot.game.gameState = GameState.DEFAULT
-            exploreRoot.game.currentStateIndex=  0
-        }
+    val doubleRoutes = players.size > 2
+    exploreRoot.claimRoutesMoves(choices.unclaimedRoutes, currentPlayer, doubleRoutes) {
+        children += GameTree(parent, it, null, null, null, wonCount = AtomicInteger(0))
     }
     children.shuffle()
     return children
 }
 
-/**
- * computes the possible moves and calls [emit] with each of them
- */
-private inline fun RootService.monteCarloMove(
-    parent: GameTree?,
-    claimableRoutes: List<Route>,
-    emit: (AIMove) -> Unit
+private inline fun RootService.claimRoutesMoves(
+    unclaimedRoutes: List<Route>,
+    currentPlayer: Player,
+    doubleRoutes: Boolean,
+    emit: (AIMove.ClaimRoute) -> Unit
 ) {
-    val exploreRoot = RootService().also { it.game = Game(this.game.currentState) }
-    parent.allClaimableRoutes(this, claimableRoutes) {
-        exploreRoot.monteCarloClaimRoute(it) { move ->
-            emit(move)
-            exploreRoot.game.gameState = GameState.DEFAULT
-            exploreRoot.game.currentStateIndex = 0
+    val cardCount = currentPlayer.wagonCards.size
+    val counts = currentPlayer.wagonCards.counts()
+    var maxWithoutLocomotive = Color.BLUE
+    var maxWithLocomotive = Color.BLUE
+    for (color in Color.values()) {
+        if (counts[color.ordinal] > counts[maxWithLocomotive.ordinal])
+            maxWithLocomotive = color
+        if (color != Color.JOKER && counts[color.ordinal] > counts[maxWithoutLocomotive.ordinal])
+            maxWithoutLocomotive = color
+    }
+    val locomotiveCount = if (maxWithLocomotive == Color.JOKER) 0 else counts[Color.JOKER.ordinal]
+    for (route in unclaimedRoutes) {
+        if (currentPlayer.trainCarsAmount < route.completeLength) continue
+        val canClaim = when (route) {
+            is Ferry -> {
+                val color = if (route.color != Color.JOKER) route.color else maxWithoutLocomotive
+                val colorCards = counts[color.ordinal]
+                val realLocomotiveCount = counts[Color.JOKER.ordinal]
+                val otherCardCount = cardCount - colorCards - realLocomotiveCount
+                playerActionService.canClaimWithCounts(route, colorCards, realLocomotiveCount, otherCardCount, false)
+            }
+
+            else -> {
+                val color = if (route.color != Color.JOKER) route.color else maxWithLocomotive
+                val colorCards = counts[color.ordinal]
+                val otherCardCount = cardCount - colorCards - locomotiveCount
+                playerActionService.canClaimWithCounts(route, colorCards, locomotiveCount, otherCardCount, false)
+            }
+        }
+        if (!canClaim) continue
+        if (doubleRoutes && currentPlayer.claimedRoutes.any { route === it }) continue
+        monteCarloClaimRoute(route) {
+            emit(it)
+            game.gameState = GameState.DEFAULT
+            game.currentStateIndex = 0
         }
     }
-    uniqueDrawWagonCard(this).forEach {
-        emit(it)
-    }
-    this.game.currentState.destinationIndices {
-        emit(AIMove.DrawDestinationCard(it))
-    }
 }
-
 
 private val wagonCardMoves = ArrayList<AIMove.DrawWagonCard>(3).apply {
     add(AIMove.DrawWagonCard(5, 5))
@@ -320,8 +303,8 @@ private val wagonCardMoves = ArrayList<AIMove.DrawWagonCard>(3).apply {
 /**
  * computes draw wagon card moves with unique effects
  */
-private fun uniqueDrawWagonCard(exploreRoot: RootService): List<AIMove.DrawWagonCard> {
-    val canDraw = exploreRoot.game.currentState.run { wagonCardsStack.size + discardStack.size } >= 2
+private fun uniqueDrawWagonCard(currentState: State): List<AIMove.DrawWagonCard> {
+    val canDraw = currentState.run { wagonCardsStack.size + discardStack.size } >= 2
     val drawWagonCards = if (canDraw) {
         wagonCardMoves
     } else {
@@ -329,8 +312,8 @@ private fun uniqueDrawWagonCard(exploreRoot: RootService): List<AIMove.DrawWagon
     }
     val moves: HashMap<Long, AIMove.DrawWagonCard> = HashMap(20)
     val countArray = IntArray(9) { 0 }
-    val drawStack = exploreRoot.game.currentState.wagonCardsStack
-    val openCards = exploreRoot.game.currentState.openCards
+    val drawStack = currentState.wagonCardsStack
+    val openCards = currentState.openCards
 
     if (drawStack.size < 2) {
         return drawWagonCards
@@ -382,7 +365,6 @@ private fun uniqueDrawWagonCard(exploreRoot: RootService): List<AIMove.DrawWagon
         if (!moves.containsKey(hash)) {
             moves[hash] = move
         }
-        exploreRoot.game.currentStateIndex = 0
     }
     return moves.values.toList()
 }
@@ -390,24 +372,28 @@ private fun uniqueDrawWagonCard(exploreRoot: RootService): List<AIMove.DrawWagon
 /**
  * Claims a route with behavior specific to monte-carlo search's strength
  */
-private inline fun RootService.monteCarloClaimRoute(route: Route, emit: (AIMove) -> Unit) {
+private inline fun RootService.monteCarloClaimRoute(route: Route, emit: (AIMove.ClaimRoute) -> Unit) {
     when (route) {
         is Ferry -> {
             val currentPlayer = game.currentState.currentPlayer
-            val counts = currentPlayer.wagonCards.groupBy { it.color }.mapValues { it.value.count() }.toMutableMap()
             // if the ferry is gray, try all possible colors as main colors of the cards used to pay the route
             if (route.color == Color.JOKER) {
-                for (primaryColor in counts.keys) {
+                val counts = currentPlayer.wagonCards.counts()
+                val allLocomotiveCards = currentPlayer.wagonCards.filter { it.color == Color.JOKER }
+                for (primaryColor in Color.values()) {
                     if (primaryColor == Color.JOKER) continue
-                    val allPrimaryCards = currentPlayer.wagonCards.filter { it.color == primaryColor }
-                    val primaryCards = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
-                    val locomotiveCards = currentPlayer.wagonCards.filter { it.color == Color.JOKER }
-                        .take(route.ferries + (route.length - primaryCards.size))
+                    val allPrimaryCards = currentPlayer.wagonCards
+                        .filterTo(ArrayList(counts[primaryColor.ordinal])) { it.color == primaryColor }
+                    val primaryCards = allPrimaryCards
+                        .subList(0, min(route.length, allPrimaryCards.size))
+                    val locomotiveCards = allLocomotiveCards
+                        .subList(0, min(route.ferries + (route.length - primaryCards.size), allLocomotiveCards.size))
                     var cards = primaryCards + locomotiveCards
                     if (cards.size < route.completeLength) {
-                        val rest =
-                            currentPlayer.wagonCards.filter { it.color != Color.JOKER && it.color != primaryColor } +
-                                    allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
+                        val remainingPrimaries = allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
+                        val rest = currentPlayer.wagonCards.filterOther(
+                            remainingPrimaries, primaryColor, allPrimaryCards.size, allLocomotiveCards.size
+                        )
                         cards = cards + rest.shuffled().take((route.completeLength - cards.size) * 3)
                     }
                     // if the route cannot be claimed with the cards given, do not emit the move
@@ -419,12 +405,14 @@ private inline fun RootService.monteCarloClaimRoute(route: Route, emit: (AIMove)
                 val primaryColor = route.color
                 val allPrimaryCards = currentPlayer.wagonCards.filter { it.color == primaryColor }
                 val primaryCards = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
-                val locomotiveCards = currentPlayer.wagonCards.filter { it.color == Color.JOKER }
-                    .take(route.ferries + (route.length - primaryCards.size))
+                val allLocomotiveCards = currentPlayer.wagonCards.filter { it.color == Color.JOKER }
+                val locomotiveCards = allLocomotiveCards
+                    .subList(0, min(allLocomotiveCards.size, route.ferries + (route.length - primaryCards.size)))
                 var cards = primaryCards + locomotiveCards
                 if (cards.size < route.completeLength) {
-                    val rest = currentPlayer.wagonCards.filter { it.color != Color.JOKER && it.color != primaryColor } +
-                            allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
+                    val remainingPrimaries = allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
+                    val rest = currentPlayer.wagonCards
+                        .filterOther(remainingPrimaries, primaryColor, allPrimaryCards.size, allLocomotiveCards.size)
                     cards = cards + rest.shuffled().subList(0, (route.completeLength - cards.size) * 3)
                 }
                 emit(AIMove.ClaimRoute(route, cards, null))
@@ -459,19 +447,19 @@ private inline fun RootService.monteCarloClaimRoute(route: Route, emit: (AIMove)
                 emit(AIMove.ClaimRoute(route, cards, null))
             } else {
                 //if the route is gray, try all colors to see if they can be used, if they can be used, emit them
-                val counts = game.currentState.currentPlayer.wagonCards
-                    .groupBy { it.color }
-                    .mapValues { it.value.count() }
-                val maxFittingCount = counts.filterValues { it >= route.length }
-                if (maxFittingCount.isNotEmpty()) {
-                    for (color in maxFittingCount.keys) {
-                        val cards = game.currentState.currentPlayer.wagonCards
-                            .filter { it.color == color }
-                            .take(route.length)
-                        emit(AIMove.ClaimRoute(route, cards, null))
-                    }
-                } else if (route.isMurmanskLieksa()) {
-                    /*val cardCount = game.currentState.currentPlayer.wagonCards.size
+                val counts = game.currentState.currentPlayer.wagonCards.counts()
+                var hasFitting = false
+                for (color in Color.values()) {
+                    if (counts[color.ordinal] < route.length) continue
+                    val cards = game.currentState.currentPlayer.wagonCards
+                        .filterTo(ArrayList(counts[color.ordinal])) { it.color == color }
+                        .take(route.length)
+                    emit(AIMove.ClaimRoute(route, cards, null))
+                    hasFitting = true
+                }
+                if (!hasFitting) {
+                    if (route.isMurmanskLieksa()) {
+                        /*val cardCount = game.currentState.currentPlayer.wagonCards.size
                     val viableValues = counts.filterValues { (cardCount - it) / 4 + it >= 9 }
                     for ((color, count) in viableValues.entries) {
                         val required = 9 - count
@@ -482,8 +470,9 @@ private inline fun RootService.monteCarloClaimRoute(route: Route, emit: (AIMove)
                         playerActionService.claimRoute(route, used)
                         emit(AIMove.ClaimRoute(route, used, null))
                     }*/
-                } else {
-                    throw AssertionError("Invalid claim")
+                    } else {
+                        throw AssertionError("Invalid claim")
+                    }
                 }
             }
         }
@@ -558,3 +547,22 @@ private fun RootService.executeMontyMove(move: AIMove) {
     }
 }
 
+private fun List<WagonCard>.filterOther(
+    remainingPrimaries: List<WagonCard>,
+    primaryColor: Color,
+    primaryColorCount: Int,
+    locomotiveCount: Int
+): List<WagonCard> {
+    val target = ArrayList<WagonCard>(size - primaryColorCount - locomotiveCount + remainingPrimaries.size)
+    filterTo(target) {
+        it.color != Color.JOKER && it.color != primaryColor
+    }
+    target.addAll(remainingPrimaries)
+    return target
+}
+
+private fun List<WagonCard>.counts(): IntArray {
+    val counts = IntArray(9) { 0 }
+    for (card in this) counts[card.color.ordinal] += 1
+    return counts
+}

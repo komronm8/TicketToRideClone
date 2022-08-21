@@ -2,7 +2,6 @@ package service.ai
 
 import entity.AIPlayer
 import entity.Player
-import entity.State
 import service.GameService
 import service.RootService
 import view.Refreshable
@@ -11,11 +10,6 @@ import view.Refreshable
  * The service responsible for executing the AI strategies
  */
 class AIService(private val root: RootService) {
-
-
-    private val state: State
-        get() = root.game.currentState
-
     companion object {
         /**
          * Runs an entire game with AIs
@@ -44,7 +38,7 @@ class AIService(private val root: RootService) {
          */
         fun runAppropriate(): Player = runWithAI(
             listOf(
-                GameService.PlayerData("monty", false, AIPlayer.Strategy.MonteCarlo(3000)),
+                GameService.PlayerData("monty", false, AIPlayer.Strategy.MonteCarlo(1000)),
                 GameService.PlayerData("randy", false, AIPlayer.Strategy.Random),
             )
         )

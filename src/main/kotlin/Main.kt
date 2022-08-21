@@ -1,10 +1,8 @@
-import entity.AIPlayer
 import service.ai.AIService
-import service.ai.MonteCarloOptimizer
 
 fun main() {
     var montyCount = 0
-    repeat(1) {
+    repeat(10) {
         val gc = it + 1
         val winner = AIService.runAppropriate()
         if (winner.name =="monty") montyCount += 1

@@ -323,7 +323,12 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 colorCardCount = counts[maxCountColor.ordinal]
             }
         }
-        var otherCardCount = cards.size - locomotiveCount - colorCardCount
+        val otherCardCount = cards.size - locomotiveCount - colorCardCount
+        return canClaimWithCounts(route, colorCardCount, locomotiveCount, otherCardCount, exhaustive)
+    }
+
+    fun canClaimWithCounts(route: Route, colorCardCount: Int, locomotiveCount: Int, otherCards: Int, exhaustive: Boolean): Boolean {
+        var otherCardCount = otherCards
         when {
             route is Ferry -> {
                 val requiredCount = if (colorCardCount >= route.length) {
