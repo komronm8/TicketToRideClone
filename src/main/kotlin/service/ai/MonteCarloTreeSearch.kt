@@ -5,21 +5,28 @@ import service.RootService
 import view.Refreshable
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.math.ln
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.sqrt
+import kotlin.math.*
 
 private data class GameTree(
     val parent: GameTree?,
     val move: AIMove,
     var state: State?,
+    var precomputedChoices: PrecomputedChoices?,
     var winner: Player?,
     var children: List<GameTree>? = null,
     var wonCount: AtomicInteger = AtomicInteger(0),
     var visited: AtomicInteger = AtomicInteger(0),
     var score: Double = 100000.0
 )
+
+private data class PrecomputedChoices(
+    val destinationCards: List<AIMove.DrawDestinationCard>,
+    val drawableWagonCards: List<AIMove.DrawWagonCard>,
+    val unclaimedRoutes: List<Route>,
+) {
+    fun choiceCount() =
+        destinationCards.size + drawableWagonCards.size
+}
 
 private class WinnerReporter(private var winner: Player? = null) : Refreshable {
     override fun refreshAfterEndGame(winner: Player) {
@@ -38,7 +45,7 @@ private class WinnerReporter(private var winner: Player? = null) : Refreshable {
 fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
     // pre-compute all claimed routes since this speeds up the computation for the routes, claimable by each player,
     // considerably
-    val unclaimedRoutes = run {
+    val startingChoices = run {
         val routes = IdentityHashMap<Route, Unit>(79)
         game.currentState.cities.flatMap { it.routes }.forEach { routes[it] = Unit }
         val doubleClaimAllowed = game.currentState.players.size > 2
@@ -48,12 +55,21 @@ fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
                 routes.remove(it.sibling)
             }
         }
-        routes.keys.toList()
+        val unclaimedRoutes = routes.keys.toList()
+        val destinationIndices = ArrayList<AIMove.DrawDestinationCard>(7)
+        game.currentState.destinationIndices {
+            destinationIndices.add(AIMove.DrawDestinationCard(it))
+        }
+        val drawableWagonCards = uniqueDrawWagonCard(this)
+        PrecomputedChoices(destinationIndices, drawableWagonCards, unclaimedRoutes)
     }
     val mainPlayer = game.currentState.currentPlayer
     // the playable moves, aka. the moves whose effectiveness should be evaluated
-    val options = this.game.currentState.monteCarloChildren(null, unclaimedRoutes)
-    options.forEach { it.state(this.game.currentState, mainPlayer) }
+    val options = this.game.currentState.monteCarloChildren(null, startingChoices)
+    options.forEach {
+        val state = it.state(this.game.currentState, mainPlayer)
+        it.precomputedChoices(state, startingChoices)
+    }
     // if one of the starting moves leads to victory, use it without further evalutation
     val winningMove = options.firstOrNull { it.winner?.name === mainPlayer.name }
     if (winningMove != null) {
@@ -65,7 +81,7 @@ fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
     var operations = 0
     while (System.currentTimeMillis() - start < timeLimit) {
         val selected = checkNotNull(options.selectNext())
-        playoff(c, ++operations, selected, unclaimedRoutes, mainPlayer)
+        playoff(c, ++operations, selected, mainPlayer)
         operations++
     }
     println(operations)
@@ -76,12 +92,12 @@ fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
  * One game instance, played to the end
  * @param operations the number of overall operations
  */
-private fun playoff(c: Double, operations: Int, rootNode: GameTree, claimableRoutes: List<Route>, mainPlayer: Player) {
+private fun playoff(c: Double, operations: Int, rootNode: GameTree, mainPlayer: Player) {
     var current = rootNode
     while (current.winner == null) {
         current.visited.incrementAndGet()
         // Select the next move the visit
-        val child = current.children(claimableRoutes, mainPlayer).selectNext()
+        val child = current.children(mainPlayer).selectNext()
         checkNotNull(child)
         // if the move has not been visited, calculate the resulting state
         if (child.state == null) child.state(checkNotNull(current.state), mainPlayer)
@@ -104,11 +120,11 @@ private fun List<GameTree>.selectNext() = maxByOrNull { it.score }
 computes the state resulting from the [GameTree.move], increases wonCount if necessary
  */
 private fun GameTree.state(parentState: State, mainPlayer: Player): State {
-    val root = RootService()
+    val exploreRoot = RootService()
     val reporter = WinnerReporter()
-    root.game = Game(parentState)
-    root.gameService.addRefreshable(reporter)
-    root.executeMontyMove(move)
+    exploreRoot.game = Game(parentState)
+    exploreRoot.gameService.addRefreshable(reporter)
+    exploreRoot.executeMontyMove(move)
     winner = reporter.report()
     if (winner?.name == mainPlayer.name) {
         var head: GameTree? = this
@@ -117,18 +133,84 @@ private fun GameTree.state(parentState: State, mainPlayer: Player): State {
             head = head.parent
         }
     }
-    return root.game.currentState.also { this.state = it }
+    return exploreRoot.game.currentState.also { this.state = it }
+}
+
+private fun GameTree.precomputedChoices(state: State, parentChoices: PrecomputedChoices): PrecomputedChoices {
+    fun <T> List<T>.without(instance: T): List<T> {
+        var result = this
+        for (i in indices) {
+            if (get(i) === instance) {
+                result = ArrayList<T>(size - 1).also {
+                    it.addAll(subList(0, i))
+                    if (i + 1 < size) it.addAll(subList(i + 1, size))
+                }
+                break
+            }
+        }
+        return result
+    }
+    precomputedChoices?.also { return@precomputedChoices it }
+    val currentPlayerIndex = if (state.currentPlayerIndex < 1) state.players.size - 1 else state.currentPlayerIndex - 1
+    val currentPlayer = state.players[currentPlayerIndex]
+    val choices = when (move) {
+        is AIMove.ClaimRoute -> {
+            var newUnclaimed = parentChoices.unclaimedRoutes
+            var newDraw = parentChoices.drawableWagonCards
+            val exploreRoot = RootService().also { it.game = Game(state) }
+            if (move.route !is Tunnel || (currentPlayer.claimedRoutes.any { it === move.route })) {
+                val allowDoubleRoutes = state.players.size > 2
+                newUnclaimed = if (move.route.sibling == null || allowDoubleRoutes) {
+                    newUnclaimed.without(move.route)
+                } else {
+                    val oldUnclaimed = newUnclaimed
+                    newUnclaimed = ArrayList(newUnclaimed.size - 1)
+                    for (it in oldUnclaimed) {
+                        if (it !== move.route && it !== move.route.sibling) newUnclaimed.add(it)
+                    }
+                    newUnclaimed
+                }
+            }
+            if (move.route is Tunnel) {
+                newDraw = uniqueDrawWagonCard(exploreRoot)
+            }
+            parentChoices.copy(
+                drawableWagonCards = newDraw,
+                unclaimedRoutes = newUnclaimed,
+            )
+        }
+
+        is AIMove.DrawDestinationCard -> {
+            if (state.destinationCards.size < 3) {
+                val results = ArrayList<AIMove.DrawDestinationCard>(3)
+                state.destinationIndices { results.add(AIMove.DrawDestinationCard(it)) }
+                parentChoices.copy(destinationCards = results)
+            } else {
+                parentChoices
+            }
+        }
+
+        is AIMove.DrawWagonCard -> {
+            val exploreRoot = RootService().also { it.game = Game(state) }
+            val newDrawableCards = uniqueDrawWagonCard(exploreRoot)
+            parentChoices.copy(drawableWagonCards = newDrawableCards)
+        }
+    }
+    precomputedChoices = choices
+    require(choices.unclaimedRoutes.isNotEmpty())
+    return choices
 }
 
 /**
  * returns [GameTree.children] if not null, otherwise calculates children using [monteCarloChildren]. Calculates the
  * state if necessary
  */
-private fun GameTree.children(claimableRoutes: List<Route>, mainPlayer: Player): List<GameTree> {
+private fun GameTree.children(mainPlayer: Player): List<GameTree> {
     val children1 = children
     if (children1 != null) return children1
     val state = state ?: state(checkNotNull(parent?.state), mainPlayer)
-    val children2 = state.monteCarloChildren(this, claimableRoutes)
+    val precomputedChoices = precomputedChoices ?: precomputedChoices(state, checkNotNull(parent?.precomputedChoices))
+    val children2 = state.monteCarloChildren(this, precomputedChoices)
     children = children2
     return children2
 }
@@ -172,12 +254,30 @@ private inline fun GameTree?.allClaimableRoutes(
 // computes the possible actions to take from the current state and adds them to list
 private fun State.monteCarloChildren(
     parent: GameTree?,
-    claimableRoutes: List<Route>,
+    choices: PrecomputedChoices,
 ): List<GameTree> {
-    val children = mutableListOf<GameTree>()
-    RootService().also { it.game = Game(this) }.monteCarloMove(parent, claimableRoutes) { move ->
-        children += GameTree(parent, move, null, null, wonCount = AtomicInteger(0))
+    val children = ArrayList<GameTree>(choices.choiceCount())
+    choices.destinationCards.forEach {
+        children += GameTree(parent, it, null, null, null, wonCount = AtomicInteger(0))
     }
+    choices.drawableWagonCards.forEach {
+        children += GameTree(parent, it, null, null, null, wonCount = AtomicInteger(0))
+    }
+    val exploreRoot = RootService().also { it.game = Game(this) }
+    val currentPlayer = currentPlayer
+    val doubleRoutes = players.size >= 2
+    for (route in choices.unclaimedRoutes) {
+        val canBeClaimed = currentPlayer.trainCarsAmount >= route.completeLength &&
+                exploreRoot.playerActionService.canClaimRoute(route, currentPlayer.wagonCards, false) &&
+                (doubleRoutes || currentPlayer.claimedRoutes.none { route === it })
+        if (!canBeClaimed) continue
+        exploreRoot.monteCarloClaimRoute(route) {
+            children += GameTree(parent, it, null, null, null, wonCount = AtomicInteger(0))
+            exploreRoot.game.gameState = GameState.DEFAULT
+            exploreRoot.game.currentStateIndex=  0
+        }
+    }
+    children.shuffle()
     return children
 }
 
@@ -198,7 +298,7 @@ private inline fun RootService.monteCarloMove(
         }
     }
     uniqueDrawWagonCard(this).forEach {
-        emit(AIMove.DrawWagonCard(it.firstDraw, it.secondDraw))
+        emit(it)
     }
     this.game.currentState.destinationIndices {
         emit(AIMove.DrawDestinationCard(it))

@@ -18,8 +18,8 @@ object MonteCarloOptimizer {
         var change = 2.5
         while (change > 0.005) {
             val runData = listOf(
-                GameService.PlayerData("1", false, AIPlayer.Strategy.MonteCarlo(2000, startValue - change, )),
-                GameService.PlayerData("2", false, AIPlayer.Strategy.MonteCarlo(2000, startValue + change)),
+                GameService.PlayerData("1", false, AIPlayer.Strategy.MonteCarlo(4000, startValue - change, )),
+                GameService.PlayerData("2", false, AIPlayer.Strategy.MonteCarlo(4000, startValue + change)),
             )
             val tasks = List(iterationsPerChange) { Callable {
                 val winner = AIService.runWithAI(runData)
