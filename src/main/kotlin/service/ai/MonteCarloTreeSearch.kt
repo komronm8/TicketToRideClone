@@ -64,10 +64,7 @@ private fun State.findMoveMonteCarlo(c: Double, timeLimit: Int): AIMove {
             }
         }
         val unclaimedRoutes = routes.keys.toList()
-        val destinationIndices = ArrayList<AIMove.DrawDestinationCard>(7)
-        destinationIndices {
-            destinationIndices.add(AIMove.DrawDestinationCard(it))
-        }
+        val destinationIndices = destinationIndices()
         val drawableWagonCards = uniqueDrawWagonCard(this)
         PrecomputedChoices(destinationIndices, drawableWagonCards, unclaimedRoutes)
     }
@@ -190,9 +187,7 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
 
         is AIMove.DrawDestinationCard -> {
             if (state.destinationCards.size < 3) {
-                val results = ArrayList<AIMove.DrawDestinationCard>(3)
-                state.destinationIndices { results.add(AIMove.DrawDestinationCard(it)) }
-                parentChoices.copy(destinationCards = results)
+                parentChoices.copy(destinationCards = state.destinationIndices())
             } else {
                 parentChoices
             }
@@ -279,94 +274,13 @@ private inline fun RootService.claimRoutesMoves(
                 playerActionService.canClaimWithCounts(route, colorCards, locomotiveCount, otherCardCount, false)
             }
         }
-        if (!canClaim) continue
-        if (doubleRoutes && currentPlayer.claimedRoutes.any { route === it }) continue
+        if (!canClaim || (doubleRoutes && currentPlayer.claimedRoutes.any { route === it })) continue
         monteCarloClaimRoute(route) {
             emit(it)
             game.gameState = GameState.DEFAULT
             game.currentStateIndex = 0
         }
     }
-}
-
-private val wagonCardMoves = ArrayList<AIMove.DrawWagonCard>(3).apply {
-    add(AIMove.DrawWagonCard(5, 5))
-    for (i in 0..4) {
-        add(AIMove.DrawWagonCard(i, 5))
-        add(AIMove.DrawWagonCard(5, i))
-        for (j in i..4) {
-            add(AIMove.DrawWagonCard(i, j))
-        }
-    }
-}
-
-/**
- * computes draw wagon card moves with unique effects
- */
-private fun uniqueDrawWagonCard(currentState: State): List<AIMove.DrawWagonCard> {
-    val canDraw = currentState.run { wagonCardsStack.size + discardStack.size } >= 2
-    val drawWagonCards = if (canDraw) {
-        wagonCardMoves
-    } else {
-        return emptyList()
-    }
-    val moves: HashMap<Long, AIMove.DrawWagonCard> = HashMap(20)
-    val countArray = IntArray(9) { 0 }
-    val drawStack = currentState.wagonCardsStack
-    val openCards = currentState.openCards
-
-    if (drawStack.size < 2) {
-        return drawWagonCards
-    }
-
-    for (move in drawWagonCards) {
-        val firstDrawCard = drawStack[drawStack.size - 1]
-        val secondDrawCard = drawStack[drawStack.size - 2]
-
-        for (card in openCards) {
-            countArray[card.color.ordinal] += 1
-        }
-
-        var firstCard: Color
-        var secondCard: Color
-
-        if (move.firstDraw in 0..4) {
-            firstCard = openCards[move.firstDraw].color
-            countArray[firstCard.ordinal] -= 1
-            countArray[firstDrawCard.color.ordinal] += 1
-        } else {
-            firstCard = firstDrawCard.color
-        }
-        if (move.secondDraw in 0..4) {
-            secondCard = if (move.secondDraw == move.firstDraw) {
-                firstDrawCard.color
-            } else {
-                openCards[move.secondDraw].color
-            }
-            countArray[secondCard.ordinal] -= 1
-            countArray[secondDrawCard.color.ordinal] += 1
-        } else {
-            secondCard = secondDrawCard.color
-        }
-
-        var hash: Long = 0
-        var factor: Long = 1
-        for (i in 0 until 9) {
-            hash += countArray[i] * factor
-            factor *= 9
-            countArray[i] = 0
-        }
-        if (firstCard.ordinal < secondCard.ordinal) {
-            val tmp = firstCard
-            firstCard = secondCard
-            secondCard = tmp
-        }
-        hash = hash.shl(7).or((firstCard.ordinal * 9 + secondCard.ordinal).toLong())
-        if (!moves.containsKey(hash)) {
-            moves[hash] = move
-        }
-    }
-    return moves.values.toList()
 }
 
 /**
@@ -498,22 +412,6 @@ private fun State.monteCarloPayTunnel(route: Tunnel, used: List<WagonCard>): Lis
 }
 
 /**
-computes all valid destination indices for the current state in regard to the amount of cards left
-in [State.destinationCards]
- */
-private inline fun State.destinationIndices(emit: (List<Int>) -> Unit) {
-    val drawAmount = min(destinationCards.size, 3)
-    if (drawAmount == 0) return
-    val indices = (0 until drawAmount).toList()
-    if (drawAmount == 1) emit(indices)
-    for (i in 0 until drawAmount) {
-        emit(listOf(indices[i]))
-        if (i + 1 < drawAmount) emit(indices.subList(i, i + 2))
-    }
-    if (drawAmount == 3) emit(listOf(0, 2))
-}
-
-/**
  * execute the move on the given root service
  */
 private fun RootService.executeMontyMove(move: AIMove) {
@@ -559,10 +457,4 @@ private fun List<WagonCard>.filterOther(
     }
     target.addAll(remainingPrimaries)
     return target
-}
-
-private fun List<WagonCard>.counts(): IntArray {
-    val counts = IntArray(9) { 0 }
-    for (card in this) counts[card.color.ordinal] += 1
-    return counts
 }

@@ -2,7 +2,7 @@ import service.ai.AIService
 
 fun main() {
     var montyCount = 0
-    repeat(10) {
+    repeat(30) {
         val gc = it + 1
         val winner = AIService.runAppropriate()
         if (winner.name =="monty") montyCount += 1

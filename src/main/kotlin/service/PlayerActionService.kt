@@ -225,6 +225,91 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
     }
 
     /**
+     * Checks whether the route can be claimed with the cards given
+     * @param route The route which should be claimed
+     * @param cards The cards which are used to claim the route
+     * @param exhaustive Sets whether the cards suffice exactly
+     */
+    fun canClaimRoute(route: Route, cards: List<WagonCard>, exhaustive: Boolean): Boolean {
+        val counts = IntArray(9) { 0 }
+        for (card in cards) {
+            counts[card.color.ordinal] += 1
+        }
+        val locomotiveCount: Int
+        val colorCardCount: Int
+        if (route.color != Color.JOKER) {
+            locomotiveCount = counts[Color.JOKER.ordinal]
+            colorCardCount = counts[route.color.ordinal]
+        } else {
+            val jokerGuard = if (route is Ferry) Color.JOKER else null
+            var maxCountColor = Color.GREEN
+            for (color in Color.values()) {
+                if (color != jokerGuard && counts[color.ordinal] > counts[maxCountColor.ordinal]) {
+                    maxCountColor = color
+                }
+            }
+            if (maxCountColor == Color.JOKER) {
+                locomotiveCount = 0
+                colorCardCount = counts[maxCountColor.ordinal]
+            } else {
+                locomotiveCount = counts[Color.JOKER.ordinal]
+                colorCardCount = counts[maxCountColor.ordinal]
+            }
+        }
+        val otherCardCount = cards.size - locomotiveCount - colorCardCount
+        return canClaimWithCounts(route, colorCardCount, locomotiveCount, otherCardCount, exhaustive)
+    }
+
+    /**
+     * Checks whether a route can be claimed with the given amount of cards
+     */
+    fun canClaimWithCounts(
+        route: Route, colorCardCount: Int, locomotiveCount: Int, otherCards: Int, exhaustive: Boolean
+    ): Boolean {
+        var otherCardCount = otherCards
+        when {
+            route is Ferry -> {
+                val requiredCount = if (colorCardCount >= route.length) {
+                    otherCardCount += colorCardCount - route.length
+                    0
+                } else {
+                    route.length - colorCardCount
+                }
+                val required = requiredCount + (route.ferries - locomotiveCount) - (otherCardCount / 3)
+                return if (exhaustive)
+                    required == 0 && otherCardCount % 3 == 0
+                else
+                    required <= 0
+            }
+
+            route is Tunnel -> {
+                val required = route.length + -locomotiveCount - colorCardCount
+                return if (exhaustive)
+                    required == 0 && otherCardCount == 0
+                else
+                    required <= 0
+            }
+
+            route.isMurmanskLieksa() -> {
+                val mixedBudget = otherCardCount + locomotiveCount
+                val required = route.length - colorCardCount - (mixedBudget / 4)
+                return if (exhaustive)
+                    required == 0 && mixedBudget % 4 == 0
+                else
+                    required <= 0
+            }
+
+            else -> {
+                val required = route.length - colorCardCount
+                return if (exhaustive)
+                    required == 0 && otherCardCount == 0 && locomotiveCount == 0
+                else
+                    required <= 0
+            }
+        }
+    }
+
+    /**
      * Finalises the  claiming of a tunnel.
      * @param route the tunnel
      * @param cards `null` if the player does not wish to pay, otherwise the given cards must be enough
@@ -289,86 +374,6 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         root.game.gameState = GameState.DEFAULT
         onAllRefreshables(Refreshable::refreshAfterAfterClaimTunnel)
         root.gameService.nextPlayer()
-    }
-
-    /**
-     * Checks whether the route can be claimed with the cards given
-     * @param route The route which should be claimed
-     * @param cards The cards which are used to claim the route
-     * @param exhaustive Sets whether the cards suffice exactly
-     */
-    fun canClaimRoute(route: Route, cards: List<WagonCard>, exhaustive: Boolean): Boolean {
-        val counts = IntArray(9) { 0 }
-        for (card in cards) {
-            counts[card.color.ordinal] += 1
-        }
-        val locomotiveCount: Int
-        val colorCardCount: Int
-        if (route.color != Color.JOKER) {
-            locomotiveCount = counts[Color.JOKER.ordinal]
-            colorCardCount = counts[route.color.ordinal]
-        } else {
-            val jokerGuard = if (route is Ferry) Color.JOKER else null
-            var maxCountColor = Color.GREEN
-            for (color in Color.values()) {
-                if (color != jokerGuard && counts[color.ordinal] > counts[maxCountColor.ordinal]) {
-                    maxCountColor = color
-                }
-            }
-            if (maxCountColor == Color.JOKER) {
-                locomotiveCount = 0
-                colorCardCount = counts[maxCountColor.ordinal]
-            } else {
-                locomotiveCount = counts[Color.JOKER.ordinal]
-                colorCardCount = counts[maxCountColor.ordinal]
-            }
-        }
-        val otherCardCount = cards.size - locomotiveCount - colorCardCount
-        return canClaimWithCounts(route, colorCardCount, locomotiveCount, otherCardCount, exhaustive)
-    }
-
-    fun canClaimWithCounts(route: Route, colorCardCount: Int, locomotiveCount: Int, otherCards: Int, exhaustive: Boolean): Boolean {
-        var otherCardCount = otherCards
-        when {
-            route is Ferry -> {
-                val requiredCount = if (colorCardCount >= route.length) {
-                    otherCardCount += colorCardCount - route.length
-                    0
-                } else {
-                    route.length - colorCardCount
-                }
-                val required = requiredCount + (route.ferries - locomotiveCount) - (otherCardCount / 3)
-                return if (exhaustive)
-                    required == 0 && otherCardCount % 3 == 0
-                else
-                    required <= 0
-            }
-
-            route is Tunnel -> {
-                val required = route.length + -locomotiveCount - colorCardCount
-                return if (exhaustive)
-                    required == 0 && otherCardCount == 0
-                else
-                    required <= 0
-            }
-
-            route.isMurmanskLieksa() -> {
-                val mixedBudget = otherCardCount + locomotiveCount
-                val required = route.length - colorCardCount - (mixedBudget / 4)
-                return if (exhaustive)
-                    required == 0 && mixedBudget % 4 == 0
-                else
-                    required <= 0
-            }
-
-            else -> {
-                val required = route.length - colorCardCount
-                return if (exhaustive)
-                    required == 0 && otherCardCount == 0 && locomotiveCount == 0
-                else
-                    required <= 0
-            }
-        }
     }
 
     /**
