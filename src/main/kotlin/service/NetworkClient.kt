@@ -77,7 +77,7 @@ class NetworkClient(playerName: String,
 
     @GameActionReceiver
     private fun onChatMessageReceivedAction(message: ChatMessage, sender: String){
-        println(message.toString() + sender)
+        println("[CHAT] $sender: $message")
     }
 
     @GameActionReceiver
@@ -97,4 +97,6 @@ class NetworkClient(playerName: String,
              networkService.rootService.game.currentState.destinationCards.filter { it.cities.first.name == card.start.maptoGameCityName() }
          })*/
     }
+
+
 }

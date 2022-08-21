@@ -12,6 +12,6 @@ data class ChatMessage (
     val text: String
 ) : GameAction() {
     override fun toString(): String {
-        return "[Chat] $text"
+        return "$text"
     }
 }
