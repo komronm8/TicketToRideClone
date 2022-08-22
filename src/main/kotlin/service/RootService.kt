@@ -8,6 +8,7 @@ class RootService {
     lateinit var game: Game
     val playerActionService: PlayerActionService = PlayerActionService(this)
     val gameService: GameService = GameService(this)
+    val network: NetworkService = NetworkService(this)
 
     /**
      * Reverts the game state to the round before.

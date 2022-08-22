@@ -4,7 +4,7 @@ import service.RootService
 fun main() {
     //AIService.minMaxAIGame()
     //SopraApplication().show()
-    //mainNetwork()
+    mainNetwork()
     println("Application ended. Goodbye")
 }
 
@@ -15,5 +15,5 @@ fun mainNetwork(){
     val root = RootService()
     val game = NetworkService(root)
     //game.hostGame("net22c", "TestGroupHOST", "TEST2223")
-    //game.joinGame("net22c", "TestGrouPLAYER", "TEST2223")
+    game.joinGame("net22c", "Johannes", "5612")
 }

@@ -20,6 +20,8 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             root.insert(value)
         }
 
+    private var choosenCards: List<List<Int>> = listOf()
+
     /**
      * Starts a game with the given player data. At the end, the game is in a valid state, but the player still needs
      * to select which cards can be kept and which discarded, to perform that decision call [chooseDestinationCard]
@@ -83,6 +85,14 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         root.game.gameState = GameState.DEFAULT
         root.game.states[0] = state.copy(players = newPlayers)
         onAllRefreshables(Refreshable::refreshAfterChooseDestinationCard)
+    }
+
+    fun chooseDestinationCards(cards: List<Int>){
+        choosenCards = choosenCards + listOf(cards)
+        if (choosenCards.size >= state.players.size){
+            chooseDestinationCard(choosenCards)
+            choosenCards = listOf()
+        }
     }
 
     /**

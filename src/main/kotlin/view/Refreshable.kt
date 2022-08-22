@@ -50,4 +50,11 @@ interface Refreshable {
      * Gets called after [service.GameService.chooseDestinationCard]
      */
     fun refreshAfterChooseDestinationCard() { refreshAfterNextPlayer() }
+
+    /**
+     * Gets called after [service.NetworkService.client.onPlayerNotification]
+     */
+    fun refreshAfterPlayerJoin() {}
+
+    fun refreshAfterPlayerDisconnect() {}
 }
