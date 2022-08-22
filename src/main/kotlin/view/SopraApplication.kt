@@ -6,11 +6,14 @@ import service.RootService
 import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.core.WindowMode
 
+/**
+ * Implementation of the BGW [BoardGameApplication] for the board game"Ticket to Ride".
+ */
 class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowMode.FULLSCREEN), Refreshable{
 
-    private var gameScene: GameScene
-
     private val rootService: RootService = RootService()
+
+    private var gameScene: GameScene = GameScene(rootService)
 
     private var configScene = ConfigPlayerScene(rootService).apply {
         goBackButton.onMouseClicked = {
@@ -49,14 +52,22 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
     }
 
     init {
-        rootService.gameService.startNewGame(listOf(
-            GameService.PlayerData("a", false),
-            GameService.PlayerData("b", false),
-            GameService.PlayerData("c", false)))
-        gameScene = GameScene(rootService)
+//        rootService.gameService.startNewGame(listOf(
+//            GameService.PlayerData("a", false),
+//            GameService.PlayerData("b", false),
+//            GameService.PlayerData("c", false)))
+//        gameScene = GameScene(rootService)
         this.showGameScene(gameScene)
 
         this.showMenuScene(mainMenuScene)
+
+        rootService.addRefreshables(
+            this,
+            mainMenuScene,
+            gameScene,
+            endScene,
+            configScene
+        )
     }
 
     private fun goBack(){
