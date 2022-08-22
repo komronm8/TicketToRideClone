@@ -1,5 +1,7 @@
 package view
 
+import entity.Player
+
 /**
  * An observer notifying the view of changes performed by the service layer
  */
@@ -17,7 +19,7 @@ interface Refreshable {
     /**
      * Gets called after [service.GameService.endGame]
      */
-    fun refreshAfterEndGame() {}
+    fun refreshAfterEndGame(winner: Player) {}
 
     /**
      * Gets called after [service.PlayerActionService.drawDestinationCards]

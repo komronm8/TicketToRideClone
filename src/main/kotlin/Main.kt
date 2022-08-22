@@ -1,12 +1,10 @@
-import service.AIService
 import service.NetworkService
 import service.RootService
-import view.SopraApplication
 
 fun main() {
     //AIService.minMaxAIGame()
     //SopraApplication().show()
-    mainNetwork()
+    //mainNetwork()
     println("Application ended. Goodbye")
 }
 
