@@ -8,7 +8,7 @@ import java.io.InputStream
 class NetworkService(val rootService: RootService): AbstractRefreshingService() {
     companion object {
         /** URL of the BGW net server hosted for SoPra participants */
-        const val SERVER_ADDRESS = "sopra.cs.tu-dortmund.de:80/bgw-net/connect"
+        const val SERVER_ADDRESS = "sopra.cs.tu-dortmund.de:80/bgw-net-test/connect"
 
         /** Name of the game as registered with the server */
         const val GAME_ID = "TicketToRide"
@@ -93,8 +93,8 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         }
         updateConnectionState(ConnectionState.CONNECTED)
 
-        client?.joinGame(sessionID, "Hello!")
-
+        val game = client?.joinGame(sessionID, "Hello!")
+        game.toString()
         updateConnectionState(ConnectionState.WAIT_FOR_JOIN_CONFIRMATION)
     }
 
