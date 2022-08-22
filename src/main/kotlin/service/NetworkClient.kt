@@ -1,8 +1,12 @@
 package service
 
+import entity.DestinationCard
+import entity.WagonCard
+import service.message.*
 import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.net.client.BoardGameClient
 import tools.aqua.bgw.net.client.NetworkLogging
+import tools.aqua.bgw.net.common.annotations.GameActionReceiver
 import tools.aqua.bgw.net.common.response.*
 
 
@@ -70,5 +74,29 @@ class NetworkClient(playerName: String,
         networkService.disconnect()
         error(message)
     }
+
+    @GameActionReceiver
+    private fun onChatMessageReceivedAction(message: ChatMessage, sender: String){
+        println("[CHAT] $sender: $message")
+    }
+
+    @GameActionReceiver
+    private fun onDrawTrainCardMessageReceivedMessage(message: DrawTrainCardMessage, sender: String){
+        message.color.forEach { color: Color -> networkService.rootService.playerActionService.drawWagonCard(
+            networkService.rootService.game.currentState.openCards.indexOf(WagonCard(color.maptoGameColor()))
+        ) }
+        if (message.newTrainCardStack == null) {
+            TODO()
+        }
+    }
+
+    @GameActionReceiver
+    private fun onDrawDestinationTicketMessage(message: DrawDestinationTicketMessage, sender: String){
+         /*networkService.rootService.playerActionService.drawDestinationCards(message.selectedDestinationTickets.map {
+             card: DestinationTicket -> networkService.rootService.game.currentState.destinationCards.indexOf(
+             networkService.rootService.game.currentState.destinationCards.filter { it.cities.first.name == card.start.maptoGameCityName() }
+         })*/
+    }
+
 
 }

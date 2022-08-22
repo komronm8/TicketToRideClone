@@ -5,7 +5,7 @@ import java.io.File
 import java.io.InputStream
 
 
-class NetworkService(private val rootService: RootService): AbstractRefreshingService() {
+class NetworkService(val rootService: RootService): AbstractRefreshingService() {
     companion object {
         /** URL of the BGW net server hosted for SoPra participants */
         const val SERVER_ADDRESS = "sopra.cs.tu-dortmund.de:80/bgw-net/connect"
@@ -156,11 +156,84 @@ class NetworkService(private val rootService: RootService): AbstractRefreshingSe
         //client?.sendGameActionMessage(message)
     }
 
+
+    /**
+     * send a [DebugMessage]
+     *
+     * @throws when not connected to a game
+     */
+    fun sendDebugMessage() {
+        check(connectionState != ConnectionState.DISCONNECTED) { "Not connected to a game" }
+
+        val numOfDestinationCards: MutableList<Int> = mutableListOf()
+        rootService.game.currentState.players.forEach {p ->
+            numOfDestinationCards.add(p.destinationCards.size)
+        }
+
+        val numOfTrainCards: MutableList<Int> = mutableListOf()
+        rootService.game.currentState.players.forEach {p ->
+            numOfTrainCards.add(p.trainCarsAmount)
+        }
+
+        val numOfClaimedRoutes: MutableList<Int> = mutableListOf()
+        rootService.game.currentState.players.forEach {p ->
+            numOfClaimedRoutes.add(p.claimedRoutes.size)
+        }
+
+        val trainCardStackCount: Int = rootService.game.currentState.wagonCardsStack.size
+
+        val message = DebugMessage(
+            numOfDestinationCards.toList(),
+            numOfTrainCards.toList(),
+            numOfClaimedRoutes.toList(),
+            trainCardStackCount
+        )
+
+        client?.sendGameActionMessage(message)
+        }
+
+    fun receiveDebugResponseMessage(message: DebugMessage) {
+        check(connectionState != ConnectionState.DISCONNECTED) { "Not connected to a game" }
+        var consistent: Boolean = true
+
+        val numOfDestinationCards: MutableList<Int> = mutableListOf()
+        rootService.game.currentState.players.forEach {p ->
+            numOfDestinationCards.add(p.destinationCards.size)
+        }
+
+        val numOfTrainCards: MutableList<Int> = mutableListOf()
+        rootService.game.currentState.players.forEach {p ->
+            numOfTrainCards.add(p.trainCarsAmount)
+        }
+
+        val numOfClaimedRoutes: MutableList<Int> = mutableListOf()
+        rootService.game.currentState.players.forEach {p ->
+            numOfClaimedRoutes.add(p.claimedRoutes.size)
+        }
+
+        val trainCardStackCount: Int = rootService.game.currentState.wagonCardsStack.size
+
+        if(numOfDestinationCards.toList() != message.numOfDestinationCards || numOfTrainCards.toList() != message.numOfTrainCards
+            || numOfClaimedRoutes.toList() != message.numOfClaimedRoutes || trainCardStackCount != message.trainCardStackCount){
+            updateConnectionState(ConnectionState.ERROR)
+            consistent = false
+        }
+
+        val message = DebugResponseMessage(consistent)
+
+        client?.sendGameActionMessage(message)
+
+    }
+
+    fun sendDrawDestinationTicket(selectedDestinationTickets: List<DestinationTicket>){
+
+    }
+
     data class cityMapping(
         val identifier: String,
         val cityName: String
     )
-    private fun readCsvAndSearch(inputStream: InputStream, cityNameToFind: String): String?{
+    private fun readCsvAndSearchName(inputStream: InputStream, cityNameToFind: String): String?{
         val reader = inputStream.bufferedReader()
         val values = reader.lineSequence()
             .filter { it.isNotBlank() }
@@ -168,17 +241,44 @@ class NetworkService(private val rootService: RootService): AbstractRefreshingSe
                 val (cityCode, cityName) = it.split(',', ignoreCase = false, limit = 2)
                 cityMapping(cityCode,cityName)
             }.toList()
-        val filt_val = values.filter { it.cityName == cityNameToFind }
-        if(filt_val.isEmpty()){
+        val filtVal = values.filter { it.cityName == cityNameToFind }
+        if(filtVal.isEmpty()){
             return null
         }else {
-            return filt_val[0].identifier
+            return filtVal[0].identifier
         }
     }
-    private fun readIdentifierFromCSV(cityName: String): String?{
+
+    private fun readCsvAndSearchIdentifier(inputStream: InputStream, cityNameToFind: String): String?{
+        val reader = inputStream.bufferedReader()
+        val values = reader.lineSequence()
+            .filter { it.isNotBlank() }
+            .map {
+                val (cityCode, cityName) = it.split(',', ignoreCase = false, limit = 2)
+                cityMapping(cityCode,cityName)
+            }.toList()
+        val filtVal = values.filter { it.identifier == cityNameToFind }
+        if(filtVal.isEmpty()){
+            return null
+        }else {
+            return filtVal[0].identifier
+        }
+    }
+    /**
+     *
+     */
+    private fun readIdentifierFromCSV(cityName: String, isIdentifier: Boolean): String?{
         var fileName = "/City_Enum_Zuordnung_1.csv"
         println(NetworkService::class.java.getResource(fileName))
         var file = File(NetworkService::class.java.getResource(fileName).file)
-        return readCsvAndSearch(file.inputStream(), cityName)
+        if(isIdentifier){
+            return readCsvAndSearchIdentifier(file.inputStream(), cityName)
+        }else {
+            return readCsvAndSearchName(file.inputStream(), cityName)
+        }
+    }
+
+    fun sendChatMessage(text: String){
+        client?.sendGameActionMessage(ChatMessage(text))
     }
 }
