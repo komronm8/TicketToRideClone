@@ -24,8 +24,8 @@ class TestClaimRoute {
         originalCards: List<WagonCard>,
         newCards: List<WagonCard>
     ) {
-        val state = root.game.currentState
         claimRoute(route, originalCards)
+        val state = root.game.currentState
         assertFails {
             afterClaimTunnel(route as Tunnel, newCards)
         }
