@@ -146,7 +146,20 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         }
 
         rootService.gameService.startNewGame(playerData.toList())
-        val game = rootService.game
+        val game = rootService.game.currentState
+
+        val colors = Stack(PlayerColor.RED, PlayerColor.WHITE, PlayerColor.PURPLE)
+
+        val message = GameInitMessage(
+            game.wagonCardsStack.map { it.color.maptoMessageColor() },
+            game.players.map { player -> Player(isBot = player is AIPlayer,
+                trainCards = player.wagonCards.map { it.color.maptoMessageColor() },
+                color = colors.pop(),
+                destinationTickets = player.destinationCards.map {
+                    DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                        mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) }) }
+        )
+
         /**
         val message = GameInitMessage(
 
@@ -233,7 +246,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         val identifier: String,
         val cityName: String
     )
-    private fun readCsvAndSearchName(inputStream: InputStream, cityNameToFind: String): String?{
+    private fun readCsvAndSearchName(inputStream: InputStream, cityNameToFind: String): String{
         val reader = inputStream.bufferedReader()
         val values = reader.lineSequence()
             .filter { it.isNotBlank() }
@@ -243,13 +256,13 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             }.toList()
         val filtVal = values.filter { it.cityName == cityNameToFind }
         if(filtVal.isEmpty()){
-            return null
+            return ""
         }else {
             return filtVal[0].identifier
         }
     }
 
-    private fun readCsvAndSearchIdentifier(inputStream: InputStream, cityNameToFind: String): String?{
+    private fun readCsvAndSearchIdentifier(inputStream: InputStream, cityNameToFind: String): String{
         val reader = inputStream.bufferedReader()
         val values = reader.lineSequence()
             .filter { it.isNotBlank() }
@@ -259,7 +272,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             }.toList()
         val filtVal = values.filter { it.identifier == cityNameToFind }
         if(filtVal.isEmpty()){
-            return null
+            return ""
         }else {
             return filtVal[0].identifier
         }
@@ -268,7 +281,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
     /**
      *
      */
-    fun readIdentifierFromCSV(cityName: String, isIdentifier: Boolean): String?{
+    fun readIdentifierFromCSV(cityName: String, isIdentifier: Boolean): String{
         var fileName = "/City_Enum_Zuordnung_1.csv"
         println(NetworkService::class.java.getResource(fileName))
         var file = File(NetworkService::class.java.getResource(fileName).file)
@@ -281,5 +294,22 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
     fun sendChatMessage(text: String){
         client?.sendGameActionMessage(ChatMessage(text))
+    }
+
+    fun mapToCityEnum(str: String): City{
+        when(str){
+            "ALB" ->return City.ALB;"AND" ->return City.AND;"ARH" ->return City.ARH;"BER"->return City.BER;"BOD"->return City.BOD;
+            "GOT"->return City.GOT;
+            "HEL"->return City.HEL;"HON"->return City.HON;"IMA"->return City.IMA;
+        "KAJ" ->return City.KAJ;"KAR"->return City.KAR;"KIK" ->return City.KIK;"KIR" ->return City.KIR;"KOB" ->return City.KOB;
+            "KRI" ->return City.KRI;"KUO" ->return City.KUO;
+            "LAU" ->return City.LAU;"LIE" ->return City.LIE;
+        "LIL" ->return City.LIL;"MOR" ->return City.MOR;"MUR" ->return City.MUR;"NAR" ->return City.NAR;"NOR" ->return City.NOR;
+            "ORE"->return City.ORE;"OSL"->return City.OSL;
+            "OST"->return City.OST;"OUL"->return City.OUL;
+        "ROV" ->return City.ROV;"STA"->return City.STA;"STO"->return City.STO;"SUN"->return City.SUN;"TAL"->return City.TAL;"TAM"->return City.TAM;"TOR"->return City.TOR;
+            "TRO"->return City.TRO;"TRH"->return City.TRH;
+        "TUR"->return City.TUR;"UME"->return City.UME;"VAA"->return City.VAA;
+        }
     }
 }

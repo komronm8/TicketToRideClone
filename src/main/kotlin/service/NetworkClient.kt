@@ -8,6 +8,8 @@ import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.net.client.BoardGameClient
 import tools.aqua.bgw.net.client.NetworkLogging
 import tools.aqua.bgw.net.common.annotations.GameActionReceiver
+import tools.aqua.bgw.net.common.notification.PlayerJoinedNotification
+import tools.aqua.bgw.net.common.notification.PlayerLeftNotification
 import tools.aqua.bgw.net.common.response.*
 import kotlin.math.min
 
@@ -21,7 +23,7 @@ class NetworkClient(playerName: String,
     var sID: String? = null
 
     /** the name of the opponent player; can be null if no message from the opponent received yet */
-    var playersNames: List<String?> = listOf()
+    var playersNames: MutableList<String?> = mutableListOf()
     var test: String = ""
 
     /**
@@ -41,6 +43,7 @@ class NetworkClient(playerName: String,
                 CreateGameResponseStatus.SUCCESS -> {
                     networkService.updateConnectionState(ConnectionState.WAIT_FOR_PLAYERS)
                     sID = response.sessionID
+                    playersNames += playerName
                 }
                 else -> disconnectAndError(response.status)
             }
@@ -153,4 +156,15 @@ class NetworkClient(playerName: String,
         networkService.rootService.game.gameState = GameState.CHOOSE_DESTINATION_CARD
     }
 
+    @GameActionReceiver
+    private fun onPlayerNotification(message: PlayerJoinedNotification, sender: String) {
+        playersNames += message.sender
+        networkService.onAllRefreshables { refreshAfterPlayerJoin() }
+    }
+
+    @GameActionReceiver
+    private fun onPlayerLeftNotification(message: PlayerLeftNotification, sender: String) {
+        playersNames.remove(sender)
+        networkService.onAllRefreshables { refreshAfterPlayerDisconnect() }
+    }
 }

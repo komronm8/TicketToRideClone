@@ -9,7 +9,6 @@ import entity.Color
  * and [ClaimARouteMessage]
  */
 enum class Color {
-    GRAY,
     BLUE,
     YELLOW,
     WHITE,
@@ -27,7 +26,7 @@ enum class Color {
 
     fun maptoGameColor(): Color{
         return when (this){
-            GRAY, RAINBOW -> Color.JOKER
+            RAINBOW -> Color.JOKER
             BLUE -> Color.BLUE
             YELLOW -> Color.YELLOW
             WHITE -> Color.WHITE
