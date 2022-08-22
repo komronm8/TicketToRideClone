@@ -264,10 +264,11 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             return filtVal[0].identifier
         }
     }
+
     /**
      *
      */
-    private fun readIdentifierFromCSV(cityName: String, isIdentifier: Boolean): String?{
+    fun readIdentifierFromCSV(cityName: String, isIdentifier: Boolean): String?{
         var fileName = "/City_Enum_Zuordnung_1.csv"
         println(NetworkService::class.java.getResource(fileName))
         var file = File(NetworkService::class.java.getResource(fileName).file)
