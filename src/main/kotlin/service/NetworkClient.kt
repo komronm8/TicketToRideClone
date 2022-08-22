@@ -74,6 +74,7 @@ class NetworkClient(playerName: String,
                 }
                 else -> disconnectAndError(response.status)
             }
+            println(playersNames)
         }
     }
 

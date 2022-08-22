@@ -164,7 +164,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
                 DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
                     mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) })
 
-        updateConnectionState(ConnectionState.PLAY_TURN)
+        updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE)
         client?.sendGameActionMessage(message)
 
     }
