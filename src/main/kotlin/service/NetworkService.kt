@@ -1,6 +1,8 @@
 package service
 
+import entity.AIPlayer
 import service.message.*
+import tools.aqua.bgw.util.Stack
 import java.io.File
 import java.io.InputStream
 
@@ -163,7 +165,8 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
                     mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) })
         
         updateConnectionState(ConnectionState.PLAY_TURN)
-        //client?.sendGameActionMessage(message)
+        client?.sendGameActionMessage(message)
+
     }
 
 
@@ -239,7 +242,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
     }
 
-    data class cityMapping(
+    data class CityMapping(
         val identifier: String,
         val cityName: String
     )
@@ -249,7 +252,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             .filter { it.isNotBlank() }
             .map {
                 val (cityCode, cityName) = it.split(',', ignoreCase = false, limit = 2)
-                cityMapping(cityCode,cityName)
+                CityMapping(cityCode,cityName)
             }.toList()
         val filtVal = values.filter { it.cityName == cityNameToFind }
         if(filtVal.isEmpty()){
@@ -265,7 +268,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             .filter { it.isNotBlank() }
             .map {
                 val (cityCode, cityName) = it.split(',', ignoreCase = false, limit = 2)
-                cityMapping(cityCode,cityName)
+                CityMapping(cityCode,cityName)
             }.toList()
         val filtVal = values.filter { it.identifier == cityNameToFind }
         if(filtVal.isEmpty()){

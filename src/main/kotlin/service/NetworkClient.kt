@@ -66,8 +66,10 @@ class NetworkClient(playerName: String,
             when (response.status) {
                 JoinGameResponseStatus.SUCCESS -> {
                     sID = response.sessionID
-                    if (playersNames.isEmpty())
-                        playersNames = response.opponents + playerName
+                    if (playersNames.isEmpty()) {
+                        playersNames.addAll(response.opponents)
+                        playersNames.add(playerName)
+                    }
                     networkService.updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT)
                 }
                 else -> disconnectAndError(response.status)
@@ -77,6 +79,7 @@ class NetworkClient(playerName: String,
 
     private fun disconnectAndError(message: Any) {
         networkService.disconnect()
+        playersNames = mutableListOf()
         error(message)
     }
 

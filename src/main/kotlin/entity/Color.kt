@@ -13,5 +13,19 @@ enum class Color {
     BLUE,
     WHITE,
     BLACK,
-    JOKER,
+    JOKER;
+
+    fun maptoMessageColor(): service.message.Color{
+        return when (this){
+            JOKER -> service.message.Color.RAINBOW
+            BLUE -> service.message.Color.BLUE
+            YELLOW -> service.message.Color.YELLOW
+            WHITE -> service.message.Color.WHITE
+            BLACK -> service.message.Color.BLACK
+            ORANGE -> service.message.Color.ORANGE
+            GREEN -> service.message.Color.GREEN
+            RED -> service.message.Color.RED
+            PURPLE -> service.message.Color.PURPLE
+        }
+    }
 }
