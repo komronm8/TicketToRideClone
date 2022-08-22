@@ -2,13 +2,12 @@ package view
 
 import entity.Player
 import service.RootService
-import service.GameService.PlayerData
-import tools.aqua.bgw.core.MenuScene
-import tools.aqua.bgw.visual.ImageVisual
 import tools.aqua.bgw.components.uicomponents.Button
 import tools.aqua.bgw.components.uicomponents.Label
-import tools.aqua.bgw.util.Font
 import tools.aqua.bgw.core.Alignment
+import tools.aqua.bgw.core.MenuScene
+import tools.aqua.bgw.util.Font
+import tools.aqua.bgw.visual.ImageVisual
 import java.awt.Color
 
 
@@ -137,7 +136,7 @@ class EndGameScene(private val rootService: RootService):
         thirdPlaceLabel, thirdPlacePointsLabel)
     }
 
-    override fun refreshAfterEndGame() {
+    override fun refreshAfterEndGame(winner: Player) {
         clearComponents()
         addComponents(restartButton, startButton, exitButton, playerYellowIcon, playerRedIcon, playerPurpleIcon)
         configScoreboard()

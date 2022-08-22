@@ -19,7 +19,6 @@ private data class GameTree(
     var children: List<GameTree>? = null,
     var wonCount: AtomicInteger = AtomicInteger(0),
     var visited: AtomicInteger = AtomicInteger(0),
-    var score: Double = 100000.0
 )
 
 private data class PrecomputedChoices(
@@ -48,6 +47,11 @@ private class WinnerReporter(private var winner: Player? = null) : Refreshable {
 fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
     val move = game.currentState.findMoveMonteCarlo(c, timeLimit)
     executeMontyMove(move)
+}
+
+//TODO improve algorithm
+fun RootService.monteCarloChooseDestinationCards(): List<Int> {
+    return listOf(0, 1, 2, 3, 4)
 }
 
 private fun State.findMoveMonteCarlo(c: Double, timeLimit: Int): AIMove {

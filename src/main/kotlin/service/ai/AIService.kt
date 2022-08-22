@@ -5,6 +5,7 @@ import entity.Player
 import service.GameService
 import service.RootService
 import view.Refreshable
+import kotlin.random.Random
 
 /**
  * The service responsible for executing the AI strategies
@@ -17,7 +18,15 @@ class AIService(private val root: RootService) {
         fun runWithAI(players: List<GameService.PlayerData>): Player {
             val root = RootService()
             root.gameService.startNewGame(players)
-            root.gameService.chooseDestinationCard(List(3) { (0..4).toList() })
+            val destinationCards = players.map {
+                when (checkNotNull(it.aiStrategy)) {
+                    is AIPlayer.Strategy.MonteCarlo -> root.monteCarloChooseDestinationCards()
+                    AIPlayer.Strategy.Random -> List(5) { idx -> idx }
+                        .shuffled()
+                        .subList(0, Random.nextInt(2, 6))
+                }
+            }
+            root.gameService.chooseDestinationCard(destinationCards)
             val refreshable = object : Refreshable {
                 var ended: Player? = null
                 override fun refreshAfterEndGame(winner: Player) {

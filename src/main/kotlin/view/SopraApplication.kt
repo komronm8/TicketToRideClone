@@ -1,5 +1,6 @@
 package view
 
+import entity.Player
 import service.GameService
 import service.RootService
 import tools.aqua.bgw.core.BoardGameApplication
@@ -66,7 +67,7 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
         this.hideMenuScene()
     }
 
-    override fun refreshAfterEndGame() {
+    override fun refreshAfterEndGame(winner: Player) {
         this.showMenuScene(endScene)
     }
 

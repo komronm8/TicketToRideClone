@@ -1,8 +1,6 @@
 package service.ai
 
-import entity.Color
-import entity.State
-import entity.WagonCard
+import entity.*
 import java.util.ArrayList
 import java.util.HashMap
 import kotlin.math.min

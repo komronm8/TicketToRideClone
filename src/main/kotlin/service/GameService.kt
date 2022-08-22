@@ -67,6 +67,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         if (root.game.gameState != GameState.CHOOSE_DESTINATION_CARD) {
             throw IllegalStateException("game is not in the right state for choose destination card")
         }
+        require(cards.size == state.players.size)
         cards.forEach {
             assert(it.size in 2..5)
             assert(cards.distinct().size == 1)
