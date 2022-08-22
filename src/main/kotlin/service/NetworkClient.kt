@@ -1,14 +1,15 @@
 package service
 
-import entity.DestinationCard
-import entity.WagonCard
+import entity.*
+import entity.City
 import service.message.*
+import service.message.Color
 import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.net.client.BoardGameClient
 import tools.aqua.bgw.net.client.NetworkLogging
 import tools.aqua.bgw.net.common.annotations.GameActionReceiver
 import tools.aqua.bgw.net.common.response.*
-
+import kotlin.math.min
 
 
 class NetworkClient(playerName: String,
@@ -20,7 +21,7 @@ class NetworkClient(playerName: String,
     var sID: String? = null
 
     /** the name of the opponent player; can be null if no message from the opponent received yet */
-    var otherPlayersNames: List<String?> = listOf()
+    var playersNames: List<String?> = listOf()
     var test: String = ""
 
     /**
@@ -62,7 +63,8 @@ class NetworkClient(playerName: String,
             when (response.status) {
                 JoinGameResponseStatus.SUCCESS -> {
                     sID = response.sessionID
-                    otherPlayersNames = response.opponents
+                    if (playersNames.isEmpty())
+                        playersNames = response.opponents + playerName
                     networkService.updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT)
                 }
                 else -> disconnectAndError(response.status)
@@ -75,28 +77,80 @@ class NetworkClient(playerName: String,
         error(message)
     }
 
+    fun getCity(name: String): City{
+        return networkService.rootService.game.currentState.cities.first { it.name == networkService.readIdentifierFromCSV(name, true) }
+    }
+
+    fun getRoute(nameStart: String, nameEnd:String, color: Color): Route{
+         return getCity(nameStart).routes.first {
+             (it.cities.first == getCity(nameEnd) || it.cities.second == getCity(nameEnd))
+                     && it.color == color.maptoGameColor()
+         }
+    }
+
     @GameActionReceiver
     private fun onChatMessageReceivedAction(message: ChatMessage, sender: String){
         println("[CHAT] $sender: $message")
     }
 
     @GameActionReceiver
-    private fun onDrawTrainCardMessageReceivedMessage(message: DrawTrainCardMessage, sender: String){
+    private fun onDrawTrainCardMessageReceivedAction(message: DrawTrainCardMessage, sender: String){
+        if (message.newTrainCardStack != null) {
+            networkService.rootService.insert(networkService.rootService.game.currentState.copy(
+                wagonCardsStack = networkService.rootService.game.currentState.wagonCardsStack
+                        + message.newTrainCardStack.map { WagonCard(it.maptoGameColor()) }
+            ))
+        }
         message.color.forEach { color: Color -> networkService.rootService.playerActionService.drawWagonCard(
             networkService.rootService.game.currentState.openCards.indexOf(WagonCard(color.maptoGameColor()))
         ) }
-        if (message.newTrainCardStack == null) {
-            TODO()
-        }
     }
 
     @GameActionReceiver
-    private fun onDrawDestinationTicketMessage(message: DrawDestinationTicketMessage, sender: String){
-         /*networkService.rootService.playerActionService.drawDestinationCards(message.selectedDestinationTickets.map {
-             card: DestinationTicket -> networkService.rootService.game.currentState.destinationCards.indexOf(
-             networkService.rootService.game.currentState.destinationCards.filter { it.cities.first.name == card.start.maptoGameCityName() }
-         })*/
+    private fun onDrawDestinationTicketMessageReceivedAction(message: DrawDestinationTicketMessage, sender: String){
+        val cards = networkService.rootService.game.currentState.destinationCards.subList(0, 2)
+        val ints: MutableList<Int> = mutableListOf()
+        for (i in 0 until min(3, networkService.rootService.game.currentState.destinationCards.size)){
+            if (message.selectedDestinationTickets.any {
+                    cards[i].points == it.score &&
+                            (cards[i].cities == Pair(getCity(it.start.toString()), getCity(it.end.toString())) ||
+                                    cards[i].cities == Pair(getCity(it.end.toString()), getCity(it.start.toString()))) }) {
+                ints += i
+            }
+        }
+        networkService.rootService.playerActionService.drawDestinationCards(ints)
     }
 
+    @GameActionReceiver
+    private fun onClaimARouteMessageReceivedAction(message: ClaimARouteMessage, sender: String){
+        networkService.rootService.playerActionService.claimRoute(
+            getRoute(message.start.toString(), message.end.toString(), message.color),
+            message.playedTrainCards.map { WagonCard(it.maptoGameColor()) }
+        )
+    }
+
+    @GameActionReceiver
+    private fun onDebugResponseMessageReceivedAction(message: DebugMessage, sender: String){
+        println(message.toString())
+    }
+
+    @GameActionReceiver
+    private fun onGameInitMessageReceived(message: GameInitMessage, sender: String){
+
+        val cities = constructGraph()
+
+        val players = message.players.map { player ->
+            entity.Player(name = "Test", destinationCards = player.destinationTickets.map {
+            DestinationCard(it.score, Pair(getCity(it.start.toString()), getCity(it.end.toString()))) },
+                wagonCards = message.players.map { WagonCard(it.color.maptoGameColor()) }, isRemote = true)
+            }
+
+        networkService.rootService.insert(State(
+            destinationCards = message.destinationTickets.map { DestinationCard(it.score, Pair(getCity(it.start.toString()), getCity(it.end.toString()))) },
+            cities = cities, players = players, openCards = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(0,5),
+            wagonCardsStack = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(5, message.trainCardStack.size)))
+
+        networkService.rootService.game.gameState = GameState.CHOOSE_DESTINATION_CARD
+    }
 
 }

@@ -1,5 +1,6 @@
 package view
 
+import entity.Player
 import service.GameService
 import service.RootService
 import tools.aqua.bgw.core.BoardGameApplication
@@ -20,7 +21,14 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
         }
     }
 
-    private var endScene = EndGameScene(rootService)
+    private var endScene = EndGameScene(rootService).apply {
+        exitButton.onMouseClicked = {
+            exit()
+        }
+        startButton.onMouseClicked = {
+            this@SopraApplication.showMenuScene(mainMenuScene)
+        }
+    }
 
     private var mainMenuScene = NewGameScene(rootService).apply {
         soloButton.onMouseClicked = {
@@ -59,7 +67,7 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
         this.hideMenuScene()
     }
 
-    override fun refreshAfterEndGame() {
+    override fun refreshAfterEndGame(winner: Player) {
         this.showMenuScene(endScene)
     }
 

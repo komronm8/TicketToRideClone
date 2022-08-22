@@ -8,8 +8,7 @@ import java.util.*
  * A service responsible for performing the system actions
  */
 class GameService(val root: RootService) : AbstractRefreshingService() {
-    data class PlayerData(val name: String, val isRemote: Boolean)
-    enum class AIStrategy
+    data class PlayerData(val name: String, val isRemote: Boolean, val aiStrategy: AIPlayer.Strategy? = null)
 
     private var state: State
         get() = root.game.currentState
@@ -33,16 +32,25 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         val wagonCards = (Color.values().flatMap { color -> List(12) { WagonCard(color) } } +
                 List(2) { WagonCard(Color.JOKER) }).shuffled().toMutableList()
         val players = playerNames.map {
-            Player(
-                name = it.name,
-                destinationCards = destinations.popAll(5),
-                wagonCards = wagonCards.popAll(4),
-                isRemote = it.isRemote
-            )
+            if (it.aiStrategy != null) {
+                AIPlayer(
+                    name = it.name,
+                    destinationCards = destinations.popAll(5),
+                    wagonCards = wagonCards.popAll(4),
+                    strategy = it.aiStrategy
+                )
+            } else {
+                Player(
+                    name = it.name,
+                    destinationCards = destinations.popAll(5),
+                    wagonCards = wagonCards.popAll(4),
+                    isRemote = it.isRemote
+                )
+            }
         }
         root.game = Game(State(
             cities = cities,
-            openCards = wagonCards.popAll(3),
+            openCards = wagonCards.popAll(5),
             wagonCardsStack = wagonCards,
             players = players,
             destinationCards = destinations,
@@ -59,6 +67,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         if (root.game.gameState != GameState.CHOOSE_DESTINATION_CARD) {
             throw IllegalStateException("game is not in the right state for choose destination card")
         }
+        require(cards.size == state.players.size)
         cards.forEach {
             assert(it.size in 2..5)
             assert(cards.distinct().size == 1)
@@ -73,15 +82,16 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     }
 
     fun endGame() {
-        updateWithFinalScore()
-        onAllRefreshables(Refreshable::refreshAfterEndGame)
+        val winner = updateWithFinalScore()
+
+        onAllRefreshables { refreshAfterEndGame(winner) }
     }
 
     fun nextGame() {
         startNewGame(state.players.map { PlayerData(it.name, it.isRemote) })
     }
 
-    private fun updateWithFinalScore() {
+    private fun updateWithFinalScore(): Player {
         val scores = state.players.map(this::calcDestinationScore)
         val maxFulfilled = scores.maxOf { it.second }
         val newPlayers = state.players.mapIndexed { index, player ->
@@ -90,6 +100,18 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             player.copy(points = player.points + additional)
         }
         state = state.copy(players = newPlayers)
+        val sorted = state.players.sortedByDescending { it.points }
+        val winner = if (sorted[0].points != sorted[1].points)
+            sorted[0]
+        else {
+            val mostFulfilled = newPlayers.filterIndexed { index, _ -> scores[index].second == maxFulfilled }
+            if (mostFulfilled.size == 1) {
+                mostFulfilled[0]
+            } else {
+                checkNotNull(newPlayers.maxByOrNull { it.claimedRoutes.maxOfOrNull { it.completeLength } ?: 0 })
+            }
+        }
+        return winner
     }
 
     fun calcDestinationScore(player: Player): Pair<Int, Int> {
