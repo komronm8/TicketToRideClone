@@ -48,3 +48,11 @@ fun State.updatedPlayer(update: Player.() -> Player): State =
  */
 fun State.updatedPlayer(index: Int, update: Player.() -> Player): State =
     copy(players = updatePlayer(index, update))
+
+/**
+ * Finds the route between the two cities
+ */
+fun City.findRoute(to: City): Route = checkNotNull(routes.find {
+    (it.cities.first === this && it.cities.second === to)
+            || (it.cities.first === to && it.cities.second === this)
+})

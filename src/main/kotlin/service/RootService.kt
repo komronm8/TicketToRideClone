@@ -40,12 +40,18 @@ class RootService {
         game.currentStateIndex += 1
     }
 
+    /**
+     * Adds a refreshable to [gameService] and to [playerActionService]
+     */
     fun addRefreshable(newRefreshable: Refreshable) {
         gameService.addRefreshable(newRefreshable)
         playerActionService.addRefreshable(newRefreshable)
     }
 
+    /**
+     * Calls [addRefreshable] with all given [newRefreshables]
+     */
     fun addRefreshables(vararg newRefreshables: Refreshable) {
-        newRefreshables.forEach { addRefreshable(it) }
+        newRefreshables.forEach(this::addRefreshable)
     }
 }

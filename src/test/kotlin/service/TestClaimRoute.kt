@@ -33,11 +33,6 @@ class TestClaimRoute {
         root.game.gameState = GameState.DEFAULT
     }
 
-    private fun City.findRoute(to: City): Route = checkNotNull(routes.find {
-        (it.cities.first === this && it.cities.second === to)
-                || (it.cities.first === to && it.cities.second === this)
-    })
-
     private fun State.discardStackContains(cards: List<WagonCard>, exhaustive: Boolean) {
         val discard = IdentityHashMap<WagonCard, Unit>(discardStack.size)
         for (card in discardStack) {
@@ -383,6 +378,9 @@ class TestClaimRoute {
         root.undo()
     }
 
+    /**
+     * Tests whether a ferry can be successfully claimed
+     */
     @Test
     fun testFerrySuccess() {
         val root = RootService()
@@ -611,6 +609,9 @@ class TestClaimRoute {
         assert(newState.discardStack.zip(playerCards.subList(0, 4)).all { it.first === it.second })
     }
 
+    /**
+     * Tests whether [PlayerActionService.validateClaimRoute] works with exhaustive set to false
+     */
     @Test
     fun testNonExhaustive() {
         val playerCard = List(4) { WagonCard(Color.ORANGE) } + List(4) { WagonCard(Color.RED) }

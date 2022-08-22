@@ -8,6 +8,10 @@ import java.util.*
  * A service responsible for performing the system actions
  */
 class GameService(val root: RootService) : AbstractRefreshingService() {
+    /**
+     * The player data necessary to construct an initial [Player]
+     * @param aiStrategy determines whether this player is an AI player.
+     */
     data class PlayerData(val name: String, val isRemote: Boolean, val aiStrategy: AIPlayer.Strategy? = null)
 
     private var state: State
@@ -26,7 +30,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             repeat(count) { removeLast() }
             return retain
         }
-
+        check(playerNames.map(PlayerData::name).distinct().size == playerNames.size)
         val cities = constructGraph()
         val destinations = destinationPool(cities.associateBy { it.name }).shuffled().toMutableList()
         val wagonCards = (Color.values().flatMap { color -> List(12) { WagonCard(color) } } +
@@ -70,7 +74,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         require(cards.size == state.players.size)
         cards.forEach {
             assert(it.size in 2..5)
-            assert(cards.distinct().size == 1)
+            assert(it.distinct().size == it.size)
             it.forEach { index -> assert(index in 0..5) }
         }
         val newPlayers = state.players.zip(cards).map {
@@ -81,6 +85,10 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         onAllRefreshables(Refreshable::refreshAfterChooseDestinationCard)
     }
 
+    /**
+     * Called at the end of the game. Calculates the final scores and the winner.
+     * Calls [Refreshable.refreshAfterEndGame] with the winner.
+     */
     fun endGame() {
         val winner = updateWithFinalScore()
 
@@ -114,7 +122,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         return winner
     }
 
-    fun calcDestinationScore(player: Player): Pair<Int, Int> {
+    private fun calcDestinationScore(player: Player): Pair<Int, Int> {
         val cities = state.cities
         val claimedRoutes = IdentityHashMap<Route, Unit>(player.claimedRoutes.size)
         player.claimedRoutes.forEach { claimedRoutes.put(it, Unit) }
@@ -154,6 +162,10 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         return scoreSum to fulfilledCards
     }
 
+    /**
+     * Advances to the next player, calls [endGame] if the current player was
+     * the last player.
+     */
     fun nextPlayer() {
         if (state.currentPlayer.name == state.endPlayer?.name) {
             endGame()
