@@ -16,7 +16,7 @@ class TestMonteCarloAI {
     fun testMonteCarloGameNoExceptions() {
         AIService.runWithAI(
             listOf(
-                GameService.PlayerData("monty", false, AIPlayer.Strategy.MonteCarlo(1000)),
+                GameService.PlayerData("monty", false, AIPlayer.Strategy.MonteCarlo(100)),
                 GameService.PlayerData("randy", false, AIPlayer.Strategy.Random)
             )
         )

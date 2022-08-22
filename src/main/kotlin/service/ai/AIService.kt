@@ -17,16 +17,6 @@ class AIService(private val root: RootService) {
          */
         fun runWithAI(players: List<GameService.PlayerData>): Player {
             val root = RootService()
-            root.gameService.startNewGame(players)
-            val destinationCards = players.map {
-                when (checkNotNull(it.aiStrategy)) {
-                    is AIPlayer.Strategy.MonteCarlo -> root.monteCarloChooseDestinationCards()
-                    AIPlayer.Strategy.Random -> List(5) { idx -> idx }
-                        .shuffled()
-                        .subList(0, Random.nextInt(2, 6))
-                }
-            }
-            root.gameService.chooseDestinationCard(destinationCards)
             val refreshable = object : Refreshable {
                 var ended: Player? = null
                 override fun refreshAfterEndGame(winner: Player) {
@@ -36,6 +26,11 @@ class AIService(private val root: RootService) {
             }
             root.addRefreshable(refreshable)
             val aiService = AIService(root)
+            aiService.root.gameService.startNewGame(players)
+            val destinationCards = aiService.root.game.currentState.players.map {
+                aiService.chooseDestinationCards(it as AIPlayer)
+            }
+            root.gameService.chooseDestinationCard(destinationCards)
             while (refreshable.ended == null) {
                 aiService.executePlayerMove()
             }
@@ -64,6 +59,14 @@ class AIService(private val root: RootService) {
             AIPlayer.Strategy.Random -> root.randomNextTurn()
             is AIPlayer.Strategy.MonteCarlo -> root.monteCarloMove(player.strategy.c, player.strategy.timeLimit)
         }
+    }
+
+    fun chooseDestinationCards(player: AIPlayer): List<Int> = when (player.strategy) {
+        AIPlayer.Strategy.Random -> List(5) { idx -> idx }
+            .shuffled()
+            .subList(0, Random.nextInt(2, 6))
+
+        is AIPlayer.Strategy.MonteCarlo -> root.monteCarloChooseDestinationCards()
     }
 }
 

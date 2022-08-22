@@ -122,6 +122,7 @@ private fun MutableList<City>.constructGraph() {
     (sun to ost).route(2, GREEN)
     (ost to tron).tunnel(2, BLACK)
     (sun to ume).route(3, PURPLE, (sun to ume).route(3, YELLOW))
+    (sun to sto).route(4, JOKER, (sun to sto).route(4,  JOKER))
     (ume to bod).route(3, WHITE, (ume to bod).route(3, RED))
     (bod to kiru).route(3, ORANGE, (bod to kiru).route(3, BLACK))
     (kiru to nar).tunnel(1, PURPLE, (kiru to nar).tunnel(1, WHITE))
@@ -155,9 +156,15 @@ private fun MutableList<City>.constructGraph() {
     (tur to sto).ferry(1, 3, BLUE)
 }
 
+/**
+ * Constructs a graph of cities all cities and routes in the game
+ */
 fun constructGraph(): List<City> =
     ArrayList<City>(38).also { it.constructGraph() }
 
+/**
+ * Creates all destination cards in the game from the given cities
+ */
 fun destinationPool(cities: Map<String, City>): List<DestinationCard> {
     val cards = mutableListOf<DestinationCard>()
     cards += DestinationCard(8, checkNotNull(cities["Bergen"]) to checkNotNull(cities["København"]))

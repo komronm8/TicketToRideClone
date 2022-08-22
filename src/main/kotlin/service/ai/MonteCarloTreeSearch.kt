@@ -155,6 +155,15 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
         }
         return result
     }
+    fun List<Route>.removeFromUnclaimed(route: Route, allowDoubleRoutes: Boolean): List<Route> {
+        return if (route.sibling == null || allowDoubleRoutes) {
+            without(route)
+        } else {
+            filterTo(ArrayList<Route>(size - 1)) {
+                it !== route && it !== route.sibling
+            }
+        }
+    }
     precomputedChoices?.also { return@precomputedChoices it }
     val currentPlayerIndex = if (state.currentPlayerIndex < 1) state.players.size - 1 else state.currentPlayerIndex - 1
     val currentPlayer = state.players[currentPlayerIndex]
@@ -163,17 +172,7 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
             var newUnclaimed = parentChoices.unclaimedRoutes
             var newDraw = parentChoices.drawableWagonCards
             if (move.route !is Tunnel || (currentPlayer.claimedRoutes.any { it === move.route })) {
-                val allowDoubleRoutes = state.players.size > 2
-                newUnclaimed = if (move.route.sibling == null || allowDoubleRoutes) {
-                    newUnclaimed.without(move.route)
-                } else {
-                    val oldUnclaimed = newUnclaimed
-                    newUnclaimed = ArrayList(newUnclaimed.size - 1)
-                    for (it in oldUnclaimed) {
-                        if (it !== move.route && it !== move.route.sibling) newUnclaimed.add(it)
-                    }
-                    newUnclaimed
-                }
+                newUnclaimed= newUnclaimed.removeFromUnclaimed(move.route, state.players.size > 2)
             }
             if (move.route is Tunnel) {
                 newDraw = uniqueDrawWagonCard(state)

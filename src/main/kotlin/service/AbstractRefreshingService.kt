@@ -2,6 +2,9 @@ package service
 
 import view.Refreshable
 
+/**
+ * A base service for all observable services
+ */
 abstract class AbstractRefreshingService {
 
     private val refreshables = mutableListOf<Refreshable>()
