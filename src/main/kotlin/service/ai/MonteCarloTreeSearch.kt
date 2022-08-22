@@ -84,9 +84,8 @@ private fun State.findMoveMonteCarlo(c: Double, timeLimit: Int): AIMove {
     val start = System.currentTimeMillis()
     var operations = 0
     while (System.currentTimeMillis() - start < timeLimit) {
-        val selected = checkNotNull(options.selectNext())
-        playoff(c, ++operations, selected, mainPlayer)
-        operations++
+        val selected = checkNotNull(options.selectNext(c, ++operations))
+        playoff(c, selected, mainPlayer)
     }
     println(operations)
     return checkNotNull(options.maxByOrNull { it.wonCount.get() }).move
@@ -94,40 +93,36 @@ private fun State.findMoveMonteCarlo(c: Double, timeLimit: Int): AIMove {
 
 /**
  * One game instance, played to the end
- * @param operations the number of overall operations
  */
-private fun playoff(c: Double, operations: Int, rootNode: GameTree, mainPlayer: Player) {
+private fun playoff(c: Double, rootNode: GameTree, mainPlayer: Player) {
     var current = rootNode
     while (current.winner == null) {
         current.visited.incrementAndGet()
         // Select the next move the visit
-        val child = current.children().selectNext()
+        val child = current.children().selectNext(c, current.visited.get())
         checkNotNull(child)
         // if the move has not been visited, calculate the resulting state
         if (child.state == null) child.state(checkNotNull(current.state))
-        // recalculate the score
-        current.renewScore(c, current.parent?.visited?.get() ?: operations)
         current = child
     }
     if (current.winner?.name == mainPlayer.name) {
         while (true) {
             val parent = current.parent
             current.wonCount.incrementAndGet()
-            val parentVisited = parent?.visited?.get() ?: operations
-            current.renewScore(c, parentVisited)
             if (parent != null) current = parent else break
         }
     }
 }
 
-
-private fun GameTree.renewScore(c: Double, parentVisited: Int) {
-    val exploitation = (wonCount.get().toDouble() / (visited.get() + 1).toDouble())
-    val exploration = c * sqrt(ln(parentVisited.toDouble()) / visited.get().plus(1).toDouble())
-    score = exploitation + exploration
+private fun List<GameTree>.selectNext(c: Double, parentVisited: Int) = maxByOrNull {
+    val parentFactor = ln(parentVisited.toDouble())
+    if (it.visited.get() == 0) Double.MAX_VALUE else {
+        val visited = it.visited.get().toDouble()
+        val exploitation = it.wonCount.get().toDouble() / visited
+        val exploration = c * sqrt(parentFactor / visited)
+        exploitation + exploration
+    }
 }
-
-private fun List<GameTree>.selectNext() = maxByOrNull { it.score }
 
 /**
 computes the state resulting from the [GameTree.move], increases wonCount if necessary
@@ -370,116 +365,6 @@ private inline fun RootService.monteCarloClaimRoute(
                     val primaryCards = colorLists[color.ordinal]
                     if (primaryCards.size < route.length) continue
                     emit(AIMove.ClaimRoute(route, primaryCards.subList(0, route.length), null))
-                    hasFitting = true
-                }
-                if (!hasFitting) {
-                    if (route.isMurmanskLieksa()) {
-                        /*val cardCount = game.currentState.currentPlayer.wagonCards.size
-                    val viableValues = counts.filterValues { (cardCount - it) / 4 + it >= 9 }
-                    for ((color, count) in viableValues.entries) {
-                        val required = 9 - count
-                        val state = game.currentState
-                        val used = state.currentPlayer.wagonCards.filter { it.color == color }.toMutableList()
-                        val left = state.currentPlayer.wagonCards.filter { it.color != color }.shuffled()
-                        used.addAll(left.subList(0, required * 4))
-                        playerActionService.claimRoute(route, used)
-                        emit(AIMove.ClaimRoute(route, used, null))
-                    }*/
-                    } else {
-                        throw AssertionError("Invalid claim")
-                    }
-                }
-            }
-        }
-    }
-}
-
-/**
- * Claims a route with behavior specific to monte-carlo search's strength
- */
-private inline fun RootService.monteCarloClaimRoute(route: Route, emit: (AIMove.ClaimRoute) -> Unit) {
-    when (route) {
-        is Ferry -> {
-            val currentPlayer = game.currentState.currentPlayer
-            // if the ferry is gray, try all possible colors as main colors of the cards used to pay the route
-            if (route.color == Color.JOKER) {
-                val counts = currentPlayer.wagonCards.counts()
-                val allLocomotiveCards = currentPlayer.wagonCards.filter { it.color == Color.JOKER }
-                for (primaryColor in Color.values()) {
-                    if (primaryColor == Color.JOKER) continue
-                    val allPrimaryCards = currentPlayer.wagonCards
-                        .filterTo(ArrayList(counts[primaryColor.ordinal])) { it.color == primaryColor }
-                    val primaryCards = allPrimaryCards
-                        .subList(0, min(route.length, allPrimaryCards.size))
-                    val locomotiveCards = allLocomotiveCards
-                        .subList(0, min(route.ferries + (route.length - primaryCards.size), allLocomotiveCards.size))
-                    var cards = primaryCards + locomotiveCards
-                    if (cards.size < route.completeLength) {
-                        val remainingPrimaries = allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
-                        val rest = currentPlayer.wagonCards.filterOther(
-                            remainingPrimaries, primaryColor, allPrimaryCards.size, allLocomotiveCards.size
-                        )
-                        cards = cards + rest.shuffled().take((route.completeLength - cards.size) * 3)
-                    }
-                    // if the route cannot be claimed with the cards given, do not emit the move
-                    if (playerActionService.canClaimRoute(route, cards, true)) {
-                        emit(AIMove.ClaimRoute(route, cards, null))
-                    }
-                }
-            } else {
-                val primaryColor = route.color
-                val allPrimaryCards = currentPlayer.wagonCards.filter { it.color == primaryColor }
-                val primaryCards = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
-                val allLocomotiveCards = currentPlayer.wagonCards.filter { it.color == Color.JOKER }
-                val locomotiveCards = allLocomotiveCards
-                    .subList(0, min(allLocomotiveCards.size, route.ferries + (route.length - primaryCards.size)))
-                var cards = primaryCards + locomotiveCards
-                if (cards.size < route.completeLength) {
-                    val remainingPrimaries = allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
-                    val rest = currentPlayer.wagonCards
-                        .filterOther(remainingPrimaries, primaryColor, allPrimaryCards.size, allLocomotiveCards.size)
-                    cards = cards + rest.shuffled().subList(0, (route.completeLength - cards.size) * 3)
-                }
-                emit(AIMove.ClaimRoute(route, cards, null))
-            }
-        }
-
-        is Tunnel -> {
-            //prioritise using colored cards over using locomotives
-            var used = game.currentState.currentPlayer.wagonCards
-                .filter { it.color == route.color }
-                .take(route.length)
-            if (used.size < route.length) {
-                used = used + game.currentState.currentPlayer.wagonCards
-                    .filter { it.color == Color.JOKER }
-                    .take(route.length - used.size)
-            }
-            playerActionService.claimRoute(route, used)
-            if (game.gameState != GameState.AFTER_CLAIM_TUNNEL) {
-                emit(AIMove.ClaimRoute(route, used, null))
-                return
-            }
-            val used2 = game.currentState.monteCarloPayTunnel(route, used)
-            emit(AIMove.ClaimRoute(route, used, used2))
-        }
-
-        else -> {
-            //if the route is not gray, then simply use the viable cards
-            if (route.color != Color.JOKER) {
-                val cards = game.currentState.currentPlayer.wagonCards
-                    .filter { it.color == route.color }
-                    .take(route.length)
-                emit(AIMove.ClaimRoute(route, cards, null))
-            } else {
-                //if the route is gray, try all colors to see if they can be used, if they can be used, emit them
-                val counts = game.currentState.currentPlayer.wagonCards.counts()
-                var hasFitting = false
-                for (color in Color.values()) {
-                    if (counts[color.ordinal] < route.length) continue
-                    val cards = game.currentState.currentPlayer.wagonCards
-                        .filterTo(ArrayList(counts[color.ordinal])) { it.color == color }
-                        .take(route.length)
-                    emit(AIMove.ClaimRoute(route, cards, null))
                     hasFitting = true
                 }
                 if (!hasFitting) {
