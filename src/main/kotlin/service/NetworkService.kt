@@ -157,14 +157,11 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
                 color = colors.pop(),
                 destinationTickets = player.destinationCards.map {
                     DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
-                        mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) }) }
-        )
-
-        /**
-        val message = GameInitMessage(
-
-        )
-        **/
+                        mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) }) },
+            game.destinationCards.map {
+                DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                    mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) })
+        
         updateConnectionState(ConnectionState.PLAY_TURN)
         //client?.sendGameActionMessage(message)
     }
@@ -310,6 +307,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         "ROV" ->return City.ROV;"STA"->return City.STA;"STO"->return City.STO;"SUN"->return City.SUN;"TAL"->return City.TAL;"TAM"->return City.TAM;"TOR"->return City.TOR;
             "TRO"->return City.TRO;"TRH"->return City.TRH;
         "TUR"->return City.TUR;"UME"->return City.UME;"VAA"->return City.VAA;
+            else -> throw IllegalArgumentException("$str not in enum.")
         }
     }
 }
