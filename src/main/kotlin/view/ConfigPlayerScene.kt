@@ -331,7 +331,6 @@ class ConfigPlayerScene(private val rootService: RootService):
                 playerList.add(GameService.PlayerData(client.playersNames[2], true))
             }
             rootService.gameService.startNewGame(playerList)
-            println(client.playersNames)
         }
     }
 
@@ -457,7 +456,6 @@ class ConfigPlayerScene(private val rootService: RootService):
     override fun refreshAfterPlayerJoin() {
         val listOfPlayers = rootService.network.client?.playersNames
         checkNotNull(listOfPlayers)
-        println("REFRESHABLE CALLED!")
         removeComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
         player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
         addComponents(player1LobbyLabel)

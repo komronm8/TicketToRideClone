@@ -10,11 +10,9 @@ import tools.aqua.bgw.components.uicomponents.*
 import tools.aqua.bgw.core.*
 import tools.aqua.bgw.event.MouseEvent
 import tools.aqua.bgw.event.ScrollDirection
-import tools.aqua.bgw.util.CoordinatePlain
 import tools.aqua.bgw.util.Font
 import tools.aqua.bgw.visual.*
 import java.awt.Color
-import javax.xml.crypto.dsig.Transform
 import kotlin.concurrent.thread
 import kotlin.math.*
 
