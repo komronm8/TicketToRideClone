@@ -31,7 +31,7 @@ class TestPlayer {
         val player8 = player1.copy(trainCarsAmount = 1313)
         testNotEqualsHash(player1, player8)
         val player9 =
-            player1.copy(claimedRoutes = listOf(Route(12, Color.BLACK, city1 to city1)))
+            player1.copy(claimedRoutes = listOf(Route(12, Color.BLACK, city1 to city1, 42)))
         testNotEqualsHash(player1, player9)
     }
 

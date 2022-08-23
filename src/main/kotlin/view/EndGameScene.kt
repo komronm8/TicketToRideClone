@@ -12,11 +12,11 @@ import java.awt.Color
 
 
 class EndGameScene(private val rootService: RootService):
-    MenuScene(1920, 1080, ImageVisual("\\EndScene\\background.png")), Refreshable{
+    MenuScene(1920, 1080, ImageVisual("EndScene/background.png")), Refreshable{
 
     private val restartButton = Button(
         posX = 693, posY = 940, width = 250, height = 57,
-        visual = ImageVisual("\\EndScene\\restartButton.png")
+        visual = ImageVisual("EndScene/restartButton.png")
     ).apply {
         onMouseClicked = {
             rootService.gameService.nextGame()
@@ -25,28 +25,28 @@ class EndGameScene(private val rootService: RootService):
 
     val startButton = Button(
         posX = 943, posY = 940, width = 250, height = 57,
-        visual = ImageVisual("\\EndScene\\newGameButton.png")
+        visual = ImageVisual("EndScene/newGameButton.png")
     )
 
     val exitButton = Button(
         posX = 1790, posY = 5, width = 142, height = 113,
-        visual = ImageVisual("\\EndScene\\button-quit.png")
+        visual = ImageVisual("EndScene/button-quit.png")
     )
 
     //PLayer icons
     private val playerYellowIcon = Label(
         posX = 750, posY = 500, width = 81, height = 117,
-        visual = ImageVisual("\\EndScene\\yellowPlayerIcon.png")
+        visual = ImageVisual("EndScene/yellowPlayerIcon.png")
     )
 
     private val playerRedIcon = Label(
         posX = 897, posY = 430, width = 80, height = 130,
-        visual = ImageVisual("\\EndScene\\redPlayerIcon.png")
+        visual = ImageVisual("EndScene/redPlayerIcon.png")
     )
 
     private val playerPurpleIcon = Label(
         posX = 1035, posY = 520, width = 96, height = 128,
-        visual = ImageVisual("\\EndScene\\purplePlayerIcon.png")
+        visual = ImageVisual("EndScene/purplePlayerIcon.png")
     )
 
     //first place labels

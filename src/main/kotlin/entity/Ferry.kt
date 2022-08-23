@@ -10,8 +10,9 @@ class Ferry(
     length: Int,
     color: Color,
     cities: Pair<City, City>,
+    id: Int,
     sibling: Route? = null,
-): Route(length, color, cities, sibling) {
+): Route(length, color, cities, id, sibling) {
     override val completeLength: Int
         get() = super.completeLength + ferries
     override fun toString(): String {
