@@ -1,5 +1,7 @@
 import service.NetworkService
 import service.RootService
+import view.SopraApplication
+
 
 fun main() {
     //AIService.minMaxAIGame()
