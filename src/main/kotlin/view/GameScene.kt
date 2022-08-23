@@ -581,7 +581,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             for(index in root.game.currentState.players.indices) {
                 if(root.game.currentState.players[index].claimedRoutes.contains(foundRoute)) {
                     routeClaimed = true
-                    placeMapButtons(route[route.size - 1] as Int, route, index)
+                    placeMapButtons(route[route.size - 2] as Int, route, index)
                     break;
                 }
             }
