@@ -264,7 +264,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val message = GameInitResponseMessage(tmp.toList())
         client?.sendGameActionMessage(message)
-        updateConnectionState(ConnectionState.WAIT_FOR_TURN)
+        updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE)
     }
 
     fun sendDrawTrainCardMessage(selectedTrainCards: List<WagonCard>,newTrainCardStack: List<WagonCard>?){

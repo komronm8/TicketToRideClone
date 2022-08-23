@@ -211,9 +211,10 @@ class NetworkClient(playerName: String,
             cities = cities, players = players, openCards = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(0,5),
             wagonCardsStack = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(5, message.trainCardStack.size),
             /*currentPlayerIndex = players.indexOfFirst { !it.isRemote }*/))
-        networkService.updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE)
+        networkService.updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
         networkService.rootService.game.gameState = GameState.CHOOSE_DESTINATION_CARD
 
+        networkService.sendDebugMessage()
         BoardGameApplication.runOnGUIThread { networkService.onAllRefreshables { refreshAfterStartNewGame() } }
     }
 
@@ -223,15 +224,15 @@ class NetworkClient(playerName: String,
     @GameActionReceiver
     private fun onGameInitResponseMessageReceived(message: GameInitResponseMessage, sender: String){
         //check(networkService.connectionState == ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE){"Not in right state"}
-        networkService.rootService.gameService.chooseDestinationCards(sender,
+        BoardGameApplication.runOnGUIThread { networkService.rootService.gameService.chooseDestinationCards(sender,
             message.selectedDestinationTickets.map { card : DestinationTicket ->
             networkService.rootService.game.currentState.players.first { it.name == sender }
                 .destinationCards.indexOfFirst { it.cities.toList().containsAll(
                 listOf(getCity(card.start.name), getCity(card.end.name))) && it.points == card.score
             }
-        })
+        }) }
         //networkService.updateConnectionState(ConnectionState.WAIT_FOR_TURN)
-
+        networkService.sendDebugMessage()
     }
 
     override fun onPlayerJoined(notification: PlayerJoinedNotification) {
