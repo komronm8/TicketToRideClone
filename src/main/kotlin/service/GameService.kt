@@ -20,7 +20,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             root.insert(value)
         }
 
-    private var choosenCards: List<List<Int>> = listOf()
+    var choosenCards: List<List<Int>> = listOf()
 
     /**
      * Starts a game with the given player data. At the end, the game is in a valid state, but the player still needs
@@ -96,6 +96,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             chooseDestinationCard(choosenCards)
             choosenCards = listOf()
         }
+        onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)
     }
 
     /**
