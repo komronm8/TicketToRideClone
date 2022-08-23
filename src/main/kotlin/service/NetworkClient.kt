@@ -217,22 +217,25 @@ class NetworkClient(playerName: String,
             { networkService.updateConnectionState(ConnectionState.PLAY_TURN) }
     }
 
-    @GameActionReceiver
-    private fun onPlayerNotification(message: PlayerJoinedNotification, sender: String) {
+    override fun onPlayerJoined(notification: PlayerJoinedNotification) {
+        super.onPlayerJoined(notification)
+        println("Test")
         check(networkService.connectionState == ConnectionState.WAIT_FOR_PLAYERS){"Wrong State"}
-        playersNames += message.sender
+        playersNames += notification.sender
         if(playersNames.size !in 1..3){
             networkService.updateConnectionState(ConnectionState.ERROR)
         }
-        networkService.onAllRefreshables { refreshAfterPlayerJoin() }
+        BoardGameApplication.runOnGUIThread {networkService.onAllRefreshables { refreshAfterPlayerJoin() } }
     }
 
-    @GameActionReceiver
-    private fun onPlayerLeftNotification(message: PlayerLeftNotification, sender: String) {
-        playersNames.remove(sender)
+    override fun onPlayerLeft(notification: PlayerLeftNotification) {
+        super.onPlayerLeft(notification)
+        playersNames.remove(notification.sender)
         networkService.onAllRefreshables { refreshAfterPlayerDisconnect() }
         if(playersNames.size in 1..3){
             networkService.updateConnectionState(ConnectionState.WAIT_FOR_PLAYERS)
         }
+        BoardGameApplication.runOnGUIThread { networkService.onAllRefreshables { refreshAfterPlayerDisconnect() } }
     }
+
 }

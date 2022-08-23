@@ -330,7 +330,7 @@ class ConfigPlayerScene(private val rootService: RootService):
             if( client.playersNames.size  == 3  ){
                 playerList.add(GameService.PlayerData(client.playersNames[2], true))
             }
-            rootService.network.startNewHostedGame(rootService.game.currentState)
+            rootService.gameService.startNewGame(playerList)
             println(client.playersNames)
         }
     }
@@ -411,7 +411,8 @@ class ConfigPlayerScene(private val rootService: RootService):
             }
             2 -> {
                 rootService.network.disconnect()
-                removeComponents(hostStartButton, hostSessionIDClipboard)
+                removeComponents(hostStartButton, hostSessionIDClipboard,
+                    player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
                 backCount--
                 remove(backCount)
             }
@@ -457,6 +458,7 @@ class ConfigPlayerScene(private val rootService: RootService):
         val listOfPlayers = rootService.network.client?.playersNames
         checkNotNull(listOfPlayers)
         println("REFRESHABLE CALLED!")
+        removeComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
         player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
         addComponents(player1LobbyLabel)
         if(listOfPlayers.size >= 2){
@@ -467,13 +469,16 @@ class ConfigPlayerScene(private val rootService: RootService):
             player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
             addComponents(player3LobbyLabel)
         }
+        if(hostLobby && listOfPlayers.size >= 2){
+            statusLobbyLabel.text = "GAME READY TO BE STARTED"
+        }
+        if(hostLobby && listOfPlayers.size < 2){
+            statusLobbyLabel.text = "WAITING FOR PLAYERS TO CONNECT TO LOBBY"
+        }
     }
 
     override fun refreshAfterPlayerDisconnect() {
-        val listOfPlayers = rootService.network.client?.playersNames
-        if(hostLobby && listOfPlayers != null){
-
-        }
+        refreshAfterPlayerJoin()
     }
 
 }
