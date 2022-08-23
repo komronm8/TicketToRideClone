@@ -2,6 +2,7 @@ package service
 
 import entity.*
 import service.message.DestinationTicket
+import tools.aqua.bgw.core.BoardGameApplication
 import view.Refreshable
 import java.util.*
 
@@ -104,7 +105,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             root.network.GameInitResponseMessage(cards.map(state.players.first { it.name == playerName }.destinationCards::get))
         }
 
-        onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)
+        BoardGameApplication.runOnGUIThread { onAllRefreshables(Refreshable::refreshAfterOneDestinationCard) }
     }
 
     /**
