@@ -4,6 +4,7 @@ import entity.*
 import entity.City
 import service.message.*
 import service.message.Color
+import service.message.Player
 import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.net.client.BoardGameClient
 import tools.aqua.bgw.net.client.NetworkLogging
@@ -194,12 +195,12 @@ class NetworkClient(playerName: String,
         networkService.updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
         val cities = constructGraph()
 
-        val players = message.players.map { player ->
-            entity.Player(name = "Test", destinationCards = player.destinationTickets.map { card: DestinationTicket ->
+        val players = message.players.zip(playersNames).map { player ->
+            entity.Player(name = player.second, destinationCards = player.first.destinationTickets.map { card: DestinationTicket ->
             DestinationCard(card.score, Pair(cities.first {
                 networkService.readIdentifierFromCSV(card.start.toString(), true) == it.name },
                 cities.first { networkService.readIdentifierFromCSV(card.end.toString(), true) == it.name })) },
-                wagonCards = message.players.map { WagonCard(it.color.maptoGameColor()) }, isRemote = true)
+                wagonCards = message.players.map { WagonCard(it.color.maptoGameColor()) }, isRemote = player.second != sender)
             }
 
         networkService.rootService.game = Game(State(
