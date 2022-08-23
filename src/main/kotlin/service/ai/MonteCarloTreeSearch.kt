@@ -174,6 +174,9 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
             if (move.route is Tunnel) {
                 newDraw = uniqueDrawWagonCard(state)
             }
+            if (newDraw.isEmpty()) {
+                newDraw = uniqueDrawWagonCard(state)
+            }
             parentChoices.copy(
                 drawableWagonCards = newDraw,
                 unclaimedRoutes = newUnclaimed,

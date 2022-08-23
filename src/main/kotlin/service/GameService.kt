@@ -116,7 +116,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     fun calcDestinationScore(player: Player): Pair<Int, Int> {
         val cities = state.cities
         val claimedRoutes = IdentityHashMap<Route, Unit>(player.claimedRoutes.size)
-        player.claimedRoutes.forEach { claimedRoutes.put(it, Unit) }
+        player.claimedRoutes.forEach { claimedRoutes[it] = Unit }
         val connectivity = IdentityHashMap<City, Int>()
         fun calcConnectivity(
             city: City,
@@ -140,7 +140,9 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         var groupIds = 0
         for (city in cities) {
             if (!connectivity.containsKey(city)) {
-                calcConnectivity(city, groupIds++)
+                val groupId = groupIds++
+                connectivity[city] = groupId
+                calcConnectivity(city, groupId)
             }
         }
         var fulfilledCards = 0
