@@ -460,7 +460,7 @@ class ConfigPlayerScene(private val rootService: RootService):
     }
 
     override fun refreshAfterPlayerJoin() {
-
+        showJoinLobby()
     }
 
     override fun refreshAfterPlayerDisconnect() {

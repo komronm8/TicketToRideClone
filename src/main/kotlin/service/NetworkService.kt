@@ -176,7 +176,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
     /**
      * send a [DebugMessage]
      *
-     * @throws when not connected to a game
+     * @throws IllegalStateException when not connected to a game
      */
     fun sendDebugMessage() {
         check(connectionState != ConnectionState.DISCONNECTED) { "Not connected to a game" }
