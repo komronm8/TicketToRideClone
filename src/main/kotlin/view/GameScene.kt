@@ -219,7 +219,13 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     ).apply { rotation = 270.0 }
     private val trainCardDeck: Button = Button(
         posX = 1670, posY = 768, width = 245, height = 160
-    ).apply { onMouseClicked = { root.playerActionService.drawWagonCard(-1) } }
+    ).apply { onMouseClicked = {
+        try {
+            root.playerActionService.drawWagonCard(-1)
+        } catch (e: Exception) {
+            focusErrorMessage("Failed to draw deck card: " + e.message)
+        }
+    } }
     //</editor-fold>
 
     //<editor-fold desc="Focus Elements">
@@ -478,7 +484,13 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         for (openCard in root.game.currentState.openCards) {
             openTrainCards.add(CardView( width = 120, height = 186,
                 front = ImageVisual(TRAIN_CARDS + openCard.color.toString() + ".png")).apply {
-                    onMouseClicked = { root.playerActionService.drawWagonCard(openTrainCards.indexOf(this)) }
+                    onMouseClicked = {
+                        try {
+                            root.playerActionService.drawWagonCard(openTrainCards.indexOf(this))
+                        } catch (e: Exception) {
+                            focusErrorMessage("Failed to draw open card: " + e.message)
+                        }
+                    }
             })
         }
     }
