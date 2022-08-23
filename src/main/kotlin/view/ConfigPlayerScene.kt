@@ -458,9 +458,12 @@ class ConfigPlayerScene(private val rootService: RootService):
         println("REFRESHABLE CALLED!")
         if(joinLobby && listOfPlayers != null){
             player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
-            player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
-            addComponents(player1LobbyLabel, player2LobbyLabel)
-            if(listOfPlayers[2] != ""){
+            addComponents(player1LobbyLabel)
+            if(listOfPlayers.size >= 2){
+                player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
+                addComponents(player2LobbyLabel)
+            }
+            if(listOfPlayers.size >= 3){
                 player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
                 addComponents(player3LobbyLabel)
             }
