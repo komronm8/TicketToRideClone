@@ -189,8 +189,9 @@ class NetworkClient(playerName: String,
         val cities = constructGraph()
 
         val players = message.players.map { player ->
-            entity.Player(name = "Test", destinationCards = player.destinationTickets.map {
-            DestinationCard(it.score, Pair(getCity(it.start.toString()), getCity(it.end.toString()))) },
+            entity.Player(name = "Test", destinationCards = player.destinationTickets.map { card: DestinationTicket ->
+            DestinationCard(card.score, Pair(cities.first { networkService.readIdentifierFromCSV(card.start.toString(), true) == it.name },
+                cities.first { networkService.readIdentifierFromCSV(card.end.toString(), true) == it.name })) },
                 wagonCards = message.players.map { WagonCard(it.color.maptoGameColor()) }, isRemote = true)
             }
 
@@ -219,7 +220,6 @@ class NetworkClient(playerName: String,
 
     override fun onPlayerJoined(notification: PlayerJoinedNotification) {
         super.onPlayerJoined(notification)
-        println("Test")
         check(networkService.connectionState == ConnectionState.WAIT_FOR_PLAYERS){"Wrong State"}
         playersNames += notification.sender
         if(playersNames.size !in 1..3){
@@ -231,7 +231,6 @@ class NetworkClient(playerName: String,
     override fun onPlayerLeft(notification: PlayerLeftNotification) {
         super.onPlayerLeft(notification)
         playersNames.remove(notification.sender)
-        networkService.onAllRefreshables { refreshAfterPlayerDisconnect() }
         if(playersNames.size in 1..3){
             networkService.updateConnectionState(ConnectionState.WAIT_FOR_PLAYERS)
         }

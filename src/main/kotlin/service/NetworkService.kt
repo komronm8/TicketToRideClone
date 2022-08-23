@@ -155,7 +155,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         val colors = Stack(PlayerColor.RED, PlayerColor.WHITE, PlayerColor.PURPLE)
 
         val message = GameInitMessage(
-            game.wagonCardsStack.map { it.color.maptoMessageColor() },
+            (game.openCards + game.wagonCardsStack).map { it.color.maptoMessageColor() },
             game.players.map { player -> Player(isBot = player is AIPlayer,
                 trainCards = player.wagonCards.map { it.color.maptoMessageColor() },
                 color = colors.pop(),
@@ -358,7 +358,6 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      */
     fun readIdentifierFromCSV(cityName: String, isIdentifier: Boolean): String{
         var fileName = "/City_Enum_Zuordnung_1.csv"
-        println(NetworkService::class.java.getResource(fileName))
         var file = File(NetworkService::class.java.getResource(fileName).file)
         if(isIdentifier){
             return readCsvAndSearchIdentifier(file.inputStream(), cityName)
