@@ -64,6 +64,9 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
 
         root.game.gameState = GameState.CHOOSE_DESTINATION_CARD
         onAllRefreshables(Refreshable::refreshAfterStartNewGame)
+        if (root.game.currentState.players.any { !it.isRemote }){
+            root.network.startNewHostedGame(state)
+        }
     }
 
     /**
@@ -136,7 +139,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         val cities = state.cities
         val claimedRoutes = IdentityHashMap<Route, Unit>(player.claimedRoutes.size)
         player.claimedRoutes.forEach { claimedRoutes.put(it, Unit) }
-        val connectivity = IdentityHashMap<City, Int>()
+        val groups = IdentityHashMap<City, Int>()
         fun calcConnectivity(
             city: City,
             groupId: Int,
@@ -148,8 +151,8 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
                     } else {
                         neighbor.cities.first
                     }
-                    if (!connectivity.contains(other)) {
-                        connectivity[other] = groupId
+                    if (!groups.contains(other)) {
+                        groups[other] = groupId
                         calcConnectivity(other, groupId)
                     }
                 }
@@ -158,14 +161,16 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
 
         var groupIds = 0
         for (city in cities) {
-            if (!connectivity.containsKey(city)) {
-                calcConnectivity(city, groupIds++)
+            if (!groups.containsKey(city)) {
+                val groupId = groupIds++
+                groups[city] = groupId
+                calcConnectivity(city, groupId)
             }
         }
         var fulfilledCards = 0
         var scoreSum = 0
         for (card in player.destinationCards) {
-            val fulfilled = connectivity[card.cities.first] == connectivity[card.cities.second]
+            val fulfilled = groups[card.cities.first] == groups[card.cities.second]
             if (fulfilled) fulfilledCards += 1
             scoreSum += if (fulfilled) card.points else -card.points
         }

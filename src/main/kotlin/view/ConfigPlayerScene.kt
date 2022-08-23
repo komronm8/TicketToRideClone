@@ -290,6 +290,7 @@ class ConfigPlayerScene(private val rootService: RootService):
                 player1LobbyLabel.text = "Player1: " + playerNameInput.text
                 addComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
                 backCount++
+                hostLobby = true
             }
         }
     }
@@ -322,9 +323,9 @@ class ConfigPlayerScene(private val rootService: RootService):
         onMouseClicked = {
             val client = rootService.network.client
             checkNotNull(client)
-//            if( client.playersNames.size  in 2..3  ){
-//                rootService.network.startNewHostedGame(client.playersNames.toList() as List<String>)
-//            }
+            if( client.playersNames.size  in 2..3  ){
+                rootService.network.startNewHostedGame(client.playersNames.toList() as List<String>)
+            }
             println(client.playersNames)
         }
     }
@@ -434,7 +435,6 @@ class ConfigPlayerScene(private val rootService: RootService):
     }
 
     private fun showJoinLobby(){
-
         removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
             onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
         statusLobbyLabel.text = "WAITING FOR HOST TO START THE GAME"
@@ -446,7 +446,6 @@ class ConfigPlayerScene(private val rootService: RootService):
             onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
         statusLobbyLabel.text = "WAITING FOR PLAYERS TO CONNECT TO LOBBY"
         addComponents(statusLabel, statusLobbyLabel, hostStartButton, hostSessionIDClipboard)
-//        println(rootService.network.client?.playersNames)
     }
 
     override fun refreshAfterPlayerJoin() {
@@ -463,6 +462,7 @@ class ConfigPlayerScene(private val rootService: RootService):
 
         if(hostLobby && listOfPlayers != null){
             player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
+            addComponents(player2LobbyLabel)
             if(listOfPlayers[2] != null){
                 player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
                 addComponents(player3LobbyLabel)

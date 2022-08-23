@@ -126,6 +126,8 @@ class NetworkClient(playerName: String,
         message.color.forEach { color: Color -> networkService.rootService.playerActionService.drawWagonCard(
             networkService.rootService.game.currentState.openCards.indexOf(WagonCard(color.maptoGameColor()))
         ) }
+        if (networkService.rootService.game.currentState.currentPlayer.name == playerName)
+            { networkService.updateConnectionState(ConnectionState.PLAY_TURN) }
     }
 
     /**
@@ -144,6 +146,8 @@ class NetworkClient(playerName: String,
             }
         }
         networkService.rootService.playerActionService.drawDestinationCards(ints)
+        if (networkService.rootService.game.currentState.currentPlayer.name == playerName)
+            { networkService.updateConnectionState(ConnectionState.PLAY_TURN) }
     }
 
     /**
@@ -155,6 +159,8 @@ class NetworkClient(playerName: String,
             getRoute(message.start.toString(), message.end.toString(), message.color),
             message.playedTrainCards.map { WagonCard(it.maptoGameColor()) }
         )
+        if (networkService.rootService.game.currentState.currentPlayer.name == playerName)
+            { networkService.updateConnectionState(ConnectionState.PLAY_TURN) }
     }
 
     /**
@@ -178,7 +184,8 @@ class NetworkClient(playerName: String,
      */
     @GameActionReceiver
     private fun onGameInitMessageReceived(message: GameInitMessage, sender: String){
-
+        check(networkService.connectionState == ConnectionState.WAIT_FOR_GAMEINIT){"Wrong State"}
+        networkService.updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
         val cities = constructGraph()
 
         val players = message.players.map { player ->
@@ -191,7 +198,7 @@ class NetworkClient(playerName: String,
             destinationCards = message.destinationTickets.map { DestinationCard(it.score, Pair(getCity(it.start.toString()), getCity(it.end.toString()))) },
             cities = cities, players = players, openCards = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(0,5),
             wagonCardsStack = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(5, message.trainCardStack.size)))
-
+        networkService.updateConnectionState(ConnectionState.WAIT_FOR_TURN)
         networkService.rootService.game.gameState = GameState.CHOOSE_DESTINATION_CARD
     }
 
@@ -200,16 +207,23 @@ class NetworkClient(playerName: String,
      */
     @GameActionReceiver
     private fun onGameInitResponseMessageReceived(message: GameInitResponseMessage, sender: String){
+        check(networkService.connectionState == ConnectionState.WAIT_FOR_TURN){"Not in right state"}
         networkService.rootService.gameService.chooseDestinationCards(message.selectedDestinationTickets.map { card : DestinationTicket ->
             networkService.rootService.game.currentState.currentPlayer.destinationCards.indexOfFirst { it.cities.toList().containsAll(
                 listOf(getCity(card.start.name), getCity(card.end.name))) && it.points == card.score
             }
         })
+        if (networkService.rootService.game.currentState.currentPlayer.name == playerName)
+            { networkService.updateConnectionState(ConnectionState.PLAY_TURN) }
     }
 
     @GameActionReceiver
     private fun onPlayerNotification(message: PlayerJoinedNotification, sender: String) {
+        check(networkService.connectionState == ConnectionState.WAIT_FOR_PLAYERS){"Wrong State"}
         playersNames += message.sender
+        if(playersNames.size !in 1..3){
+            networkService.updateConnectionState(ConnectionState.ERROR)
+        }
         networkService.onAllRefreshables { refreshAfterPlayerJoin() }
     }
 
@@ -217,5 +231,8 @@ class NetworkClient(playerName: String,
     private fun onPlayerLeftNotification(message: PlayerLeftNotification, sender: String) {
         playersNames.remove(sender)
         networkService.onAllRefreshables { refreshAfterPlayerDisconnect() }
+        if(playersNames.size in 1..3){
+            networkService.updateConnectionState(ConnectionState.WAIT_FOR_PLAYERS)
+        }
     }
 }

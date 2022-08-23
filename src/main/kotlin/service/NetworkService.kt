@@ -41,7 +41,6 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         if (!connect(secret, name)) {
             error("Connection failed")
         }
-        updateConnectionState(ConnectionState.CONNECTED)
 
         if (sessionID.isNullOrBlank()) {
             client?.createGame(GAME_ID, "Welcome!")
@@ -77,6 +76,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         return if (newClient.connect()) {
             this.client = newClient
+            updateConnectionState(ConnectionState.CONNECTED)
             true
         } else {
             false
@@ -96,7 +96,6 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         if (!connect(secret, name)) {
             error("Connection failed")
         }
-        updateConnectionState(ConnectionState.CONNECTED)
 
         val game = client?.joinGame(sessionID, "Hello!")
         game.toString()
@@ -141,18 +140,18 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      *
      * @throws IllegalStateException if [connectionState] != [ConnectionState.WAITING_FOR_GUEST]
      */
-    fun startNewHostedGame(playerNames: List<String>) {
+    fun startNewHostedGame(game: State) {
         check(connectionState == ConnectionState.WAIT_FOR_PLAYERS)
         { "currently not prepared to start a new hosted game." }
-
+        /**
         val playerData: MutableList<GameService.PlayerData> = mutableListOf()
         playerNames.forEach {name ->
-            playerData.add(GameService.PlayerData(name,true))
+        playerData.add(GameService.PlayerData(name,true))
         }
 
         rootService.gameService.startNewGame(playerData.toList())
         val game = rootService.game.currentState
-
+        */
         val colors = Stack(PlayerColor.RED, PlayerColor.WHITE, PlayerColor.PURPLE)
 
         val message = GameInitMessage(
@@ -167,7 +166,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
                 DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
                     mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) })
 
-        updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE)
+        updateConnectionState(ConnectionState.PLAY_TURN)
         client?.sendGameActionMessage(message)
 
     }
