@@ -283,7 +283,11 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     ).apply {
         onKeyPressed = {
             if(it.keyCode == KeyCode.ENTER) {
-                root.network.sendChatMessage(text)
+                try {
+                    root.network.sendChatMessage(text)
+                } catch (e: Exception) {
+                    println("Message send failure: " + e.message)
+                }
                 text = ""
             }
         }
