@@ -739,12 +739,14 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         showCards(root.game.currentState.currentPlayer)
 
         val toPay: Pair<Int, entity.Color?> = root.playerActionService.tunnelPayAmount(cardsUsed)
-
-        focusUI(
-            showTrainCards, "Pay for the tunnel: " + toPay.first + " cards of color " + toPay.second,
-            root.game.currentState.currentPlayerIndex
-        ) {
-            if (selectedTrainCards.size > 0) {
+        val tunnelMessage = if (toPay.first == 0) {
+            "Pay nothing for the tunnel!"
+        } else {
+            "Pay ${toPay.first} locomotive card(s)" +
+                    (toPay.second?.let { " or ${it.toString().lowercase()} card(s)" } ?: "")
+        }
+        focusUI(showTrainCards, tunnelMessage, root.game.currentState.currentPlayerIndex) {
+            if (selectedTrainCards.size > 0 || toPay.first == 0) {
                 try {
                     root.playerActionService.afterClaimTunnel(
                         route as Tunnel,
@@ -785,7 +787,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         println(root.game.currentState.currentPlayerIndex)
         //TODO
         if (root.game.currentState.currentPlayer is AIPlayer) {
-            println("hello")
             val access = Any()
             aiAccessKey = access
             thread {
