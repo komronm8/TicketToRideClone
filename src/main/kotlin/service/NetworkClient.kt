@@ -225,7 +225,7 @@ class NetworkClient(playerName: String,
         if(playersNames.size !in 1..3){
             networkService.updateConnectionState(ConnectionState.ERROR)
         }
-        networkService.onAllRefreshables { refreshAfterPlayerJoin() }
+        BoardGameApplication.runOnGUIThread {networkService.onAllRefreshables { refreshAfterPlayerJoin() } }
     }
 
     override fun onPlayerLeft(notification: PlayerLeftNotification) {
@@ -235,7 +235,7 @@ class NetworkClient(playerName: String,
         if(playersNames.size in 1..3){
             networkService.updateConnectionState(ConnectionState.WAIT_FOR_PLAYERS)
         }
-        networkService.onAllRefreshables { refreshAfterPlayerDisconnect() }
+        BoardGameApplication.runOnGUIThread { networkService.onAllRefreshables { refreshAfterPlayerDisconnect() } }
     }
 
 }
