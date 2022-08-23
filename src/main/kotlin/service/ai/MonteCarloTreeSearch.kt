@@ -51,6 +51,7 @@ private class WinnerReporter(private var winner: Player? = null) : Refreshable {
 fun RootService.monteCarloMove(c: Double, timeLimit: Int, execute: (() -> Unit) -> Unit) {
     val move = game.currentState.findMoveMonteCarlo(c, timeLimit)
     execute {
+        println(move)
         executeMontyMove(move)
     }
 }

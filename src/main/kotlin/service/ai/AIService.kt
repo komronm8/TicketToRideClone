@@ -24,10 +24,6 @@ class AIService(private val root: RootService) {
                     println("winner: ${winner.name}")
                     ended = winner
                 }
-
-                override fun refreshAfterClaimRoute(route: Route) {
-                    super.refreshAfterClaimRoute(route)
-                }
             }
             root.addRefreshable(refreshable)
             val aiService = AIService(root)
