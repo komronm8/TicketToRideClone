@@ -256,6 +256,21 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     private val focusPlayer: Label = Label(width = 156, height = 156, posX = 822, posY = 5)
     //</editor-fold>
 
+    //<editor-fold desc="Net and AI">
+    private var tempAISpeed: Int = 0;
+    private val aiSpeedButton: Button = Button(
+        posY = 2, posX = 867, width = 186, height = 74, visual = ImageVisual("GameScene/ai_3x.png")
+    ).apply {
+        onMouseClicked = {
+            when(tempAISpeed) {
+                0 -> { visual = ImageVisual("GameScene/ai_1x.png"); tempAISpeed = 2 }
+                2 -> { visual = ImageVisual("GameScene/ai_2x.png"); tempAISpeed = 1 }
+                1 -> { visual = ImageVisual("GameScene/ai_3x.png"); tempAISpeed = 0 }
+            }
+        }
+    }
+    //</editor-fold>
+
     init {
         opacity = 1.0
         background = ImageVisual("GameScene/background.png")
@@ -527,7 +542,9 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         val focusPlayer: Player = root.game.currentState.players[playerIndex]
 
         if(focusPlayer is AIPlayer || focusPlayer.isRemote) {
+            unFocus()
             focusChooseDestCards( playerIndex + 1)
+            return
         }
 
         selectedDestCards.clear()
@@ -681,6 +698,13 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     }
 
     override fun refreshAfterStartNewGame() {
+        for(player in root.game.currentState.players) {
+            if(player is AIPlayer) {
+                addComponents(aiSpeedButton)
+                break
+            }
+        }
+
         initializeOtherPlayerUI()
         updateDecks()
         focusChooseDestCards(0)
