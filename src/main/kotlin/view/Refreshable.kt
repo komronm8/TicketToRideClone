@@ -61,5 +61,10 @@ interface Refreshable {
      */
     fun refreshAfterPlayerJoin() {}
 
+    /**
+     * Gets called after [service.NetworkService.client.onPlayerNotification]
+     */
     fun refreshAfterPlayerDisconnect() {}
+
+    fun refreshAfterText(text: String) {}
 }

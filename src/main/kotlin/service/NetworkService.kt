@@ -349,7 +349,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         if(filtVal.isEmpty()){
             return ""
         }else {
-            return filtVal[0].identifier
+            return filtVal[0].cityName
         }
     }
 
