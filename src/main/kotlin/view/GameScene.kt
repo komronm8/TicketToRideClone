@@ -320,9 +320,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                         val foundRoute = gameRoute
                         checkNotNull(foundRoute)
 
-                        val playerIndex: Int = root.game.currentState.currentPlayerIndex
-
-                        val claimSuccess =root.playerActionService.claimRoute(foundRoute,
+                        val claimSuccess = root.playerActionService.claimRoute(foundRoute,
                                 root.game.currentState.currentPlayer.wagonCards.slice(selectedTrainCards)) == null
                     }
                 })
@@ -507,22 +505,63 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         }
     }
 
-    private fun placeMapButtons(routeStart: Int, route: Array<Any>) {
+    private fun placeMapButtons(routeStart: Int, route: Array<Any>, playerIndex: Int) {
         for (mapIndex in routeStart..routeStart + route.size - 3) {
             map.elementAt(mapIndex).visual = ImageVisual(
                 path = getBoardFieldPath(
                     (route[mapIndex - routeStart] as Pair<Any, Boolean>).second,
-                    root.game.currentState.currentPlayerIndex
+                    playerIndex
                 )
             )
             map.elementAt(mapIndex).isDisabled = true
         }
     }
 
+    private fun clearMapButtons(routeStart: Int, route: Array<Any>) {
+        for (mapIndex in routeStart..routeStart + route.size - 3) {
+            map.elementAt(mapIndex).visual = ColorVisual.TRANSPARENT
+            map.elementAt(mapIndex).isDisabled = false
+        }
+    }
+
     private fun claimRouteById(routeId: Int): Unit {
         val routeToClaim =
             checkNotNull(mapRouteButtons.find { (it.last() as Triple<String, String, Int>).third == routeId })
-        placeMapButtons(routeToClaim[routeToClaim.size - 2] as Int, routeToClaim)
+        placeMapButtons(routeToClaim[routeToClaim.size - 2] as Int,
+            routeToClaim, root.game.currentState.currentPlayerIndex)
+    }
+
+    private fun redrawAllButtons(): Unit {
+        for(route in mapRouteButtons) {
+            val stations = route.last() as Triple<String, String, Int>
+
+            val cities = root.game.currentState.cities.associateBy { it.name }
+            var gameRoute: Route? = null
+
+            for(searchRoute in checkNotNull(cities[stations.first])
+                .findRoute(checkNotNull(cities[stations.second]))) {
+                if(searchRoute.id == stations.third) {
+                    gameRoute = searchRoute
+                    break
+                }
+            }
+
+            val foundRoute = gameRoute
+            checkNotNull(foundRoute)
+
+            var routeClaimed = false
+
+            for(index in root.game.currentState.players.indices) {
+                if(root.game.currentState.players[index].claimedRoutes.contains(foundRoute)) {
+                    routeClaimed = true
+                    placeMapButtons(route[route.size - 1] as Int, route, index)
+                    break;
+                }
+            }
+
+            if(routeClaimed == false)
+                clearMapButtons(route[route.size - 1] as Int, route)
+        }
     }
 
     //<editor-fold desc="Focus Functions">
