@@ -155,10 +155,15 @@ class NetworkClient(playerName: String,
      */
     @GameActionReceiver
     private fun onClaimARouteMessageReceivedAction(message: ClaimARouteMessage, sender: String){
-        networkService.rootService.playerActionService.claimRoute(
-            getRoute(message.start.toString(), message.end.toString(), message.color),
-            message.playedTrainCards.map { WagonCard(it.maptoGameColor()) }
-        )
+        val route = getRoute(message.start.toString(), message.end.toString(), message.color)
+        val sibling = route.sibling
+        if (networkService.rootService.playerActionService.claimRoute(
+            route, message.playedTrainCards.map { WagonCard(it.maptoGameColor()) } )
+            == PlayerActionService.ClaimRouteFailure.RouteAlreadyClaimed && sibling != null)
+        {
+            networkService.rootService.playerActionService.claimRoute(
+                sibling, message.playedTrainCards.map { WagonCard(it.maptoGameColor()) })
+        }
         if (networkService.rootService.game.currentState.currentPlayer.name == playerName)
             { networkService.updateConnectionState(ConnectionState.PLAY_TURN) }
 

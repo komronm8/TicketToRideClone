@@ -1,6 +1,7 @@
 package service
 
 import entity.*
+import service.message.DestinationTicket
 import view.Refreshable
 import java.util.*
 
@@ -100,6 +101,10 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         }
 
         onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)
+
+        if (root.game.currentState.players.any { it.isRemote }){
+            root.network.GameInitResponseMessage(cards.map { index -> state.players.first { it.name == playerName }.destinationCards[index] })
+        }
     }
 
     /**
