@@ -20,7 +20,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             root.insert(value)
         }
 
-    private var choosenCards: List<List<Int>> = listOf()
+    var choosenCards: MutableList<List<Int>> = mutableListOf()
 
     /**
      * Starts a game with the given player data. At the end, the game is in a valid state, but the player still needs
@@ -91,11 +91,18 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     }
 
     fun chooseDestinationCards(cards: List<Int>){
-        choosenCards = choosenCards + listOf(cards)
+        val selected: MutableList<Int> = mutableListOf()
+        for(index in cards) {
+            selected.add(index)
+        }
+        choosenCards.add(selected)
+
         if (choosenCards.size >= state.players.size){
             chooseDestinationCard(choosenCards)
-            choosenCards = listOf()
+            choosenCards = mutableListOf()
         }
+
+        onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)
     }
 
     /**

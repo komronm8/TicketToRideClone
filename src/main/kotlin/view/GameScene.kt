@@ -43,7 +43,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         width = 68, height = 83, posY = 495, posX = 1550, visual = ImageVisual("GameScene/redo.png")
     ).apply {
         onMouseClicked = {
-            root.redo();
+            root.playerActionService.redo();
         }
     }
 
@@ -51,7 +51,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         width = 68, height = 83, posY = 495, posX = 1465, visual = ImageVisual("GameScene/undo.png")
     ).apply {
         onMouseClicked = {
-            root.undo();
+            root.playerActionService.undo();
         }
     }
 
@@ -264,7 +264,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         background = ImageVisual("GameScene/background.png")
 
         playerBanner.addAll(playerTrainCarLabel, currentPlayerImage,
-            currentPlayerPoints, redo, undo, showCurrentPlayerCards)
+            currentPlayerPoints, showCurrentPlayerCards)
 
         addComponents(
             playerBanner, map,
@@ -279,7 +279,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         buildMapButtons()
     }
 
-    private fun City.findRoute(to: City): Route = checkNotNull(routes.find {
+    private fun City.findRoute(to: City): /*List<*/Route/*>*/ = checkNotNull(routes.find {
         (it.cities.first === this && it.cities.second === to)
                 || (it.cities.first === to && it.cities.second === this)
     })
@@ -556,9 +556,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             return
         }
 
-        selectedDestCards.clear()
-
-        showCards(focusPlayer)
         focusUI(showDestCards, "Choose at least two cards and continue...", playerIndex) {
             if(selectedDestCards.size >= 2) {
                 unFocus()
@@ -709,6 +706,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     }
 
     override fun refreshAfterStartNewGame() {
+        playerBanner.addAll(redo, undo)
         for(player in root.game.currentState.players) {
             if(player is AIPlayer) {
                 addComponents(aiSpeedButton)
@@ -719,14 +717,22 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         for(player in root.game.currentState.players) {
             if(player.isRemote) {
                 addComponents(chat)
+                playerBanner.remove(redo)
+                playerBanner.remove(undo)
                 break
             }
         }
 
         initializeOtherPlayerUI()
         updateDecks()
+        showCards(root.game.currentState.currentPlayer)
         focusChooseDestCards(0)
         updateRedoUndo()
+    }
+
+    override fun refreshAfterOneDestinationCard() {
+        selectedDestCards.clear()
+        showCards(root.game.currentState.players[root.gameService.choosenCards.size])
     }
     //</editor-fold>
 }

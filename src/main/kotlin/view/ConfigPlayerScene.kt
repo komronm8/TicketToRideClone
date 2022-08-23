@@ -288,7 +288,7 @@ class ConfigPlayerScene(private val rootService: RootService):
                 hostSessionIDClipboard.text = "SID: " + sessionTextField.text
                 showHostLobby()
                 player1LobbyLabel.text = "Player1: " + playerNameInput.text
-                addComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
+                addComponents(player1LobbyLabel)
                 backCount++
                 hostLobby = true
             }
@@ -323,9 +323,14 @@ class ConfigPlayerScene(private val rootService: RootService):
         onMouseClicked = {
             val client = rootService.network.client
             checkNotNull(client)
-            if( client.playersNames.size  in 2..3  ){
-                rootService.network.startNewHostedGame(client.playersNames.toList() as List<String>)
+            val playerList = mutableListOf<GameService.PlayerData>()
+            playerList.add(GameService.PlayerData(playerNameInput.text, false,
+                getAIStrategy(onlinePlayerTypeLabel)))
+            playerList.add(GameService.PlayerData(client.playersNames[1], true))
+            if( client.playersNames.size  == 3  ){
+                playerList.add(GameService.PlayerData(client.playersNames[2], true))
             }
+            rootService.network.startNewHostedGame(rootService.game.currentState)
             println(client.playersNames)
         }
     }
@@ -450,11 +455,12 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     override fun refreshAfterPlayerJoin() {
         val listOfPlayers = rootService.network.client?.playersNames
+        println("REFRESHABLE CALLED!")
         if(joinLobby && listOfPlayers != null){
             player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
             player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
             addComponents(player1LobbyLabel, player2LobbyLabel)
-            if(listOfPlayers[2] != null){
+            if(listOfPlayers[2] != ""){
                 player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
                 addComponents(player3LobbyLabel)
             }
@@ -463,7 +469,7 @@ class ConfigPlayerScene(private val rootService: RootService):
         if(hostLobby && listOfPlayers != null){
             player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
             addComponents(player2LobbyLabel)
-            if(listOfPlayers[2] != null){
+            if(listOfPlayers[2] != ""){
                 player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
                 addComponents(player3LobbyLabel)
             }
