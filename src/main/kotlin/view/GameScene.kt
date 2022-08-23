@@ -11,6 +11,7 @@ import tools.aqua.bgw.components.uicomponents.*
 import tools.aqua.bgw.core.Alignment
 import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.core.BoardGameScene
+import tools.aqua.bgw.event.KeyCode
 import tools.aqua.bgw.event.MouseEvent
 import tools.aqua.bgw.event.ScrollDirection
 import tools.aqua.bgw.util.Font
@@ -279,7 +280,18 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     private val chatInput: TextField = TextField(
         posY = chatRecieved.height, posX = 0, width = chat.width,
         height = chat.height - chatRecieved.height, font = Font(size = 10)
-    )
+    ).apply {
+        onKeyPressed = {
+            if(it.keyCode == KeyCode.ENTER) {
+                try {
+                    root.network.sendChatMessage(text)
+                } catch (e: Exception) {
+                    println("Message send failure: " + e.message)
+                }
+                text = ""
+            }
+        }
+    }
     //</editor-fold>
 
     init {
@@ -880,6 +892,10 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         root.game.currentState.players.firstOrNull {
             it.name !in root.gameService.chosenCards
         }?.also(this::showCards)
+    }
+
+    override fun refreshAfterText(text: String) {
+        chatRecieved.items.add(text)
     }
     //</editor-fold>
 }
