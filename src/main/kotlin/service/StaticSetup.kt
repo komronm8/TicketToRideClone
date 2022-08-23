@@ -3,51 +3,51 @@ package service
 import entity.*
 import entity.Color.*
 
-private fun MutableList<City>.city(name: String): Pair<City, MutableList<Route>>{
+fun MutableList<City>.city(name: String): Pair<City, MutableList<Route>>{
     val routes = mutableListOf<Route>()
     val city = City(name, routes)
     add(city)
     return city to routes
 }
-private fun Pair<Pair<City, MutableList<Route>>, Pair<City, MutableList<Route>>>.route(
-    length: Int,
-    color: Color,
-    sibling: Route? = null
-): Route {
-    val route = Route(length, color, this.first.first to this.second.first, sibling)
-    sibling?.also { it.sibling = route }
-    this.first.second.add(route)
-    this.second.second.add(route)
-    return route
-}
-
-private fun Pair<Pair<City, MutableList<Route>>, Pair<City, MutableList<Route>>>.ferry(
-    ferries: Int,
-    length: Int,
-    color: Color,
-    sibling: Route? = null
-): Ferry {
-    assert(ferries <= length)
-    val route = Ferry(ferries, length - ferries, color, this.first.first to this.second.first, sibling)
-    sibling?.also { it.sibling = route }
-    this.first.second.add(route)
-    this.second.second.add(route)
-    return route
-}
-
-private fun Pair<Pair<City, MutableList<Route>>, Pair<City, MutableList<Route>>>.tunnel(
-    length: Int,
-    color: Color,
-    sibling: Route? = null
-): Route {
-    val route = Tunnel(length, color, this.first.first to this.second.first, sibling)
-    sibling?.also { it.sibling = route }
-    this.first.second.add(route)
-    this.second.second.add(route)
-    return route
-}
-
 private fun MutableList<City>.constructGraph() {
+    var id = 0
+    fun Pair<Pair<City, MutableList<Route>>, Pair<City, MutableList<Route>>>.route(
+        length: Int,
+        color: Color,
+        sibling: Route? = null
+    ): Route {
+        val route = Route(length, color, this.first.first to this.second.first, id++, sibling)
+        sibling?.also { it.sibling = route }
+        this.first.second.add(route)
+        this.second.second.add(route)
+        return route
+    }
+
+    fun Pair<Pair<City, MutableList<Route>>, Pair<City, MutableList<Route>>>.ferry(
+        ferries: Int,
+        length: Int,
+        color: Color,
+        sibling: Route? = null
+    ): Ferry {
+        assert(ferries <= length)
+        val route = Ferry(ferries, length - ferries, color, this.first.first to this.second.first, id++, sibling)
+        sibling?.also { it.sibling = route }
+        this.first.second.add(route)
+        this.second.second.add(route)
+        return route
+    }
+
+    fun Pair<Pair<City, MutableList<Route>>, Pair<City, MutableList<Route>>>.tunnel(
+        length: Int,
+        color: Color,
+        sibling: Route? = null
+    ): Route {
+        val route = Tunnel(length, color, this.first.first to this.second.first, id++, sibling)
+        sibling?.also { it.sibling = route }
+        this.first.second.add(route)
+        this.second.second.add(route)
+        return route
+    }
     val hon = city("Honningsvåg")
     val trom = city("Tromsø")
     val kirk = city("Kirkenes")

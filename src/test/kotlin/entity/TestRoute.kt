@@ -13,7 +13,7 @@ class TestRoute {
     @Test
     fun testToString() {
         val city1 = City(name = "asdad", emptyList())
-        val ferry = Route(13, Color.JOKER, city1 to city1)
+        val ferry = Route(13, Color.JOKER, city1 to city1, 42)
         assertEquals(
             "Route(City(name = asdad) to City(name = asdad), length=13, color=JOKER, sibling: ())",
             ferry.toString()
@@ -26,7 +26,7 @@ class TestRoute {
     @Test
     fun testCompleteLength() {
         val city1 = City(name = "asdad", emptyList())
-        val route = Route(5, Color.BLACK, city1 to city1)
+        val route = Route(5, Color.BLACK, city1 to city1, 42)
         assertEquals(5, route.completeLength)
     }
 }

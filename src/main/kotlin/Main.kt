@@ -1,6 +1,5 @@
 import service.NetworkService
 import service.RootService
-import service.ai.AIService
 import view.SopraApplication
 
 
@@ -8,7 +7,6 @@ fun main() {
     //AIService.minMaxAIGame()
     SopraApplication().show()
     //mainNetwork()
-    //repeat(10) { AIService.runAppropriate() }
     println("Application ended. Goodbye")
 }
 

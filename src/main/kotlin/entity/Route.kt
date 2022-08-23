@@ -7,7 +7,7 @@ package entity
  * @param color The color of the route
  * @param cities The two connected cities
  */
-open class Route(val length: Int, val color: Color, val cities: Pair<City, City>, var sibling: Route? = null) {
+open class Route(val length: Int, val color: Color, val cities: Pair<City, City>, val id: Int, var sibling: Route? = null) {
     /**
      * The complete length of the route(may differ when route is [Ferry])
      */
@@ -22,7 +22,7 @@ open class Route(val length: Int, val color: Color, val cities: Pair<City, City>
     protected open fun reducedToString() = "Route(length = $length, color = $color)"
     protected fun toStringCore(): String {
         val siblingText = sibling?.reducedToString() ?: "()"
-        return "${cities.first} to ${cities.second}, length=$length, color=$color, sibling: $siblingText"
+        return "${cities.first} to ${cities.second}, length=$length, color=$color, sibling: $siblingText, id: $id"
     }
     override fun toString(): String {
         return "Route(${toStringCore()})"
