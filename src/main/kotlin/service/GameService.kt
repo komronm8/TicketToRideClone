@@ -104,7 +104,6 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     fun chooseDestinationCards(playerName: String, cards: List<Int>){
         chosenCards[playerName] = cards
 
-        println((chosenCards.size >= state.players.size).toString() + " Test")
         if (chosenCards.size >= state.players.size){
             chooseDestinationCard(chosenCards)
             chosenCards.clear()

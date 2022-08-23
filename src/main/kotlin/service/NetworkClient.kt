@@ -223,8 +223,10 @@ class NetworkClient(playerName: String,
     @GameActionReceiver
     private fun onGameInitResponseMessageReceived(message: GameInitResponseMessage, sender: String){
         //check(networkService.connectionState == ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE){"Not in right state"}
-        networkService.rootService.gameService.chooseDestinationCards(sender, message.selectedDestinationTickets.map { card : DestinationTicket ->
-            networkService.rootService.game.currentState.currentPlayer.destinationCards.indexOfFirst { it.cities.toList().containsAll(
+        networkService.rootService.gameService.chooseDestinationCards(sender,
+            message.selectedDestinationTickets.map { card : DestinationTicket ->
+            networkService.rootService.game.currentState.players.first { it.name == sender }
+                .destinationCards.indexOfFirst { it.cities.toList().containsAll(
                 listOf(getCity(card.start.name), getCity(card.end.name))) && it.points == card.score
             }
         })
