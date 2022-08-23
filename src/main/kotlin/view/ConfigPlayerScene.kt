@@ -236,6 +236,9 @@ class ConfigPlayerScene(private val rootService: RootService):
         opacity = 0.5
     }
 
+    private var joinLobby = false
+    private var hostLobby = false
+
     private val joinSessionButton = Button(
         posX = 1015, posY = 650, width = 250, height = 84,
         visual = ImageVisual("\\ConfigScene\\joinSessionButton.png")
@@ -245,6 +248,7 @@ class ConfigPlayerScene(private val rootService: RootService):
                 rootService.network.joinGame("net22c", playerNameInput.text, sessionTextField.text)
                 showJoinLobby()
                 backCount++
+                joinLobby = true
             }
         }
     }
@@ -283,11 +287,6 @@ class ConfigPlayerScene(private val rootService: RootService):
                 rootService.network.hostGame("net22c", playerNameInput.text, sessionTextField.text)
                 hostSessionIDClipboard.text = "SID: " + sessionTextField.text
                 showHostLobby()
-                val players = rootService.network.client?.playersNames
-                if(players != null) {
-//                    player1LobbyLabel.text = "Player1: " + players.get(0)
-//                    println(players)
-                }
                 player1LobbyLabel.text = "Player1: " + playerNameInput.text
                 addComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
                 backCount++
@@ -435,22 +434,11 @@ class ConfigPlayerScene(private val rootService: RootService):
     }
 
     private fun showJoinLobby(){
-        val listOfPlayers = rootService.network.client?.playersNames
+
         removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
             onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
         statusLobbyLabel.text = "WAITING FOR HOST TO START THE GAME"
         addComponents(statusLabel, statusLobbyLabel)
-        if (listOfPlayers != null) {
-            if (listOfPlayers.isNotEmpty()) {
-                player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
-                player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
-                addComponents(player1LobbyLabel, player2LobbyLabel)
-                if(listOfPlayers[2] != null){
-                    player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
-                    addComponents(player3LobbyLabel)
-                }
-            }
-        }
     }
 
     private fun showHostLobby(){
@@ -462,11 +450,31 @@ class ConfigPlayerScene(private val rootService: RootService):
     }
 
     override fun refreshAfterPlayerJoin() {
-        showJoinLobby()
+        val listOfPlayers = rootService.network.client?.playersNames
+        if(joinLobby && listOfPlayers != null){
+            player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
+            player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
+            addComponents(player1LobbyLabel, player2LobbyLabel)
+            if(listOfPlayers[2] != null){
+                player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
+                addComponents(player3LobbyLabel)
+            }
+        }
+
+        if(hostLobby && listOfPlayers != null){
+            player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
+            if(listOfPlayers[2] != null){
+                player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
+                addComponents(player3LobbyLabel)
+            }
+        }
     }
 
     override fun refreshAfterPlayerDisconnect() {
+        val listOfPlayers = rootService.network.client?.playersNames
+        if(hostLobby && listOfPlayers != null){
 
+        }
     }
 
 }
