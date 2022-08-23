@@ -42,38 +42,16 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     private val redo: Button = Button(
         width = 68, height = 83, posY = 495, posX = 1550, visual = ImageVisual("GameScene/redo.png")
     ).apply {
-        isDisabled = true
-        opacity = 0.5
-
         onMouseClicked = {
             root.redo();
-
-            undo.isDisabled = false
-            undo.opacity = 1.0
-
-            if(root.game.currentStateIndex == root.game.states.size - 1) {
-                isDisabled = true
-                opacity = 0.5
-            }
         }
     }
 
     private val undo: Button = Button(
         width = 68, height = 83, posY = 495, posX = 1465, visual = ImageVisual("GameScene/undo.png")
     ).apply {
-        isDisabled = true
-        opacity = 0.5
-
         onMouseClicked = {
             root.undo();
-
-            redo.isDisabled = false
-            redo.opacity = 1.0
-
-            if(root.game.currentStateIndex == 0) {
-                isDisabled = true
-                opacity = 0.5
-            }
         }
     }
 
@@ -269,13 +247,24 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             }
         }
     }
+
+    private val chat: Pane<UIComponent> = Pane(1235, 860, 420, 100)
+    private val chatRecieved: ListView<String> = ListView(
+        posX = 0, posY = 0, width = chat.width, height = chat.height - 10, orientation = Orientation.VERTICAL,
+        visual = ImageVisual("GameScene/chat_bg.png"), font = Font(color = Color.WHITE, size = 10)
+    )
+    private val chatInput: TextField = TextField(
+        posY = chatRecieved.height, posX = 0, width = chat.width,
+        height = chat.height - chatRecieved.height, font = Font(size = 10)
+    )
     //</editor-fold>
 
     init {
         opacity = 1.0
         background = ImageVisual("GameScene/background.png")
 
-        playerBanner.addAll(playerTrainCarLabel, currentPlayerImage, currentPlayerPoints, redo, undo, showCurrentPlayerCards)
+        playerBanner.addAll(playerTrainCarLabel, currentPlayerImage,
+            currentPlayerPoints, redo, undo, showCurrentPlayerCards)
 
         addComponents(
             playerBanner, map,
@@ -284,6 +273,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             viewingLabel, viewingImage,
             destCardDeck, openTrainCards, trainCardDeck
         )
+
+        chat.addAll(chatRecieved, chatInput)
 
         buildMapButtons()
     }
@@ -330,7 +321,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                                 tunnelRoute = Triple(gameRoute, route[route.size - 2] as Int,
                                     route)
                             } else {
-                                placeMapButtons(route[route.size - 2] as Int, route)
+                                placeMapButtons(route[route.size - 2] as Int, route, playerIndex)
                             }
                         }
                     }
@@ -492,12 +483,30 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         }
     }
 
-    private fun placeMapButtons(routeStart: Int, route: Array<Any>) {
+    private fun updateRedoUndo() {
+        if(root.game.currentStateIndex < root.game.states.size - 1) {
+            redo.isDisabled = false
+            redo.opacity = 1.0
+        } else {
+            redo.isDisabled = true
+            redo.opacity = 0.5
+        }
+
+        if(root.game.currentStateIndex != 0) {
+            undo.isDisabled = false
+            undo.opacity = 1.0
+        } else {
+            undo.isDisabled = true
+            undo.opacity = 0.5
+        }
+    }
+
+    private fun placeMapButtons(routeStart: Int, route: Array<Any>, playerIndex: Int) {
         for (mapIndex in routeStart..routeStart + route.size - 3) {
             map.elementAt(mapIndex).visual = ImageVisual(
                 path = getBoardFieldPath(
                     (route[mapIndex - routeStart] as Pair<Any, Boolean>).second,
-                    root.game.currentState.currentPlayerIndex
+                    playerIndex
                 )
             )
             map.elementAt(mapIndex).isDisabled = true
@@ -655,6 +664,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
         setPlayerImages()
         showCards(root.game.currentState.currentPlayer)
+
+        updateRedoUndo()
     }
 
     override fun refreshAfterUndoRedo() {
@@ -694,7 +705,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
         val tunnel = tunnelRoute
         checkNotNull(tunnel)
-        placeMapButtons(tunnel.second, tunnel.third)
+        placeMapButtons(tunnel.second, tunnel.third, root.game.currentState.currentPlayerIndex)
     }
 
     override fun refreshAfterStartNewGame() {
@@ -705,9 +716,17 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             }
         }
 
+        for(player in root.game.currentState.players) {
+            if(player.isRemote) {
+                addComponents(chat)
+                break
+            }
+        }
+
         initializeOtherPlayerUI()
         updateDecks()
         focusChooseDestCards(0)
+        updateRedoUndo()
     }
     //</editor-fold>
 }
