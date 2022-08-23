@@ -28,6 +28,7 @@ const val DEST_CARDS: String = "GameScene/Cards/Destination/"
 @Suppress("UNCHECKED_CAST")
 class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Refreshable {
     private var tunnelRoute: Triple<Tunnel, Int, Array<Any>>? = null
+    private var paidTunnelWagons: List<WagonCard>? = null
     private val playerBanner: Pane<UIComponent> = Pane( 0, 480, 1920, 600 )
 
     //<editor-fold desc="Player banner UI">
@@ -326,6 +327,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
                         if(claimSuccess) {
                             if(gameRoute is Tunnel) {
+                                paidTunnelWagons = root.game.currentState.currentPlayer.
+                                    wagonCards.slice(selectedTrainCards)
                                 tunnelRoute = Triple(gameRoute, route[route.size - 2] as Int,
                                     route)
                             } else {
@@ -642,7 +645,13 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         selectedTrainCards.clear()
         showCards(root.game.currentState.currentPlayer)
 
-        focusUI(showTrainCards, "Pay for the tunnel", root.game.currentState.currentPlayerIndex) {
+        val paid = paidTunnelWagons
+        checkNotNull(paid)
+
+        val toPay: Pair<Int, entity.Color?> = root.playerActionService.tunnelPayAmount(paid)
+
+        focusUI(showTrainCards, "Pay for the tunnel: " + toPay.first + " cards of color " + toPay.second,
+            root.game.currentState.currentPlayerIndex) {
             val tunnel = tunnelRoute
             checkNotNull(tunnel)
             if(selectedTrainCards.size > 0) {
