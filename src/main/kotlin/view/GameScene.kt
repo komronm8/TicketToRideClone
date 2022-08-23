@@ -776,7 +776,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     override fun refreshAfterOneDestinationCard() {
         selectedDestCards.clear()
         root.game.currentState.players.firstOrNull {
-            it.name !in root.gameService.choosenCards
+            it.name !in root.gameService.chosenCards
         }?.also(this::showCards)
     }
     //</editor-fold>

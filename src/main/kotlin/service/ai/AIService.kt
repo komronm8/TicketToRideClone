@@ -2,6 +2,7 @@ package service.ai
 
 import entity.AIPlayer
 import entity.Player
+import entity.Route
 import service.GameService
 import service.RootService
 import view.Refreshable
@@ -22,7 +23,11 @@ class AIService(private val root: RootService) {
                 override fun refreshAfterEndGame(winner: Player) {
                     println("winner: ${winner.name}")
                     ended = winner
-                    }
+                }
+
+                override fun refreshAfterClaimRoute(route: Route) {
+                    super.refreshAfterClaimRoute(route)
+                }
             }
             root.addRefreshable(refreshable)
             val aiService = AIService(root)
