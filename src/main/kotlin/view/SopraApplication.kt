@@ -1,7 +1,6 @@
 package view
 
 import entity.Player
-import service.GameService
 import service.RootService
 import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.core.WindowMode
