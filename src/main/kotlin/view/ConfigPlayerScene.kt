@@ -236,7 +236,6 @@ class ConfigPlayerScene(private val rootService: RootService):
         opacity = 0.5
     }
 
-    private var joinLobby = false
     private var hostLobby = false
 
     private val joinSessionButton = Button(
@@ -248,7 +247,6 @@ class ConfigPlayerScene(private val rootService: RootService):
                 rootService.network.joinGame("net22c", playerNameInput.text, sessionTextField.text)
                 showJoinLobby()
                 backCount++
-                joinLobby = true
             }
         }
     }
@@ -358,6 +356,12 @@ class ConfigPlayerScene(private val rootService: RootService):
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
     )
 
+    //host disconnect notification
+    private val hostDisconnected = Label(
+        posX = 400, posY = 40, width = 373, height = 187, alignment = Alignment.CENTER,
+        visual = ImageVisual("\\ConfigScene\\bubble.png")
+    )
+
     //Methods
     /**
      * Function for adding the solo components of the config scene
@@ -414,14 +418,13 @@ class ConfigPlayerScene(private val rootService: RootService):
                     player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
                 backCount--
                 hostLobby = false
-                joinLobby = false
                 remove(backCount)
             }
         }
     }
 
     private fun removeOnlineComponents(){
-        removeComponents(joinButton, hostButton)
+        removeComponents(joinButton, hostButton, hostDisconnected)
     }
 
     private fun changeTypeButton( button: Button, label: Label, typeArray: Array<String> ){
@@ -460,6 +463,7 @@ class ConfigPlayerScene(private val rootService: RootService):
         checkNotNull(listOfPlayers)
         if( !hostLobby && playerNameInput.text == listOfPlayers[0] ){
             remove(backCount)
+            addComponents(hostDisconnected)
         }
         removeComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
         if( rootService.network.client != null && listOfPlayers.size > 0){
