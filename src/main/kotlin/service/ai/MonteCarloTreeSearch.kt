@@ -277,7 +277,7 @@ private inline fun RootService.claimRoutesMoves(
             emptyList()
     }
     val locomotiveCount = if (maxWithLocomotive == Color.JOKER) 0 else counts[Color.JOKER.ordinal]
-    var uniqueReplacements: LongArray?  = null
+    var uniqueReplacements: LongArray? = null
     var uniqueReplacementsCount = 0
     for (route in unclaimedRoutes) {
         if (currentPlayer.trainCarsAmount < route.completeLength) continue
@@ -310,7 +310,7 @@ private inline fun RootService.claimRoutesMoves(
                     hash = hash * 9 + count2[i]
                 }
                 for (i in 0 until uniqueReplacementsCount) {
-                    if  (checkNotNull(uniqueReplacements)[i] == hash) {
+                    if (checkNotNull(uniqueReplacements)[i] == hash) {
                         return@monteCarloClaimRoute
                     }
                 }
@@ -386,17 +386,42 @@ private inline fun RootService.monteCarloClaimRoute(
         is Tunnel -> {
             //prioritise using colored cards over using locomotives
             val allPrimaryCards = colorLists[route.color.ordinal]
+            val allLocomotive = colorLists[Color.JOKER.ordinal]
             var used = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
+            val primaryUsed = used.size
             if (used.size < route.length) {
-                val allLocomotive = colorLists[Color.JOKER.ordinal]
                 used = used + allLocomotive.subList(0, min(route.length - used.size, allLocomotive.size))
             }
-            playerActionService.claimRoute(route, used)
-            if (game.gameState != GameState.AFTER_CLAIM_TUNNEL) {
-                emit(AIMove.ClaimRoute(route, used, null))
-                return
+            val locomotiveUsed = used.size - primaryUsed
+
+            val used2 = if (game.currentState.wagonCardsStack.size >= 3) {
+                val required = game.currentState.wagonCardsStack.run { subList(max(0, size - 3), size) }
+                val remainingLocomotives = allLocomotive.subList(locomotiveUsed, allLocomotive.size)
+                //only locomotives
+                if (primaryUsed == 0) {
+                    val requiredCount = required.count { it.color == Color.JOKER }
+                    if (allLocomotive.size - locomotiveUsed >= requiredCount)
+                        allLocomotive.subList(locomotiveUsed, locomotiveUsed + requiredCount)
+                    else
+                        null
+                } else {
+                    val requiredCount = required.count { it.color == Color.JOKER || it.color == route.color }
+                    var used2 = allPrimaryCards.subList(
+                        primaryUsed, min(primaryUsed + requiredCount, allPrimaryCards.size)
+                    )
+                    if (used2.size < requiredCount) used2 = used2 + allLocomotive.subList(
+                        locomotiveUsed, min(locomotiveUsed + (requiredCount - used2.size), allLocomotive.size)
+                    )
+                    used2
+                }
+            } else {
+                playerActionService.claimRoute(route, used)
+                if (game.gameState != GameState.AFTER_CLAIM_TUNNEL) {
+                    emit(AIMove.ClaimRoute(route, used, null))
+                    return
+                }
+                game.currentState.monteCarloPayTunnel(route, used)
             }
-            val used2 = game.currentState.monteCarloPayTunnel(route, used)
             emit(AIMove.ClaimRoute(route, used, used2))
         }
 
