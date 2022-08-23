@@ -66,7 +66,7 @@ class AIService(private val root: RootService) {
             .shuffled()
             .subList(0, Random.nextInt(2, 6))
 
-        is AIPlayer.Strategy.MonteCarlo -> root.monteCarloChooseDestinationCards()
+        is AIPlayer.Strategy.MonteCarlo -> root.monteCarloChooseDestinationCards(player)
     }
 }
 

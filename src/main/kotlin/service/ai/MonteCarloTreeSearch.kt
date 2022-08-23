@@ -50,8 +50,17 @@ fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
 }
 
 //TODO improve algorithm
-fun RootService.monteCarloChooseDestinationCards(): List<Int> {
-    return listOf(0, 1, 2, 3, 4)
+fun RootService.monteCarloChooseDestinationCards(player: AIPlayer): List<Int> {
+    val destinationCards = ArrayList(player.destinationCards)
+    val destCardChooser = AIChooseDestinationCard();
+    val choice = destCardChooser.chooseDestinationCards(destinationCards)
+
+    val indices = ArrayList<Int>()
+
+    for(i in 0 until choice.size) {
+        indices.add(destinationCards.indexOf(choice[i]))
+    }
+    return indices.toList()
 }
 
 private fun State.findMoveMonteCarlo(c: Double, timeLimit: Int): AIMove {
