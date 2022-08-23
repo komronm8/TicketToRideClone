@@ -1,19 +1,26 @@
 package service.ai
 
 import entity.*
+import org.deeplearning4j.nn.api.NeuralNetwork
 import org.deeplearning4j.nn.api.OptimizationAlgorithm
 import org.deeplearning4j.nn.conf.BackpropType
+import org.deeplearning4j.nn.conf.ConvolutionMode
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration
-import org.deeplearning4j.nn.conf.layers.DenseLayer
-import org.deeplearning4j.nn.conf.layers.OutputLayer
+import org.deeplearning4j.nn.conf.layers.*
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor
+import org.deeplearning4j.nn.layers.convolution.Cnn3DLossLayer
+import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasFlatten
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork
 import org.deeplearning4j.nn.weights.WeightInit
 import org.nd4j.linalg.activations.Activation
 import org.nd4j.linalg.api.ndarray.INDArray
+import org.nd4j.linalg.api.ops.aggregates.Batch
+import org.nd4j.linalg.dataset.api.preprocessor.ImageFlatteningDataSetPreProcessor
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.indexing.NDArrayIndex
 import org.nd4j.linalg.learning.config.Adam
+import org.nd4j.linalg.lossfunctions.LossFunctions
 import service.GameService
 import service.RootService
 import service.constructGraph
@@ -29,6 +36,7 @@ import kotlin.random.Random
 
 class QLearning {
     val inputArray: INDArray = Nd4j.zeros(158,3)
+    val inputArray2: INDArray = Nd4j.zeros(158,3)
     var outputArray: INDArray = Nd4j.zeros(122)
     val random = java.util.Random()
 
@@ -324,23 +332,33 @@ class QLearning {
 
     fun getModel(): MultiLayerConfiguration {
         return NeuralNetConfiguration.Builder()
-            .weightInit(WeightInit.XAVIER)
-            .activation(Activation.SOFTMAX)
+            .weightInit(WeightInit.ONES)
+            .activation(Activation.RELU)
             .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-            .updater(Adam(0.05))
+            .updater(Adam())
             .list()
-            .layer(0,DenseLayer.Builder().nIn(158*3).nOut(300).build())
-            .layer(1,DenseLayer.Builder().nIn(300).nOut(300).build())
-            .layer(2,DenseLayer.Builder().nIn(300).nOut(300).build())
-            .layer(3,DenseLayer.Builder().nIn(300).nOut(300).build())
-            .layer(4,DenseLayer.Builder().nIn(300).nOut(300).build())
-            .layer(5,DenseLayer.Builder().nIn(300).nOut(122).build())
-            .layer(6, OutputLayer.Builder().nIn(122).nOut(122).build())
-            .backpropType(BackpropType.Standard)
+            .layer(DenseLayer.Builder().nIn(158*3).nOut(500).build())
+            .layer(DenseLayer.Builder().nIn(500).nOut(500).build())
+            .layer(DenseLayer.Builder().nIn(500).nOut(122).activation(Activation.RELU).build())
+            .layer(OutputLayer.Builder(LossFunctions.LossFunction.MSE).nIn(122).nOut(122).activation(Activation.RELU).build())
             .build()
     }
 
+    private fun calculateRewardMonteCarlo(state: State, mainPlayer: Player, aiMove: AIMove): Double{
+        val gameTreeRoot = GameTree(null, aiMove, state, state.startingChoices(), null)
+        val numPlayOffs = 3000
+        repeat(numPlayOffs) {
+            playoff(100.0, gameTreeRoot, mainPlayer)
+        }
+        val result = gameTreeRoot.wonCount.get().toDouble()/gameTreeRoot.visited.get().toDouble()
+        println("Monte Carlo: $result")
+        return result
+    }
+    fun INDArray.reshapeInput(): INDArray {
+        return reshape(1,158*3)
+    }
     fun learn(numEpisodes: Int, f: File? = null, self: Boolean = false){
+
         val model = if (f != null){
             MultiLayerNetwork.load(f, true)
         } else{
@@ -349,9 +367,11 @@ class QLearning {
         }
 
         model.init()
+
+        val alpha = 1
         val discount_factor = 1
-        var eps = 0.5
-        val eps_decay_factor = 0.999
+        var eps = 0.7
+        val eps_decay_factor = 0.995
         repeat(numEpisodes){
             val winnerReporter = WinnerReporter()
             val rootService = RootService()
@@ -362,27 +382,33 @@ class QLearning {
                 GameService.PlayerData("randy", false)
             ))
             rootService.gameService.chooseDestinationCard(List(3) { (0..4).toList() })
-            println("iteration:$it")
+            print("iteration:$it, eps: $eps\r")
             while (winnerReporter.report() == null){
                 var flag = false
                 var action = -1
+                var timeoutCounter = 0
                 var lastAction = action
                 if (random.nextFloat() < eps){
                     while (!actionLegal(action, rootService)){
                         action = random.nextInt(122)
+                        timeoutCounter++
+                        if(timeoutCounter > 50){
+                            flag = true
+                            break
+                        }
                     }
 
                 } else {
 
                     readState(rootService.game.currentState, inputArray)
-                    outputArray = model.output(inputArray.reshape(1,158*3))
+                    outputArray = model.output(inputArray.reshapeInput())
                     while (!actionLegal(action, rootService)){
                         if(action >= 0){
                             outputArray.putScalar(action.toLong(), -100)
                         }
                         action = outputArray.argMax().toString().toInt()
                         if (lastAction == action){
-                            print("same")
+                            println("same")
                             flag = true
                             break
                         }
@@ -393,37 +419,54 @@ class QLearning {
                 }
                 if (flag)
                     break
-                val aimove = toAiMove(action, rootService)
-                rootService.executeAiMove(aimove)
-                if (self)
-                    nextAiMove(rootService)
-                else
-                    rootService.randomNextTurn()
-                var reward = 0.0
-                reward = if (winnerReporter.winner?.name == "neuralNetwork"){
-                    println("reward1")
-                    1.0
-                } else if (winnerReporter.winner == null){
-                    0.5
-                } else {
-                    println("reward-1")
-                    0.0
+                val aiMove = toAiMove(action, rootService)
+                rootService.executeAiMove(aiMove)
+                if (!self) {
+                    while (true) {
+                        try {
+                            rootService.randomNextTurn()
+                            break
+                        } catch (e: Exception) {
+                            timeoutCounter++
+                            if (timeoutCounter > 50)
+                                flag = true
+                            break
+                        }
+                    }
                 }
-                val target = reward + discount_factor * model.output(inputArray.reshape(1,158*3)).max(0).getDouble(0)
-                val targetVector = model.output(inputArray.reshape(1,158*3))
-                targetVector.putScalar(action.toLong(), target)
-                model.fit(inputArray.reshape(1,158*3), targetVector)
+                if (flag)
+                    break
+                val reward = if (winnerReporter.winner ==  rootService.game.currentState.currentPlayer){
+                    println(winnerReporter.winner?.name)
+                    0.0
+                } else if (winnerReporter.winner == null){
+//                    calculateRewardMonteCarlo(rootService.game.currentState, rootService.game.currentState.players[0], aiMove)
+                     1.0
+                } else {
+                    println(winnerReporter.winner?.name)
+                    model.save(File("model_tmp.h5"))
+                    10.0
+                }
 
+                // fit q function
+                val currentQ = model.output(inputArray.reshapeInput()).getDouble(action)
+
+                readState(rootService.game.currentState,inputArray2) // q(newState)
+                val target = currentQ + alpha*(reward + discount_factor * model.output(inputArray2.reshapeInput()).max(0).getDouble(0) - currentQ)
+//                println("old value ${currentQ}, new Value: ${target}")
+                val targetVector = model.output(inputArray.reshapeInput())
+                targetVector.putScalar(action.toLong(), target)
+                model.fit(inputArray.reshapeInput(), targetVector)
             }
         }
         model.save(File("model.h5"))
     }
 
-    private val playModel = MultiLayerNetwork.load(File("model-gut.h5"), true)
+    private val playModel = MultiLayerNetwork.load(File("model_tmp.h5"), true)
 
     fun nextAiMove(root: RootService){
         readState(root.game.currentState, inputArray)
-        outputArray = playModel.output(inputArray.reshape(1,158*3))
+        outputArray = playModel.output(inputArray.reshapeInput())
         var action = -1
         while (!actionLegal(action, root)){
             if(action >= 0){
