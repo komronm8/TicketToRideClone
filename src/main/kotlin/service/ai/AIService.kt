@@ -27,12 +27,12 @@ class AIService(private val root: RootService) {
             root.addRefreshable(refreshable)
             val aiService = AIService(root)
             aiService.root.gameService.startNewGame(players)
-            val destinationCards = aiService.root.game.currentState.players.map {
-                aiService.chooseDestinationCards(it as AIPlayer)
+            val destinationCards = aiService.root.game.currentState.players.associate {
+                it.name to aiService.chooseDestinationCards(it as AIPlayer)
             }
             root.gameService.chooseDestinationCard(destinationCards)
             while (refreshable.ended == null) {
-                aiService.executePlayerMove()
+                aiService.executePlayerMove { it() }
             }
             return checkNotNull(refreshable.ended)
         }
@@ -52,12 +52,12 @@ class AIService(private val root: RootService) {
      * executes the move of an AI player
      * @throws ClassCastException if the current player is not a [AIPlayer]
      */
-    fun executePlayerMove() {
+    fun executePlayerMove(execute: (()->Unit)->Unit) {
         val player = root.game.currentState.currentPlayer
         player as AIPlayer
         when (player.strategy) {
-            AIPlayer.Strategy.Random -> root.randomNextTurn()
-            is AIPlayer.Strategy.MonteCarlo -> root.monteCarloMove(player.strategy.c, player.strategy.timeLimit)
+            AIPlayer.Strategy.Random -> execute { root.randomNextTurn() }
+            is AIPlayer.Strategy.MonteCarlo -> root.monteCarloMove(player.strategy.c, player.strategy.timeLimit, execute)
         }
     }
 

@@ -48,9 +48,11 @@ private class WinnerReporter(private var winner: Player? = null) : Refreshable {
  * but the exploration factor allows it, to visit rarely visited moves
  * @param timeLimit the time limit for the calculation
  */
-fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
+fun RootService.monteCarloMove(c: Double, timeLimit: Int, execute: (() -> Unit) -> Unit) {
     val move = game.currentState.findMoveMonteCarlo(c, timeLimit)
-    executeMontyMove(move)
+    execute {
+        executeMontyMove(move)
+    }
 }
 
 //TODO improve algorithm
@@ -61,7 +63,7 @@ fun RootService.monteCarloChooseDestinationCards(player: AIPlayer): List<Int> {
 
     val indices = ArrayList<Int>()
 
-    for(i in 0 until choice.size) {
+    for (i in 0 until choice.size) {
         indices.add(destinationCards.indexOf(choice[i]))
     }
     return indices.toList()
@@ -168,6 +170,7 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
         }
         return result
     }
+
     fun List<Route>.removeFromUnclaimed(route: Route, allowDoubleRoutes: Boolean): List<Route> {
         return if (route.sibling == null || allowDoubleRoutes) {
             without(route)
@@ -185,7 +188,7 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
             var newUnclaimed = parentChoices.unclaimedRoutes
             var newDraw = parentChoices.drawableWagonCards
             if (move.route !is Tunnel || (currentPlayer.claimedRoutes.any { it === move.route })) {
-                newUnclaimed= newUnclaimed.removeFromUnclaimed(move.route, state.players.size > 2)
+                newUnclaimed = newUnclaimed.removeFromUnclaimed(move.route, state.players.size > 2)
             }
             if (move.route is Tunnel || newDraw.isEmpty()) {
                 newDraw = uniqueDrawWagonCard(state)
@@ -300,9 +303,10 @@ private inline fun RootService.claimRoutesMoves(
         }
     }
 }
+
 /**
-* Claims a route with behavior specific to monte-carlo search's strength
-*/
+ * Claims a route with behavior specific to monte-carlo search's strength
+ */
 private inline fun RootService.monteCarloClaimRoute(
     route: Route,
     colorLists: List<List<WagonCard>>,

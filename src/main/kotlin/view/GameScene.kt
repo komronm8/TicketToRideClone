@@ -2,6 +2,7 @@ package view
 
 import entity.*
 import service.RootService
+import service.ai.AIService
 import tools.aqua.bgw.components.container.LinearLayout
 import tools.aqua.bgw.components.gamecomponentviews.CardView
 import tools.aqua.bgw.components.layoutviews.Pane
@@ -549,7 +550,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         }
 
         val focusPlayer: Player = root.game.currentState.players[playerIndex]
-
         if(focusPlayer is AIPlayer || focusPlayer.isRemote) {
             unFocus()
             focusChooseDestCards( playerIndex + 1)
@@ -560,7 +560,9 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             if(selectedDestCards.size >= 2) {
                 unFocus()
                 focusChooseDestCards(playerIndex + 1)
-                root.gameService.chooseDestinationCards(selectedDestCards)
+                root.gameService.chooseDestinationCards(
+                    root.game.currentState.players[playerIndex].name, selectedDestCards
+                )
             }
         }
     }
@@ -661,8 +663,9 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
         setPlayerImages()
         showCards(root.game.currentState.currentPlayer)
-
         updateRedoUndo()
+        //TODO
+        AIService(root).executePlayerMove { BoardGameApplication.runOnGUIThread(it) }
     }
 
     override fun refreshAfterUndoRedo() {

@@ -3,10 +3,7 @@ package service
 import entity.*
 import java.lang.Integer.max
 import java.util.*
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFails
-import kotlin.test.assertSame
+import kotlin.test.*
 
 /**
  * Tests the [PlayerActionService.claimRoute] and [PlayerActionService.afterClaimTunnel]
@@ -15,7 +12,7 @@ import kotlin.test.assertSame
 class TestClaimRoute {
     private fun PlayerActionService.assertFailedClaim(route: Route, cards: List<WagonCard>) {
         val state = root.game.currentState
-        assertFails { claimRoute(route, cards) }
+        assertNotNull(claimRoute(route, cards))
         assertSame(state, root.game.currentState)
     }
 
@@ -147,13 +144,11 @@ class TestClaimRoute {
         val lah = checkNotNull(cities["Lahti"])
         val kuo = checkNotNull(cities["Kuopio"])
         val oul = checkNotNull(cities["Oulu"])
-        root.playerActionService.assertFailedClaim(
-            hel.findRoute(ima),
-            List(3) { state1.players.first().wagonCards.first() }
-        )
-        root.playerActionService.assertFailedClaim(hel.findRoute(ima), List(3) { WagonCard(Color.RED) })
-        root.playerActionService.assertFailedClaim(hel.findRoute(ima), List(3) { WagonCard(Color.RED) })
-        root.playerActionService.assertFailedClaim(hel.findRoute(lah), List(3) { WagonCard(Color.BLACK) })
+        assertFails {
+            root.playerActionService.claimRoute(hel.findRoute(ima),
+                List(3) { state1.players.first().wagonCards.first() }
+            )
+        }
         val newPlayerCards =
             listOf(WagonCard(Color.JOKER)) +
                     List(4) { WagonCard(Color.RED) } +
@@ -163,6 +158,12 @@ class TestClaimRoute {
             copy(wagonCards = newPlayerCards)
         }
         root.insert(state2)
+        assertFails {
+            root.playerActionService.claimRoute(hel.findRoute(ima), List(3) { WagonCard(Color.RED) })
+        }
+        assertFails {
+            root.playerActionService.claimRoute(hel.findRoute(lah), List(3) { WagonCard(Color.BLACK) })
+        }
         //2x Red
         root.playerActionService.assertFailedClaim(hel.findRoute(ima), newPlayerCards.subList(1, 3))
         //4x Red
