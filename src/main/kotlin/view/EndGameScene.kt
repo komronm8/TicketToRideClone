@@ -143,19 +143,4 @@ class EndGameScene(private val rootService: RootService):
     }
 
 
-    //Just to test if everything works as planned
-//    init {
-//        val list = mutableListOf(
-//            PlayerData("Max", false),
-//            PlayerData("Alex", false),
-//            PlayerData("Sam", false)
-//        )
-//        rootService.gameService.startNewGame(list)
-//        val game = rootService.game.currentState
-//        game.players[0].points = 50
-//        game.players[1].points = 32
-//        game.players[2].points = 68
-//        refreshAfterEndGame()
-//    }
-
 }

@@ -64,6 +64,9 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
 
         root.game.gameState = GameState.CHOOSE_DESTINATION_CARD
         onAllRefreshables(Refreshable::refreshAfterStartNewGame)
+        if (root.game.currentState.players.any { !it.isRemote }){
+            root.network.startNewHostedGame(state)
+        }
     }
 
     /**

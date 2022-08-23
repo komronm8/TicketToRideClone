@@ -1,15 +1,13 @@
 package view
 
-import entity.City
-import entity.Player
-import entity.Route
-import entity.WagonCard
+import entity.*
 import service.RootService
 import tools.aqua.bgw.components.container.LinearLayout
 import tools.aqua.bgw.components.gamecomponentviews.CardView
 import tools.aqua.bgw.components.layoutviews.Pane
 import tools.aqua.bgw.components.uicomponents.*
 import tools.aqua.bgw.core.*
+import tools.aqua.bgw.event.MouseEvent
 import tools.aqua.bgw.event.ScrollDirection
 import tools.aqua.bgw.util.CoordinatePlain
 import tools.aqua.bgw.util.Font
@@ -27,6 +25,7 @@ const val DEST_CARDS: String = "GameScene/Cards/Destination/"
  */
 @Suppress("UNCHECKED_CAST")
 class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Refreshable {
+    private var tunnelRoute: Triple<Tunnel, Int, Array<Any>>? = null
     private val playerBanner: Pane<UIComponent> = Pane( 0, 480, 1920, 600 )
 
     //<editor-fold desc="Player banner UI">
@@ -43,38 +42,16 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     private val redo: Button = Button(
         width = 68, height = 83, posY = 495, posX = 1550, visual = ImageVisual("GameScene/redo.png")
     ).apply {
-        isDisabled = true
-        opacity = 0.5
-
         onMouseClicked = {
             root.redo();
-
-            undo.isDisabled = false
-            undo.opacity = 1.0
-
-            if(root.game.currentStateIndex == root.game.states.size - 1) {
-                isDisabled = true
-                opacity = 0.5
-            }
         }
     }
 
     private val undo: Button = Button(
         width = 68, height = 83, posY = 495, posX = 1465, visual = ImageVisual("GameScene/undo.png")
     ).apply {
-        isDisabled = true
-        opacity = 0.5
-
         onMouseClicked = {
             root.undo();
-
-            redo.isDisabled = false
-            redo.opacity = 1.0
-
-            if(root.game.currentStateIndex == 0) {
-                isDisabled = true
-                opacity = 0.5
-            }
         }
     }
 
@@ -163,6 +140,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     private var destCardsToView: Array<CardView> = arrayOf()
     private var destCardIndex: Int = 0
 
+    private val selectedDestCards: MutableList<Int> = mutableListOf()
+
     private fun setDestCards(cards: Collection<CardView>): Unit {
         destCardsToView = cards.toTypedArray();
         setDestCardIndex(0)
@@ -176,7 +155,15 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         showDestCards.clear()
         for(count in destCardIndex..min (destCardIndex + 4, destCardsToView.size - 1)) {
             destCardsToView[count].onMouseClicked = {
-                println("Ja")
+                val me = destCardsToView[count]
+
+                if(me.opacity == 1.0) {
+                    me.opacity = 0.5
+                    selectedDestCards.add(count)
+                } else {
+                    me.opacity = 1.0
+                    selectedDestCards.remove(count)
+                }
             }
             showDestCards.add(destCardsToView[count])
         }
@@ -217,6 +204,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     }
     //</editor-fold>
 
+    //<editor-fold desc="Card Deck">
     private val viewingLabel: Label = Label(
         posX = 725, posY = 870, width = 500, text = "You are viewing the cards of: ",
         font = Font(size = 28, color = Color.WHITE)
@@ -225,19 +213,58 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
     private val destCardDeck: Button = Button(
         posX = 1670, posY = 0, width = 245, height = 163
-    )
+    ).apply { onMouseClicked = { focusDrawDestCards() } }
     private val openTrainCards: LinearLayout<CardView> = LinearLayout<CardView>(
         posX = 1460, posY = 355, width = 670, height = 200, spacing = 5, alignment = Alignment.CENTER
     ).apply { rotation = 270.0 }
     private val trainCardDeck: Button = Button(
         posX = 1670, posY = 768, width = 245, height = 160
+    ).apply { onMouseClicked = { root.playerActionService.drawWagonCard(-1) } }
+    //</editor-fold>
+
+    //<editor-fold desc="Focus Elements">
+    private val leftFocus: Label = Label(visual = ColorVisual.BLACK).apply { opacity = 0.75 }
+    private val topFocus: Label = Label(visual = ColorVisual.BLACK).apply { opacity = 0.75 }
+    private val bottomFocus: Label = Label(visual = ColorVisual.BLACK).apply { opacity = 0.75 }
+    private val rightFocus: Label = Label(visual = ColorVisual.BLACK).apply { opacity = 0.75 }
+    private val focusButton: Button = Button(
+        width = 800, height = 75, posX = 1100, posY = 975, visual = ImageVisual("wood_btn.jpg"),
+        font = Font(size = 28, fontWeight = Font.FontWeight.BOLD, color = Color.WHITE)
     )
+    private val focusPlayer: Label = Label(width = 156, height = 156, posX = 822, posY = 5)
+    //</editor-fold>
+
+    //<editor-fold desc="Net and AI">
+    private var tempAISpeed: Int = 0;
+    private val aiSpeedButton: Button = Button(
+        posY = 2, posX = 867, width = 186, height = 74, visual = ImageVisual("GameScene/ai_3x.png")
+    ).apply {
+        onMouseClicked = {
+            when(tempAISpeed) {
+                0 -> { visual = ImageVisual("GameScene/ai_1x.png"); tempAISpeed = 2 }
+                2 -> { visual = ImageVisual("GameScene/ai_2x.png"); tempAISpeed = 1 }
+                1 -> { visual = ImageVisual("GameScene/ai_3x.png"); tempAISpeed = 0 }
+            }
+        }
+    }
+
+    private val chat: Pane<UIComponent> = Pane(1235, 860, 420, 100)
+    private val chatRecieved: ListView<String> = ListView(
+        posX = 0, posY = 0, width = chat.width, height = chat.height - 10, orientation = Orientation.VERTICAL,
+        visual = ImageVisual("GameScene/chat_bg.png"), font = Font(color = Color.WHITE, size = 10)
+    )
+    private val chatInput: TextField = TextField(
+        posY = chatRecieved.height, posX = 0, width = chat.width,
+        height = chat.height - chatRecieved.height, font = Font(size = 10)
+    )
+    //</editor-fold>
 
     init {
         opacity = 1.0
         background = ImageVisual("GameScene/background.png")
 
-        playerBanner.addAll(playerTrainCarLabel, currentPlayerImage, currentPlayerPoints, redo, undo, showCurrentPlayerCards)
+        playerBanner.addAll(playerTrainCarLabel, currentPlayerImage,
+            currentPlayerPoints, redo, undo, showCurrentPlayerCards)
 
         addComponents(
             playerBanner, map,
@@ -247,10 +274,9 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             destCardDeck, openTrainCards, trainCardDeck
         )
 
+        chat.addAll(chatRecieved, chatInput)
+
         buildMapButtons()
-        showCards(root.game.currentState.currentPlayer)
-        initializeOtherPlayerUI()
-        updateDecks()
     }
 
     private fun City.findRoute(to: City): Route = checkNotNull(routes.find {
@@ -258,6 +284,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                 || (it.cities.first === to && it.cities.second === this)
     })
 
+    //<editor-fold desc="Initialize">
     private fun buildMapButtons() {
         for(route in mapRouteButtons) {
             for(fieldIndex in 0..route.size-3) {
@@ -265,7 +292,9 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
                 map.add(Button(
                     posX = transform.first.first, posY = transform.first.second, width = 36, height = 13,
+                    visual = ColorVisual.TRANSPARENT
                 ).apply {
+                    componentStyle = "-fx-background-insets: 0 0 12 0;"
                     rotation = transform.first.third
 
                     val stations = route.last() as Pair<String, String>
@@ -276,83 +305,29 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                         val gameRoute = checkNotNull(cities[stations.first])
                             .findRoute(checkNotNull(cities[stations.second]))
 
-                        try {
+                        var claimSuccess: Boolean = true
+                        val playerIndex: Int = root.game.currentState.currentPlayerIndex
+
+                        try{
                             root.playerActionService.claimRoute(gameRoute,
                                 root.game.currentState.currentPlayer.wagonCards.slice(selectedTrainCards))
                         } catch (e: Exception) {
-                            //TODO ROUTE CANNOT BE CLAIMED (VIELLEICHT)
+                            focusErrorMessage("An error occurred while claiming the route:\n" + e.message)
+                            claimSuccess = false
                         }
 
-                        val routeStart = route[route.size - 2] as Int
-                        for(mapIndex in routeStart..routeStart + route.size - 3)
-                            map.elementAt(mapIndex).visual = ImageVisual(
-                                path = getBoardFieldPath((route[mapIndex - routeStart] as Pair<Any, Boolean>).second)
-                            )
+                        if(claimSuccess) {
+                            if(gameRoute is Tunnel) {
+                                tunnelRoute = Triple(gameRoute, route[route.size - 2] as Int,
+                                    route)
+                            } else {
+                                placeMapButtons(route[route.size - 2] as Int, route, playerIndex)
+                            }
+                        }
                     }
                 })
             }
         }
-    }
-
-    private fun getBoardFieldPath(isTrain: Boolean): String {
-        return when(isTrain) {
-            false -> getPlayerFolder(root.game.currentState.currentPlayerIndex) + "wagon.png"
-            true -> getPlayerFolder(root.game.currentState.currentPlayerIndex) + "train.png"
-        }
-    }
-
-    private fun getPlayerFolder(index: Int): String {
-        return when(index) {
-            0 -> "GameScene/Player/Purple/"
-            1 -> "GameScene/Player/Yellow/"
-            else -> "GameScene/Player/Red/"
-        }
-    }
-
-    private fun showCards(playerToExpose: Player): Unit {
-        val trainCards: MutableList<CardView> = mutableListOf()
-        val destCards: MutableList<CardView> = mutableListOf()
-
-        for(wagonIndex in playerToExpose.wagonCards.indices) {
-            trainCards.add(CardView(
-                front = ImageVisual(TRAIN_CARDS + playerToExpose.wagonCards[wagonIndex].color.toString() + ".png")
-            ).apply {
-                if(playerToExpose != root.game.currentState.currentPlayer)
-                    isDisabled = true
-                else {
-                    if(selectedTrainCards.contains(wagonIndex))
-                        opacity = 0.5
-                }
-            })
-        }
-        for(dest in playerToExpose.destinationCards) {
-            val start: String = dest.cities.first.name.lowercase().
-                replace('å', 'a').replace('ø', 'o').
-                replace('ö', 'o').replace(" ", "")
-            val end: String = dest.cities.second.name.lowercase().
-                replace('å', 'a').replace('ø', 'o').
-                replace('ö', 'o').replace(" ", "")
-
-            destCards.add(CardView(front = ImageVisual("$DEST_CARDS$start-$end.png")))
-        }
-
-        for(index in root.game.currentState.players.indices) {
-            if(root.game.currentState.players[index] == playerToExpose) {
-                viewingImage.visual = ImageVisual(getPlayerFolder(index) + "player_profile.png")
-                break
-            }
-        }
-
-        setTrainCards(trainCards)
-        setDestCards(destCards)
-    }
-
-    private fun setCardsScrollable(cards: Array<CardView>, currentIndex: Int, left: Button, right: Button): Unit {
-        left.isDisabled = (currentIndex == 0)
-        left.opacity = when(left.isDisabled) { true -> 0.5; false -> 1.0 }
-
-        right.isDisabled = (cards.size == currentIndex + 5 || cards.size <= 5)
-        right.opacity = when(right.isDisabled) { true -> 0.5; false -> 1.0 }
     }
 
     private fun initializeOtherPlayerUI(): Unit {
@@ -382,6 +357,73 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         }
 
         setPlayerImages()
+    }
+    //</editor-fold>
+
+    private fun getBoardFieldPath(isTrain: Boolean, playerIndex: Int): String {
+        return when(isTrain) {
+            false -> getPlayerFolder(playerIndex) + "wagon.png"
+            true -> getPlayerFolder(playerIndex) + "train.png"
+        }
+    }
+
+    private fun getPlayerFolder(index: Int): String {
+        return when(index) {
+            0 -> "GameScene/Player/Yellow/"
+            1 -> "GameScene/Player/Purple/"
+            else -> "GameScene/Player/Red/"
+        }
+    }
+
+    private fun showCards(playerToExpose: Player): Unit {
+        val trainCards: MutableList<CardView> = mutableListOf()
+        val destCards: MutableList<CardView> = mutableListOf()
+
+        for(wagonIndex in playerToExpose.wagonCards.indices) {
+            trainCards.add(CardView(
+                front = ImageVisual(TRAIN_CARDS + playerToExpose.wagonCards[wagonIndex].color.toString() + ".png")
+            ).apply {
+                if(playerToExpose != root.game.currentState.currentPlayer ||
+                    playerToExpose is AIPlayer || playerToExpose.isRemote)
+                    isDisabled = true
+                else {
+                    if(selectedTrainCards.contains(wagonIndex))
+                        opacity = 0.5
+                }
+            })
+        }
+        for(dest in playerToExpose.destinationCards) {
+            val start: String = dest.cities.first.name.lowercase().
+                replace('å', 'a').replace('ø', 'o').
+                replace('ö', 'o').replace(" ", "")
+            val end: String = dest.cities.second.name.lowercase().
+                replace('å', 'a').replace('ø', 'o').
+                replace('ö', 'o').replace(" ", "")
+
+            destCards.add(CardView(front = ImageVisual("$DEST_CARDS$start-$end.png")).apply {
+                if(root.game.gameState != GameState.CHOOSE_DESTINATION_CARD ||
+                    playerToExpose is AIPlayer || playerToExpose.isRemote)
+                    isDisabled = true
+            })
+        }
+
+        for(index in root.game.currentState.players.indices) {
+            if(root.game.currentState.players[index] == playerToExpose) {
+                viewingImage.visual = ImageVisual(getPlayerFolder(index) + "player_profile.png")
+                break
+            }
+        }
+
+        setTrainCards(trainCards)
+        setDestCards(destCards)
+    }
+
+    private fun setCardsScrollable(cards: Array<CardView>, currentIndex: Int, left: Button, right: Button): Unit {
+        left.isDisabled = (currentIndex == 0)
+        left.opacity = when(left.isDisabled) { true -> 0.5; false -> 1.0 }
+
+        right.isDisabled = (cards.size == currentIndex + 5 || cards.size <= 5)
+        right.opacity = when(right.isDisabled) { true -> 0.5; false -> 1.0 }
     }
 
     private fun setPlayerImages(): Unit {
@@ -416,22 +458,275 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     }
 
     private fun updateDecks() {
-        val destDeckSize: Int = min((root.game.currentState.destinationCards.size / 10 * 10) + 10, 100)
-        destCardDeck.visual = ImageVisual(DEST_CARDS + "Back/back-" + destDeckSize.toString() + ".png")
+        if(root.game.currentState.destinationCards.isNotEmpty()) {
+            val destDeckSize: Int = min((root.game.currentState.destinationCards.size / 10 * 10) + 10, 100)
+            destCardDeck.visual = ImageVisual(DEST_CARDS + "Back/back-" + destDeckSize.toString() + ".png")
+        } else {
+            destCardDeck.visual = Visual.EMPTY
+            destCardDeck.isDisabled = true
+        }
 
-        val trainDeckSize: Int = min((root.game.currentState.wagonCardsStack.size / 10 * 10) + 10, 100)
-        trainCardDeck.visual = ImageVisual(TRAIN_CARDS + "Back/back-" + trainDeckSize.toString() + ".png")
+        if(root.game.currentState.wagonCardsStack.isNotEmpty()) {
+            val trainDeckSize: Int = min((root.game.currentState.wagonCardsStack.size / 10 * 10) + 10, 100)
+            trainCardDeck.visual = ImageVisual(TRAIN_CARDS + "Back/back-" + trainDeckSize.toString() + ".png")
+        } else {
+            trainCardDeck.visual = Visual.EMPTY
+            trainCardDeck.isDisabled = true
+        }
 
+        openTrainCards.clear()
         for (openCard in root.game.currentState.openCards) {
             openTrainCards.add(CardView( width = 120, height = 186,
                 front = ImageVisual(TRAIN_CARDS + openCard.color.toString() + ".png")).apply {
-                    onMouseClicked = { println("Nein") }
+                    onMouseClicked = { root.playerActionService.drawWagonCard(openTrainCards.indexOf(this)) }
             })
         }
     }
 
+    private fun updateRedoUndo() {
+        if(root.game.currentStateIndex < root.game.states.size - 1) {
+            redo.isDisabled = false
+            redo.opacity = 1.0
+        } else {
+            redo.isDisabled = true
+            redo.opacity = 0.5
+        }
+
+        if(root.game.currentStateIndex != 0) {
+            undo.isDisabled = false
+            undo.opacity = 1.0
+        } else {
+            undo.isDisabled = true
+            undo.opacity = 0.5
+        }
+    }
+
+    private fun placeMapButtons(routeStart: Int, route: Array<Any>, playerIndex: Int) {
+        for (mapIndex in routeStart..routeStart + route.size - 3) {
+            map.elementAt(mapIndex).visual = ImageVisual(
+                path = getBoardFieldPath(
+                    (route[mapIndex - routeStart] as Pair<Any, Boolean>).second,
+                    playerIndex
+                )
+            )
+            map.elementAt(mapIndex).isDisabled = true
+        }
+    }
+
+    //<editor-fold desc="Focus Functions">
+    private fun focusUI(toFocus: Any, focusText: String, playerIndex: Int, focusAction: (MouseEvent) -> Unit): Unit {
+        val focus = when(toFocus){
+            is UIComponent -> toFocus
+            is LinearLayout<*> -> toFocus
+            else -> Label(posX = 1920, posY = 1080, width = 0, height = 0)
+        }
+
+        leftFocus.apply { posX = 0.0; posY = 0.0; height = 1080.0; width = focus.posX }
+        topFocus.apply { posX = focus.posX; posY = 0.0; height = focus.posY; width = focus.width }
+        bottomFocus.apply { posX = focus.posX; posY = focus.posY + focus.height;
+            height = 1080 - focus.posY - focus.height; width = focus.width }
+        rightFocus.apply { posX = focus.posX + focus.width; posY = 0.0;
+            height = 1080.0; width = 1920 - focus.posX - focus.width }
+
+        if(!focusText.isEmpty()) {
+            focusButton.text = focusText
+            focusButton.onMouseClicked = focusAction
+        }
+
+        focusPlayer.visual = ImageVisual(getPlayerFolder(playerIndex) + "player_profile.png")
+
+        addComponents(leftFocus, topFocus, bottomFocus, rightFocus, focusButton, focusPlayer)
+    }
+
+    private fun unFocus(): Unit {
+        removeComponents(focusButton, leftFocus, topFocus, bottomFocus, rightFocus, focusPlayer)
+    }
+
+    private fun focusChooseDestCards(playerIndex: Int): Unit {
+        if(playerIndex < 0 || playerIndex >= root.game.currentState.players.size) {
+            focusUI(0, "Wait for other players...", 0) {}
+            return
+        }
+
+        val focusPlayer: Player = root.game.currentState.players[playerIndex]
+
+        if(focusPlayer is AIPlayer || focusPlayer.isRemote) {
+            unFocus()
+            focusChooseDestCards( playerIndex + 1)
+            return
+        }
+
+        selectedDestCards.clear()
+
+        showCards(focusPlayer)
+        focusUI(showDestCards, "Choose at least two cards and continue...", playerIndex) {
+            if(selectedDestCards.size >= 2) {
+                unFocus()
+                focusChooseDestCards(playerIndex + 1)
+                root.gameService.chooseDestinationCards(selectedDestCards)
+            }
+        }
+    }
+
+    private fun focusErrorMessage(message: String) {
+        val errorMessage: Label = Label(
+            width = 1000, height = 500, posY = 290, posX = 460, visual = ImageVisual("wood_btn.jpg"),
+            font = Font(size = 28, fontWeight = Font.FontWeight.BOLD, color = Color.WHITE), text = message
+        )
+        addComponents(errorMessage)
+        println(message)
+
+        focusUI(errorMessage, "Continue", root.game.currentState.currentPlayerIndex) {
+            removeComponents(errorMessage)
+            unFocus()
+        }
+    }
+
+    private fun focusDrawDestCards() {
+        val drawDestCards: MutableList<Int> = mutableListOf()
+
+        val destCardsToDraw: LinearLayout<CardView> = LinearLayout<CardView>(
+            posX = 625, posY = 440, width = 670, height = 200, spacing = 5,
+            alignment = Alignment.CENTER, visual = ImageVisual("wood_btn.jpg")
+        ).apply {
+            val destCardStack = root.game.currentState.destinationCards
+            val cardsToDraw = destCardStack.subList(max(0, destCardStack.size - 3), destCardStack.size)
+
+            for (index in cardsToDraw.indices) {
+                val start: String = cardsToDraw[index].cities.first.name.lowercase().
+                replace('å', 'a').replace('ø', 'o').
+                replace('ö', 'o').replace(" ", "")
+                val end: String = cardsToDraw[index].cities.second.name.lowercase().
+                replace('å', 'a').replace('ø', 'o').
+                replace('ö', 'o').replace(" ", "")
+
+                add(CardView(front = ImageVisual("$DEST_CARDS$start-$end.png")).apply {
+                    onMouseClicked = {
+                        if(opacity == 1.0) {
+                            opacity = 0.5
+                            drawDestCards.add(index)
+                        }
+                        else {
+                            opacity = 1.0
+                            drawDestCards.remove(index)
+                        }
+                    }
+                })
+            }
+        }
+
+        addComponents(destCardsToDraw)
+
+        focusUI(destCardsToDraw, "Draw selected cards", root.game.currentState.currentPlayerIndex) {
+            if(drawDestCards.size > 0) {
+                root.playerActionService.drawDestinationCards(drawDestCards)
+                removeComponents(destCardsToDraw)
+                unFocus()
+            }
+        }
+    }
+
+    private fun focusPayTunnel(): Unit {
+        selectedTrainCards.clear()
+        showCards(root.game.currentState.currentPlayer)
+
+        focusUI(showTrainCards, "Pay for the tunnel", root.game.currentState.currentPlayerIndex) {
+            val tunnel = tunnelRoute
+            checkNotNull(tunnel)
+            if(selectedTrainCards.size > 0) {
+                try {
+                    root.playerActionService.afterClaimTunnel(
+                        tunnel.first,
+                        root.game.currentState.currentPlayer.wagonCards.slice(selectedTrainCards)
+                    )
+                } catch (e: Exception) {
+                    focusButton.text = e.message + " Pay for the tunnel"
+                }
+            } else {
+                root.playerActionService.afterClaimTunnel(tunnel.first, null)
+            }
+        }
+    }
+    //</editor-fold>
+
+    //<editor-fold desc="Refreshables">
+    override fun refreshAfterChooseDestinationCard() {
+        unFocus()
+        showCards(root.game.currentState.currentPlayer)
+    }
+
     override fun refreshAfterNextPlayer() {
+        if(components.contains(topFocus))
+            unFocus()
 
         selectedTrainCards.clear()
+        selectedDestCards.clear()
+
+        setPlayerImages()
+        showCards(root.game.currentState.currentPlayer)
+
+        updateRedoUndo()
     }
+
+    override fun refreshAfterUndoRedo() {
+        refreshAfterNextPlayer()
+    }
+
+    override fun refreshAfterDrawWagonCards() {
+        if(root.game.gameState == GameState.DREW_WAGON_CARD) {
+            focusUI(
+                Label(
+                    posX = trainCardDeck.posX, posY = destCardDeck.posY + destCardDeck.height,
+                    width = trainCardDeck.width,
+                    height = trainCardDeck.posY - (destCardDeck.posY + destCardDeck.height) + trainCardDeck.height
+                ), "Choose another card",
+                root.game.currentState.currentPlayerIndex
+            ) {}
+        }
+        else
+            unFocus()
+
+        updateDecks()
+    }
+
+    override fun refreshAfterDrawDestinationCards() {
+        updateDecks()
+    }
+
+    override fun refreshAfterClaimRoute() {
+        if(root.game.gameState == GameState.AFTER_CLAIM_TUNNEL) {
+            showCards(root.game.currentState.currentPlayer)
+            focusPayTunnel()
+        }
+    }
+
+    override fun refreshAfterAfterClaimTunnel() {
+        unFocus()
+
+        val tunnel = tunnelRoute
+        checkNotNull(tunnel)
+        placeMapButtons(tunnel.second, tunnel.third, root.game.currentState.currentPlayerIndex)
+    }
+
+    override fun refreshAfterStartNewGame() {
+        for(player in root.game.currentState.players) {
+            if(player is AIPlayer) {
+                addComponents(aiSpeedButton)
+                break
+            }
+        }
+
+        for(player in root.game.currentState.players) {
+            if(player.isRemote) {
+                addComponents(chat)
+                break
+            }
+        }
+
+        initializeOtherPlayerUI()
+        updateDecks()
+        focusChooseDestCards(0)
+        updateRedoUndo()
+    }
+    //</editor-fold>
 }

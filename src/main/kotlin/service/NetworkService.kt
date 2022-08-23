@@ -1,7 +1,10 @@
 package service
 
-import entity.AIPlayer
+import entity.*
 import service.message.*
+import service.message.City
+import service.message.Color
+import service.message.Player
 import tools.aqua.bgw.util.Stack
 import java.io.File
 import java.io.InputStream
@@ -38,7 +41,6 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         if (!connect(secret, name)) {
             error("Connection failed")
         }
-        updateConnectionState(ConnectionState.CONNECTED)
 
         if (sessionID.isNullOrBlank()) {
             client?.createGame(GAME_ID, "Welcome!")
@@ -74,6 +76,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         return if (newClient.connect()) {
             this.client = newClient
+            updateConnectionState(ConnectionState.CONNECTED)
             true
         } else {
             false
@@ -93,7 +96,6 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         if (!connect(secret, name)) {
             error("Connection failed")
         }
-        updateConnectionState(ConnectionState.CONNECTED)
 
         val game = client?.joinGame(sessionID, "Hello!")
         game.toString()
@@ -138,18 +140,18 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      *
      * @throws IllegalStateException if [connectionState] != [ConnectionState.WAITING_FOR_GUEST]
      */
-    fun startNewHostedGame(playerNames: List<String>) {
+    fun startNewHostedGame(game: State) {
         check(connectionState == ConnectionState.WAIT_FOR_PLAYERS)
         { "currently not prepared to start a new hosted game." }
-
+        /**
         val playerData: MutableList<GameService.PlayerData> = mutableListOf()
         playerNames.forEach {name ->
-            playerData.add(GameService.PlayerData(name,true))
+        playerData.add(GameService.PlayerData(name,true))
         }
 
         rootService.gameService.startNewGame(playerData.toList())
         val game = rootService.game.currentState
-
+        */
         val colors = Stack(PlayerColor.RED, PlayerColor.WHITE, PlayerColor.PURPLE)
 
         val message = GameInitMessage(
@@ -164,7 +166,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
                 DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
                     mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) })
 
-        updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE)
+        updateConnectionState(ConnectionState.PLAY_TURN)
         client?.sendGameActionMessage(message)
 
     }
@@ -173,7 +175,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
     /**
      * send a [DebugMessage]
      *
-     * @throws when not connected to a game
+     * @throws IllegalStateException when not connected to a game
      */
     fun sendDebugMessage() {
         check(connectionState != ConnectionState.DISCONNECTED) { "Not connected to a game" }
@@ -205,7 +207,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         client?.sendGameActionMessage(message)
         }
 
-    fun receiveDebugResponseMessage(message: DebugMessage) {
+    fun sendDebugResponseMessage(message: DebugMessage) {
         check(connectionState != ConnectionState.DISCONNECTED) { "Not connected to a game" }
         var consistent: Boolean = true
 
@@ -238,10 +240,83 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
     }
 
-    fun sendDrawDestinationTicket(selectedDestinationTickets: List<DestinationTicket>){
+    fun sendDrawDestinationTicket(selectedDestinationTickets: List<DestinationCard>){
+        check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send GameInitResponse" }
 
+        val tmp: MutableList<DestinationTicket> = mutableListOf()
+        selectedDestinationTickets.forEach{
+            tmp.add(DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))))
+        }
+
+        val message = GameInitResponseMessage(tmp.toList())
+        client?.sendGameActionMessage(message)
+        updateConnectionState(ConnectionState.WAIT_FOR_TURN)
+    }
+    fun GameInitResponseMessage(selectedCards: List<DestinationCard>){
+        check(connectionState == ConnectionState.BUILD_GAMEINIT_RESPONSE) { "Not in a state to send GameInitResponse" }
+
+        val tmp: MutableList<DestinationTicket> = mutableListOf()
+        selectedCards.forEach{
+            tmp.add(DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))))
+        }
+
+        val message = GameInitResponseMessage(tmp.toList())
+        client?.sendGameActionMessage(message)
+        updateConnectionState(ConnectionState.WAIT_FOR_TURN)
     }
 
+    fun sendDrawTrainCardMessage(selectedTrainCards: List<WagonCard>,newTrainCardStack: List<WagonCard>?){
+        val tmpWC: MutableList<Color> = mutableListOf()
+        selectedTrainCards.forEach{
+            tmpWC.add(it.color.maptoMessageColor())
+        }
+        if(newTrainCardStack != null) {
+            val tmpNewStack: MutableList<Color> = mutableListOf()
+            newTrainCardStack.forEach{
+                tmpWC.add(it.color.maptoMessageColor())
+            }
+            val message = DrawTrainCardMessage(tmpWC,tmpNewStack)
+            client?.sendGameActionMessage(message)
+        }else{
+            val message = DrawTrainCardMessage(tmpWC,null)
+            client?.sendGameActionMessage(message)
+        }
+    }
+
+    fun sendClaimARounteMessage(claimedRoute: Route,newTrainCardStack: List<WagonCard>?,
+                                playedTrainCards: List<WagonCard>, drawnTunnelCards: List<Tunnel>?){
+        val tmpTrainCards: MutableList<Color> = mutableListOf()
+        playedTrainCards.forEach {
+            tmpTrainCards.add(it.color.maptoMessageColor())
+        }
+
+        var tmpNewTrainCards: MutableList<Color>? = mutableListOf()
+        var tmpTunnelCards: MutableList<Color>? = mutableListOf()
+
+        if (newTrainCardStack != null){
+            newTrainCardStack.forEach {
+                tmpNewTrainCards?.add(it.color.maptoMessageColor())
+            }
+        }else{
+            tmpNewTrainCards = null
+        }
+
+        if (drawnTunnelCards != null){
+            drawnTunnelCards.forEach {
+                tmpTunnelCards?.add(it.color.maptoMessageColor())
+            }
+        }else{
+            tmpTunnelCards = null
+        }
+
+        val message = ClaimARouteMessage(mapToCityEnum(readIdentifierFromCSV(claimedRoute.cities.second.name,false)),
+            mapToCityEnum(readIdentifierFromCSV(claimedRoute.cities.first.name,false)),tmpNewTrainCards,tmpTrainCards,
+            claimedRoute.color.maptoMessageColor(),tmpTunnelCards)
+
+        client?.sendGameActionMessage(message)
+    }
     data class CityMapping(
         val identifier: String,
         val cityName: String
@@ -313,4 +388,5 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             else -> throw IllegalArgumentException("$str not in enum.")
         }
     }
+
 }
