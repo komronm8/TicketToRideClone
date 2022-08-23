@@ -104,6 +104,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     fun chooseDestinationCards(playerName: String, cards: List<Int>){
         chosenCards[playerName] = cards
 
+        println((chosenCards.size >= state.players.size).toString() + " Test")
         if (chosenCards.size >= state.players.size){
             chooseDestinationCard(chosenCards)
             chosenCards.clear()
@@ -111,9 +112,11 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
 
         if (root.game.currentState.players.any { it.isRemote } && playerName == root.network.client?.playerName){
             root.network.GameInitResponseMessage(cards.map(state.players.first { it.name == playerName }.destinationCards::get))
+            BoardGameApplication.runOnGUIThread {onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)}
         }
-
-        BoardGameApplication.runOnGUIThread {onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)}
+        else{
+            BoardGameApplication.runOnGUIThread {onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)}
+        }
     }
 
     /**
