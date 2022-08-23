@@ -413,6 +413,8 @@ class ConfigPlayerScene(private val rootService: RootService):
                 removeComponents(hostStartButton, hostSessionIDClipboard,
                     player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
                 backCount--
+                hostLobby = false
+                joinLobby = false
                 remove(backCount)
             }
         }
@@ -456,9 +458,14 @@ class ConfigPlayerScene(private val rootService: RootService):
     override fun refreshAfterPlayerJoin() {
         val listOfPlayers = rootService.network.client?.playersNames
         checkNotNull(listOfPlayers)
+        if( !hostLobby && playerNameInput.text == listOfPlayers[0] ){
+            remove(backCount)
+        }
         removeComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
-        player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
-        addComponents(player1LobbyLabel)
+        if(listOfPlayers.size > 0){
+            player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
+            addComponents(player1LobbyLabel)
+        }
         if(listOfPlayers.size >= 2){
             player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
             addComponents(player2LobbyLabel)
