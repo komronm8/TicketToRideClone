@@ -64,7 +64,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
 
         root.game.gameState = GameState.CHOOSE_DESTINATION_CARD
         onAllRefreshables(Refreshable::refreshAfterStartNewGame)
-        if (root.game.currentState.players.any { !it.isRemote }){
+        if (root.game.currentState.players.any { it.isRemote }){
             root.network.startNewHostedGame(state)
         }
     }
@@ -80,7 +80,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         cards.forEach {
             assert(it.size in 2..5)
             assert(it.distinct().size == it.size)
-            it.forEach { index -> assert(index in 0..5) }
+            it.forEach { index -> assert(index in 0 until 5) }
         }
         val newPlayers = state.players.zip(cards).map {
             it.first.copy(destinationCards = it.second.map(it.first.destinationCards::get))

@@ -22,7 +22,7 @@ class AIService(private val root: RootService) {
                 override fun refreshAfterEndGame(winner: Player) {
                     println("winner: ${winner.name}")
                     ended = winner
-                }
+                    }
             }
             root.addRefreshable(refreshable)
             val aiService = AIService(root)

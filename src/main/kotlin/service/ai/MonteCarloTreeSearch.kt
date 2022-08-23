@@ -56,7 +56,7 @@ fun RootService.monteCarloMove(c: Double, timeLimit: Int) {
 //TODO improve algorithm
 fun RootService.monteCarloChooseDestinationCards(player: AIPlayer): List<Int> {
     val destinationCards = ArrayList(player.destinationCards)
-    val destCardChooser = AIChooseDestinationCard();
+    val destCardChooser = AIChooseDestinationCard()
     val choice = destCardChooser.chooseDestinationCards(destinationCards)
 
     val indices = ArrayList<Int>()
@@ -292,7 +292,7 @@ private inline fun RootService.claimRoutesMoves(
                 playerActionService.canClaimWithCounts(route, colorCards, locomotiveCount, otherCardCount, false)
             }
         }
-        if (!canClaim || (doubleRoutes && currentPlayer.claimedRoutes.any { route === it })) continue
+        if (canClaim != null || (doubleRoutes && currentPlayer.claimedRoutes.any { route === it })) continue
         monteCarloClaimRoute(route, coloredCards) {
             emit(it)
             game.gameState = GameState.DEFAULT
@@ -329,7 +329,7 @@ private inline fun RootService.monteCarloClaimRoute(
                         cards = cards + rest.shuffled().take((route.completeLength - cards.size) * 3)
                     }
                     // if the route cannot be claimed with the cards given, do not emit the move
-                    if (playerActionService.canClaimRoute(route, cards, true)) {
+                    if (playerActionService.canClaimRoute(route, cards, true) == null) {
                         emit(AIMove.ClaimRoute(route, cards, null))
                     }
                 }

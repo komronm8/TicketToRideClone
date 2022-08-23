@@ -49,9 +49,8 @@ private fun State.getPossibleMoves(): List<RandomMove> {
     cities.flatMap { it.routes }.forEach { routes[it] = Unit }
     val exploreRoot = RootService().apply { game = Game(this@getPossibleMoves) }
     val validRoutes = routes.keys.filter {
-        kotlin.runCatching {
-            exploreRoot.playerActionService.validateClaimRoute(currentPlayer, it, currentPlayer.wagonCards, false)
-        }.isSuccess
+        exploreRoot.playerActionService
+            .validateClaimRoute(currentPlayer, it, currentPlayer.wagonCards, false) == null
     }.map(RandomMove::ClaimRoute)
     val destinationDrawAction = if (destinationCards.isNotEmpty()) {
         listOf(RandomMove.DrawDestinationCard)

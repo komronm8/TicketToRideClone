@@ -9,6 +9,15 @@ import kotlin.math.min
  * The service responsible for actions performed by the player
  */
 class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
+    sealed interface ClaimRouteFailure {
+        object NotEnoughTrainCars: ClaimRouteFailure
+        object SiblingClaimedBySamePlayer: ClaimRouteFailure
+        object RouteAlreadyClaimed: ClaimRouteFailure
+        object SiblingClaimedByAnotherPlayer: ClaimRouteFailure
+        object NotEnoughCards: ClaimRouteFailure
+        object TooManyCards: ClaimRouteFailure
+        object IllegalCards: ClaimRouteFailure
+    }
     private inline val state: State
         get() = root.game.currentState
 
@@ -151,17 +160,17 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      * @param route the route to be claimed. Must either be unclaimed or a double route
      * @param usedCards the cards that are used to claim the route. Must be distinct and in possession of the player
      */
-    fun claimRoute(route: Route, usedCards: List<WagonCard>) {
+    fun claimRoute(route: Route, usedCards: List<WagonCard>): ClaimRouteFailure? {
         when (root.game.gameState) {
             GameState.DEFAULT -> {}
             else -> throw IllegalStateException("Illegal state for claim route")
         }
         usedCards.forEachIndexed { index, wagonCard ->
             usedCards.forEachIndexed { index2, wagonCard2 ->
-                check(wagonCard !== wagonCard2 || index == index2)
+                require(wagonCard !== wagonCard2 || index == index2)
             }
         }
-        validateClaimRoute(state.currentPlayer, route, usedCards, true)
+        validateClaimRoute(state.currentPlayer, route, usedCards, true)?.also { return it }
         val newPlayerCard = state.currentPlayer.wagonCards.filter { card -> usedCards.none { it === card } }
         if (route is Tunnel && state.wagonCardsStack.size + state.discardStack.size > 0) {
             var newDiscardStack = state.discardStack
@@ -187,6 +196,8 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 )
             )
             root.game.gameState = GameState.AFTER_CLAIM_TUNNEL
+            onAllRefreshables(Refreshable::refreshAfterClaimRoute)
+            return null
         } else {
             val newPlayer = state.updateCurrentPlayer {
                 copy(
@@ -200,9 +211,8 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             root.insert(state.copy(discardStack = newDiscardStack, players = newPlayer))
             onAllRefreshables(Refreshable::refreshAfterClaimRoute)
             root.gameService.nextPlayer()
-            return
+            return null
         }
-        onAllRefreshables(Refreshable::refreshAfterClaimRoute)
     }
 
     /**
@@ -212,19 +222,26 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      * @param usedCards the cards which are used to claim the route
      * @param exhaustive sets whether the [usedCards] must suffice exactly to claim the route
      */
-    fun validateClaimRoute(currentPlayer: Player, route: Route, usedCards: List<WagonCard>, exhaustive: Boolean) {
-        check(currentPlayer.trainCarsAmount >= route.completeLength)
+    fun validateClaimRoute(currentPlayer: Player, route: Route, usedCards: List<WagonCard>, exhaustive: Boolean): ClaimRouteFailure? {
+        if (currentPlayer.trainCarsAmount < route.completeLength) {
+            return ClaimRouteFailure.NotEnoughTrainCars
+        }
         val doubleRoute = state.players.size > 2
         state.players.forEach { player ->
             player.claimedRoutes.forEach {
-                if (it === route)
-                    throw IllegalStateException("Route $route already claimed")
-                if (it.sibling === route && (!doubleRoute || player === state.currentPlayer))
-                    throw IllegalStateException("Cannot claim double route: $route")
+                if (it === route) {
+                    return ClaimRouteFailure.RouteAlreadyClaimed
+                }
+                if (it.sibling === route && !doubleRoute) {
+                    return ClaimRouteFailure.SiblingClaimedBySamePlayer
+                }
+                if (it.sibling === route && player === state.currentPlayer) {
+                    return ClaimRouteFailure.SiblingClaimedByAnotherPlayer
+                }
             }
         }
-        check(usedCards.all { card -> currentPlayer.wagonCards.any { it === card } })
-        check(canClaimRoute(route, usedCards, exhaustive))
+        require(usedCards.all { card -> currentPlayer.wagonCards.any { it === card } })
+        return canClaimRoute(route, usedCards, exhaustive)
     }
 
     /**
@@ -233,7 +250,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      * @param cards The cards which are used to claim the route
      * @param exhaustive Sets whether the cards suffice exactly
      */
-    fun canClaimRoute(route: Route, cards: List<WagonCard>, exhaustive: Boolean): Boolean {
+    fun canClaimRoute(route: Route, cards: List<WagonCard>, exhaustive: Boolean): ClaimRouteFailure? {
         val counts = IntArray(9) { 0 }
         for (card in cards) {
             counts[card.color.ordinal] += 1
@@ -268,7 +285,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      */
     fun canClaimWithCounts(
         route: Route, colorCardCount: Int, locomotiveCount: Int, otherCards: Int, exhaustive: Boolean
-    ): Boolean {
+    ): ClaimRouteFailure? {
         var otherCardCount = otherCards
         when {
             route is Ferry -> {
@@ -279,35 +296,54 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                     route.length - colorCardCount
                 }
                 val required = requiredCount + (route.ferries - locomotiveCount) - (otherCardCount / 3)
-                return if (exhaustive)
-                    required == 0 && otherCardCount % 3 == 0
-                else
-                    required <= 0
+                if (exhaustive) {
+                    if (required < 0 || (otherCardCount % 3 > 0)) return ClaimRouteFailure.TooManyCards
+                    if (required > 0) return ClaimRouteFailure.NotEnoughCards
+                    return null
+                } else {
+                    if (required > 0) return ClaimRouteFailure.NotEnoughCards
+                    return null
+                }
             }
 
             route is Tunnel -> {
-                val required = route.length + -locomotiveCount - colorCardCount
-                return if (exhaustive)
-                    required == 0 && otherCardCount == 0
-                else
-                    required <= 0
+                val required = route.length - locomotiveCount - colorCardCount
+                if (exhaustive && otherCardCount != 0) return ClaimRouteFailure.IllegalCards
+                if (exhaustive) {
+                    if (required < 0) return ClaimRouteFailure.TooManyCards
+                    if (required > 0) return ClaimRouteFailure.NotEnoughCards
+                    return null
+                } else {
+                    if (required > 0) return ClaimRouteFailure.NotEnoughCards
+                    return null
+                }
             }
 
             route.isMurmanskLieksa() -> {
                 val mixedBudget = otherCardCount + locomotiveCount
                 val required = route.length - colorCardCount - (mixedBudget / 4)
-                return if (exhaustive)
-                    required == 0 && mixedBudget % 4 == 0
-                else
-                    required <= 0
+                if (exhaustive) {
+                    if (required < 0 || (otherCardCount % 4 > 0)) return ClaimRouteFailure.TooManyCards
+                    if (required > 0) return ClaimRouteFailure.NotEnoughCards
+                    return null
+                } else {
+                    if (required > 0) return ClaimRouteFailure.NotEnoughCards
+                    return null
+                }
             }
 
             else -> {
                 val required = route.length - colorCardCount
-                return if (exhaustive)
-                    required == 0 && otherCardCount == 0 && locomotiveCount == 0
-                else
-                    required <= 0
+
+                if (exhaustive) {
+                    if (otherCardCount != 0 || locomotiveCount != 0) return ClaimRouteFailure.IllegalCards
+                    if (required > 0) return ClaimRouteFailure.NotEnoughCards
+                    if (required < 0) return ClaimRouteFailure.TooManyCards
+                    return null
+                } else {
+                    if (required > 0) return ClaimRouteFailure.NotEnoughCards
+                    return null
+                }
             }
         }
     }
