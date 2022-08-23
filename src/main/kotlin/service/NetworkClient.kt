@@ -210,7 +210,7 @@ class NetworkClient(playerName: String,
                 cities.first { networkService.readIdentifierFromCSV(card.end.toString(), true) == it.name })) },
             cities = cities, players = players, openCards = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(0,5),
             wagonCardsStack = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(5, message.trainCardStack.size)))
-        networkService.updateConnectionState(ConnectionState.WAIT_FOR_TURN)
+        networkService.updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE)
         networkService.rootService.game.gameState = GameState.CHOOSE_DESTINATION_CARD
 
         BoardGameApplication.runOnGUIThread { networkService.onAllRefreshables { refreshAfterStartNewGame() } }
