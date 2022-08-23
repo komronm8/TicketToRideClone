@@ -344,16 +344,9 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             root.gameService.nextPlayer()
             return
         }
-        if (usedCards.all { it.color == Color.JOKER }) {
-            val locomotives = requiredCards.count { it.color == Color.JOKER }
-            check(cards.all { it.color == Color.JOKER } && locomotives == cards.size)
-        } else {
-            assert(route.color != Color.JOKER) { "Tunnel should not be gray!" }
-            val required = requiredCards.count { it.color == route.color || it.color == Color.JOKER }
-            val given = cards.count { it.color == route.color || it.color == Color.JOKER }
-            check(required == given)
-            check(given == cards.size)
-        }
+        val (required, allowedColor) = tunnelPayAmount(usedCards)
+        val given = cards.count { it.color == Color.JOKER || it.color == allowedColor }
+        check(required == given && given == cards.size)
         val newPlayerHand = betweenState.currentPlayer.wagonCards.filter { card -> cards.none { it === card } }
         val newPlayers = betweenState.updateCurrentPlayer {
             copy(
@@ -374,6 +367,16 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         root.game.gameState = GameState.DEFAULT
         onAllRefreshables(Refreshable::refreshAfterAfterClaimTunnel)
         root.gameService.nextPlayer()
+    }
+
+    fun tunnelPayAmount(usedCards: List<WagonCard>): Pair<Int, Color?> {
+        val required = state.wagonCardsStack.run { subList(max(0, size - 3), size) }
+        val colorCard = usedCards.firstOrNull { it.color != Color.JOKER }
+        if (colorCard == null) {
+            return required.count { it.color == Color.JOKER } to null
+        } else {
+            return required.count { it.color == colorCard.color || it.color == Color.JOKER} to colorCard.color
+        }
     }
 
     /**
