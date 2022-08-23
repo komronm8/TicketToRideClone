@@ -441,12 +441,14 @@ class ConfigPlayerScene(private val rootService: RootService):
         statusLobbyLabel.text = "WAITING FOR HOST TO START THE GAME"
         addComponents(statusLabel, statusLobbyLabel)
         if (listOfPlayers != null) {
-            player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
-            player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
-            addComponents(player1LobbyLabel, player2LobbyLabel)
-            if(listOfPlayers[2] != null){
-                player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
-                addComponents(player3LobbyLabel)
+            if (listOfPlayers.isNotEmpty()) {
+                player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
+                player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
+                addComponents(player1LobbyLabel, player2LobbyLabel)
+                if(listOfPlayers[2] != null){
+                    player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
+                    addComponents(player3LobbyLabel)
+                }
             }
         }
     }
