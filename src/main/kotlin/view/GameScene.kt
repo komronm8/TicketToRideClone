@@ -1,6 +1,7 @@
 package view
 
 import entity.*
+import service.PlayerActionService
 import service.RootService
 import service.ai.AIService
 import tools.aqua.bgw.components.container.LinearLayout
@@ -325,24 +326,48 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                     name = stations.first + " - " + stations.second
 
                     onMouseClicked = {
-                        val cities = root.game.currentState.cities.associateBy { it.name }
-                        var gameRoute: Route? = null
+                        if(!(root.game.currentState.currentPlayer is AIPlayer ||
+                                    root.game.currentState.currentPlayer.isRemote)) {
+                            val cities = root.game.currentState.cities.associateBy { it.name }
+                            var gameRoute: Route? = null
 
-                        for (searchRoute in checkNotNull(cities[stations.first])
-                            .findRoute(checkNotNull(cities[stations.second]))) {
-                            if (searchRoute.id == stations.third) {
-                                gameRoute = searchRoute
-                                break
+                            for (searchRoute in checkNotNull(cities[stations.first])
+                                .findRoute(checkNotNull(cities[stations.second]))) {
+                                if (searchRoute.id == stations.third) {
+                                    gameRoute = searchRoute
+                                    break
+                                }
+                            }
+
+                            val foundRoute = gameRoute
+                            checkNotNull(foundRoute)
+
+                            val claimSuccess = root.playerActionService.claimRoute(
+                                foundRoute,
+                                root.game.currentState.currentPlayer.wagonCards.slice(selectedTrainCards)
+                            )
+
+                            if (claimSuccess != null) {
+                                focusErrorMessage(
+                                    when (claimSuccess) {
+                                        PlayerActionService.ClaimRouteFailure.RouteAlreadyClaimed
+                                        -> "Route already claimed"
+                                        PlayerActionService.ClaimRouteFailure.IllegalCards
+                                        -> "Wrong cards selected"
+                                        PlayerActionService.ClaimRouteFailure.NotEnoughCards
+                                        -> "Not enough cards selected"
+                                        PlayerActionService.ClaimRouteFailure.NotEnoughTrainCars
+                                        -> "Not enough train cards selected"
+                                        PlayerActionService.ClaimRouteFailure.SiblingClaimedByAnotherPlayer
+                                        -> "Another player claimed this double route"
+                                        PlayerActionService.ClaimRouteFailure.SiblingClaimedBySamePlayer
+                                        -> "You already claimed one of this double route"
+                                        PlayerActionService.ClaimRouteFailure.TooManyCards
+                                        -> "You have selected too many cards"
+                                    }
+                                )
                             }
                         }
-
-                        val foundRoute = gameRoute
-                        checkNotNull(foundRoute)
-
-                        val claimSuccess = root.playerActionService.claimRoute(
-                            foundRoute,
-                            root.game.currentState.currentPlayer.wagonCards.slice(selectedTrainCards)
-                        ) == null
                     }
                 })
             }
@@ -484,6 +509,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         if (root.game.currentState.destinationCards.isNotEmpty()) {
             val destDeckSize: Int = min((root.game.currentState.destinationCards.size / 10 * 10) + 10, 100)
             destCardDeck.visual = ImageVisual(DEST_CARDS + "Back/back-" + destDeckSize.toString() + ".png")
+            destCardDeck.isDisabled =
+                root.game.currentState.currentPlayer is AIPlayer || root.game.currentState.currentPlayer.isRemote
         } else {
             destCardDeck.visual = Visual.EMPTY
             destCardDeck.isDisabled = true
@@ -492,6 +519,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         if (root.game.currentState.wagonCardsStack.isNotEmpty()) {
             val trainDeckSize: Int = min((root.game.currentState.wagonCardsStack.size / 10 * 10) + 10, 100)
             trainCardDeck.visual = ImageVisual(TRAIN_CARDS + "Back/back-" + trainDeckSize.toString() + ".png")
+            trainCardDeck.isDisabled =
+                root.game.currentState.currentPlayer is AIPlayer || root.game.currentState.currentPlayer.isRemote
         } else {
             trainCardDeck.visual = Visual.EMPTY
             trainCardDeck.isDisabled = true
@@ -503,6 +532,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                 width = 120, height = 186,
                 front = ImageVisual(TRAIN_CARDS + openCard.color.toString() + ".png")
             ).apply {
+                isDisabled =
+                    root.game.currentState.currentPlayer is AIPlayer || root.game.currentState.currentPlayer.isRemote
                 onMouseClicked = {
                     try {
                         root.playerActionService.drawWagonCard(openTrainCards.indexOf(this))
@@ -749,6 +780,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
         setPlayerImages()
         showCards(root.game.currentState.currentPlayer)
+        updateDecks()
         updateRedoUndo()
         println(root.game.currentState.currentPlayerIndex)
         //TODO
