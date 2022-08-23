@@ -288,6 +288,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                 } catch (e: Exception) {
                     println("Message send failure: " + e.message)
                 }
+                chatRecieved.items.add("[You]: " + text)
                 text = ""
             }
         }
@@ -672,6 +673,11 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             focusUI(0, "Wait for other players...", 0) {}
             return
         }
+
+        println("PLAYER CHECK")
+        println(root.game.currentState.players[playerIndex])
+        println(root.game.currentState.players[playerIndex].isRemote)
+        println(root.game.currentState.players[playerIndex] is AIPlayer)
 
         val focusPlayer: Player = root.game.currentState.players[playerIndex]
         if (focusPlayer is AIPlayer || focusPlayer.isRemote) {
