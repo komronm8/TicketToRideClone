@@ -674,11 +674,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             return
         }
 
-        println("PLAYER CHECK")
-        println(root.game.currentState.players[playerIndex])
-        println(root.game.currentState.players[playerIndex].isRemote)
-        println(root.game.currentState.players[playerIndex] is AIPlayer)
-
         val focusPlayer: Player = root.game.currentState.players[playerIndex]
         if (focusPlayer is AIPlayer || focusPlayer.isRemote) {
             unFocus()
@@ -686,6 +681,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             return
         }
 
+        showCards(root.game.currentState.players[playerIndex])
         focusUI(showDestCards, "Choose at least two cards and continue...", playerIndex) {
             if (selectedDestCards.size >= 2) {
                 unFocus()
@@ -878,7 +874,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
         initializeOtherPlayerUI()
         updateDecks()
-        showCards(root.game.currentState.currentPlayer)
+        //showCards(root.game.currentState.currentPlayer)
         focusChooseDestCards(0)
         updateRedoUndo()
         // TODO
