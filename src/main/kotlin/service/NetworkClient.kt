@@ -23,7 +23,7 @@ class NetworkClient(playerName: String,
     var sID: String? = null
 
     /** the name of the opponent player; can be null if no message from the opponent received yet */
-    var playersNames: MutableList<String?> = mutableListOf()
+    var playersNames: MutableList<String> = mutableListOf()
     var test: String = ""
 
     /**
