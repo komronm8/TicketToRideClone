@@ -8,8 +8,7 @@ import kotlin.math.min
 /**
  * Counts the occurrence of [WagonCard] of each color and saves the count at the [entity.Color.ordinal] index
  */
-fun List<WagonCard>.counts(): IntArray {
-    val counts = IntArray(9) { 0 }
+fun List<WagonCard>.counts(counts: IntArray = IntArray(9) { 0 }): IntArray {
     for (card in this) counts[card.color.ordinal] += 1
     return counts
 }
