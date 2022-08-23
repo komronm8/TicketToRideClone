@@ -1,13 +1,25 @@
+import entity.AIPlayer
+import service.GameService
 import service.ai.AIService
+import service.ai.QLearning
+import java.io.File
+
 
 fun main() {
-    var montyCount = 0
-    repeat(30) {
-        val gc = it + 1
-        val winner = AIService.runAppropriate()
-        if (winner.name =="monty") montyCount += 1
-        println("games: $gc, wins: $montyCount, wr: ${montyCount.toDouble() / gc.toDouble()}, winner: ${winner.name}")
-    }
-    //println(MonteCarloOptimizer.optimizeC(35))
-    println("Application ended. Goodbye")
+
+//    var netWon = 0
+//    repeat(10) {
+//        val result = AIService.runWithAI(
+//            listOf(
+//                GameService.PlayerData("monty", false, AIPlayer.Strategy.MonteCarlo(500)),
+//                GameService.PlayerData("randy",false, AIPlayer.Strategy.Random),
+//                GameService.PlayerData("q", false, AIPlayer.Strategy.neuralNet),
+//            )
+//        )
+//        if (result is AIPlayer && result.strategy is AIPlayer.Strategy.neuralNet) {
+//            netWon += 1
+//        }
+//        println("wr: ${netWon / (it.toDouble() + 1)}")
+//    }
+    QLearning().learn(500,File("model.h5"), true)
 }

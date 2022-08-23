@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.ir.backend.js.compile
 
 plugins {
     kotlin("jvm") version "1.5.21"
@@ -24,7 +25,10 @@ dependencies {
     implementation(group = "tools.aqua", name = "bgw-gui", version = "0.7.2")
     implementation(group = "tools.aqua", name = "bgw-net-common", version = "0.7.2")
     implementation(group = "tools.aqua", name = "bgw-net-client", version = "0.7.2")
+    implementation(group = "org.deeplearning4j",name="deeplearning4j-core",version="1.0.0-M2.1")
+    implementation(group = "org.nd4j",name="nd4j-native-platform",version="1.0.0-M2.1")
 }
+
 
 tasks.distZip {
     archiveFileName.set("distribution.zip")

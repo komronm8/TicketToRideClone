@@ -28,6 +28,8 @@ class AIPlayer(
          * @param timeLimit The time frame in which the algorithm has to find the best move
          */
         data class MonteCarlo(val timeLimit: Int, val c: Double = sqrt(2.0)): Strategy
+
+        object neuralNet: Strategy
     }
 
     override fun copy(

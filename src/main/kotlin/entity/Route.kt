@@ -28,27 +28,27 @@ open class Route(val length: Int, val color: Color, val cities: Pair<City, City>
         return "Route(${toStringCore()})"
     }
 
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
+//    override fun equals(other: Any?): Boolean {
+//        if (this === other) return true
+//        if (javaClass != other?.javaClass) return false
+//
+//        other as Route
+//
+//        if (length != other.length) return false
+//        if (color != other.color) return false
+//        if (cities != other.cities) return false
+//
+//        if (sibling != other.sibling) return false
+//
+//        return true
+//    }
 
-        other as Route
-
-        if (length != other.length) return false
-        if (color != other.color) return false
-        if (cities != other.cities) return false
-
-        if (sibling != other.sibling) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = length
-        result = 31 * result + color.hashCode()
-        result = 31 * result + cities.hashCode()
-        result = 31 * result + (sibling?.hashCode() ?: 0)
-        return result
-    }
+//    override fun hashCode(): Int {
+//        var result = length
+//        result = 31 * result + color.hashCode()
+//        result = 31 * result + cities.hashCode()
+//        result = 31 * result + (sibling?.hashCode() ?: 0)
+//        return result
+//    }
 
 }

@@ -10,6 +10,7 @@ import view.Refreshable
  * The service responsible for executing the AI strategies
  */
 class AIService(private val root: RootService) {
+    private val qLearning = QLearning()
     companion object {
         /**
          * Runs an entire game with AIs
@@ -54,6 +55,7 @@ class AIService(private val root: RootService) {
         when (player.strategy) {
             AIPlayer.Strategy.Random -> root.randomNextTurn()
             is AIPlayer.Strategy.MonteCarlo -> root.monteCarloMove(player.strategy.c, player.strategy.timeLimit)
+            AIPlayer.Strategy.neuralNet -> qLearning.nextAiMove(root)
         }
     }
 }
