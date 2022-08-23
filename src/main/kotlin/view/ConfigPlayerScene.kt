@@ -462,7 +462,7 @@ class ConfigPlayerScene(private val rootService: RootService):
             remove(backCount)
         }
         removeComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
-        if(listOfPlayers.size > 0){
+        if( rootService.network.client != null && listOfPlayers.size > 0){
             player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
             addComponents(player1LobbyLabel)
         }
