@@ -100,11 +100,11 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             chosenCards.clear()
         }
 
-        onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)
-
         if (root.game.currentState.players.any { it.isRemote }){
-            root.network.GameInitResponseMessage(cards.map { index -> state.players.first { it.name == playerName }.destinationCards[index] })
+            root.network.GameInitResponseMessage(cards.map(state.players.first { it.name == playerName }.destinationCards::get))
         }
+
+        onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)
     }
 
     /**

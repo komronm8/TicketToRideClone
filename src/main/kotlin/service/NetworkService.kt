@@ -254,7 +254,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         updateConnectionState(ConnectionState.WAIT_FOR_TURN)
     }
     fun GameInitResponseMessage(selectedCards: List<DestinationCard>){
-        check(connectionState == ConnectionState.BUILD_GAMEINIT_RESPONSE) { "Not in a state to send GameInitResponse" }
+        check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send GameInitResponse" }
 
         val tmp: MutableList<DestinationTicket> = mutableListOf()
         selectedCards.forEach{
