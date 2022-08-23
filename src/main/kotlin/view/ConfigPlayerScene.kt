@@ -324,7 +324,7 @@ class ConfigPlayerScene(private val rootService: RootService):
             val client = rootService.network.client
             checkNotNull(client)
             if( client.playersNames.size  in 2..3  ){
-                rootService.network.startNewHostedGame(client.playersNames.toList() as List<String>)
+                //rootService.network.startNewHostedGame(client.playersNames.toList() as List<String>)
             }
             println(client.playersNames)
         }
