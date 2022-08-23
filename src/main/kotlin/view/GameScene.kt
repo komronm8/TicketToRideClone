@@ -25,8 +25,6 @@ const val DEST_CARDS: String = "GameScene/Cards/Destination/"
  */
 @Suppress("UNCHECKED_CAST")
 class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Refreshable {
-    private var tunnelRoute: Triple<Tunnel, Int, Array<Any>>? = null
-    private var paidTunnelWagons: List<WagonCard>? = null
     private val playerBanner: Pane<UIComponent> = Pane( 0, 480, 1920, 600 )
 
     //<editor-fold desc="Player banner UI">
@@ -304,7 +302,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                     componentStyle = "-fx-background-insets: 0 0 12 0;"
                     rotation = transform.first.third
 
-                    val stations = route.last() as Triple<String, String, entity.Color>
+                    val stations = route.last() as Triple<String, String, Int>
                     name = stations.first + " - " + stations.second
 
                     onMouseClicked = {
@@ -313,7 +311,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
                         for(searchRoute in checkNotNull(cities[stations.first])
                             .findRoute(checkNotNull(cities[stations.second]))) {
-                            if(searchRoute.color == stations.third) {
+                            if(searchRoute.id == stations.third) {
                                 gameRoute = searchRoute
                                 break
                             }
@@ -326,17 +324,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
                         val claimSuccess =root.playerActionService.claimRoute(foundRoute,
                                 root.game.currentState.currentPlayer.wagonCards.slice(selectedTrainCards)) == null
-
-                        if(claimSuccess) {
-                            if(foundRoute is Tunnel) {
-                                paidTunnelWagons = root.game.currentState.currentPlayer.
-                                    wagonCards.slice(selectedTrainCards)
-                                tunnelRoute = Triple(foundRoute, route[route.size - 2] as Int,
-                                    route)
-                            } else {
-                                placeMapButtons(route[route.size - 2] as Int, route, playerIndex)
-                            }
-                        }
                     }
                 })
             }
@@ -520,16 +507,22 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         }
     }
 
-    private fun placeMapButtons(routeStart: Int, route: Array<Any>, playerIndex: Int) {
+    private fun placeMapButtons(routeStart: Int, route: Array<Any>) {
         for (mapIndex in routeStart..routeStart + route.size - 3) {
             map.elementAt(mapIndex).visual = ImageVisual(
                 path = getBoardFieldPath(
                     (route[mapIndex - routeStart] as Pair<Any, Boolean>).second,
-                    playerIndex
+                    root.game.currentState.currentPlayerIndex
                 )
             )
             map.elementAt(mapIndex).isDisabled = true
         }
+    }
+
+    private fun claimRouteById(routeId: Int): Unit {
+        val routeToClaim =
+            checkNotNull(mapRouteButtons.find { (it.last() as Triple<String, String, Int>).third == routeId })
+        placeMapButtons(routeToClaim[routeToClaim.size - 2] as Int, routeToClaim)
     }
 
     //<editor-fold desc="Focus Functions">
@@ -643,30 +636,25 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         }
     }
 
-    private fun focusPayTunnel(): Unit {
+    private fun focusPayTunnel(route: Route, cardsUsed: List<WagonCard>): Unit {
         selectedTrainCards.clear()
         showCards(root.game.currentState.currentPlayer)
 
-        val paid = paidTunnelWagons
-        checkNotNull(paid)
-
-        val toPay: Pair<Int, entity.Color?> = root.playerActionService.tunnelPayAmount(paid)
+        val toPay: Pair<Int, entity.Color?> = root.playerActionService.tunnelPayAmount(cardsUsed)
 
         focusUI(showTrainCards, "Pay for the tunnel: " + toPay.first + " cards of color " + toPay.second,
             root.game.currentState.currentPlayerIndex) {
-            val tunnel = tunnelRoute
-            checkNotNull(tunnel)
             if(selectedTrainCards.size > 0) {
                 try {
                     root.playerActionService.afterClaimTunnel(
-                        tunnel.first,
+                        route as Tunnel,
                         root.game.currentState.currentPlayer.wagonCards.slice(selectedTrainCards)
                     )
                 } catch (e: Exception) {
                     focusButton.text = e.message + " Pay for the tunnel"
                 }
             } else {
-                root.playerActionService.afterClaimTunnel(tunnel.first, null)
+                root.playerActionService.afterClaimTunnel(route as Tunnel, null)
             }
         }
     }
@@ -723,19 +711,19 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         updateDecks()
     }
 
-    override fun refreshAfterClaimRoute(route: Route) {
+    override fun refreshAfterClaimRoute(route: Route, cardsUsed: List<WagonCard>) {
         if(root.game.gameState == GameState.AFTER_CLAIM_TUNNEL) {
             showCards(root.game.currentState.currentPlayer)
-            focusPayTunnel()
+            focusPayTunnel(route, cardsUsed)
+        } else {
+            claimRouteById(route.id)
         }
     }
 
-    override fun refreshAfterAfterClaimTunnel() {
+    override fun refreshAfterAfterClaimTunnel(route: Route) {
         unFocus()
 
-        val tunnel = tunnelRoute
-        checkNotNull(tunnel)
-        placeMapButtons(tunnel.second, tunnel.third, root.game.currentState.currentPlayerIndex)
+        claimRouteById(route.id)
     }
 
     override fun refreshAfterStartNewGame() {

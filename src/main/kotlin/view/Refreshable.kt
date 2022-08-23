@@ -2,6 +2,7 @@ package view
 
 import entity.Player
 import entity.Route
+import entity.WagonCard
 
 /**
  * An observer notifying the view of changes performed by the service layer
@@ -35,12 +36,12 @@ interface Refreshable {
     /**
      * Gets called after [service.PlayerActionService.claimRoute]
      */
-    fun refreshAfterClaimRoute(route: Route) {}
+    fun refreshAfterClaimRoute(route: Route, cardsUsed: List<WagonCard>) {}
 
     /**
      * Gets called after [service.PlayerActionService.afterClaimTunnel]
      */
-    fun refreshAfterAfterClaimTunnel() {}
+    fun refreshAfterAfterClaimTunnel(route: Route) {}
 
     /**
      * Gets called after [service.PlayerActionService.undo] and [service.PlayerActionService.redo]
