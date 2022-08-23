@@ -69,6 +69,9 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         root.insert(state.copy(destinationCards = newDestinationStack, players = newPlayer))
         onAllRefreshables(Refreshable::refreshAfterDrawDestinationCards)
         root.gameService.nextPlayer()
+        if (root.game.currentState.players.any { !it.isRemote }){
+            root.network
+        }
     }
 
     /**

@@ -126,6 +126,8 @@ class NetworkClient(playerName: String,
         message.color.forEach { color: Color -> networkService.rootService.playerActionService.drawWagonCard(
             networkService.rootService.game.currentState.openCards.indexOf(WagonCard(color.maptoGameColor()))
         ) }
+        if (networkService.rootService.game.currentState.currentPlayer.name == playerName)
+            { networkService.updateConnectionState(ConnectionState.PLAY_TURN) }
     }
 
     /**
@@ -144,6 +146,8 @@ class NetworkClient(playerName: String,
             }
         }
         networkService.rootService.playerActionService.drawDestinationCards(ints)
+        if (networkService.rootService.game.currentState.currentPlayer.name == playerName)
+            { networkService.updateConnectionState(ConnectionState.PLAY_TURN) }
     }
 
     /**
@@ -155,6 +159,8 @@ class NetworkClient(playerName: String,
             getRoute(message.start.toString(), message.end.toString(), message.color),
             message.playedTrainCards.map { WagonCard(it.maptoGameColor()) }
         )
+        if (networkService.rootService.game.currentState.currentPlayer.name == playerName)
+            { networkService.updateConnectionState(ConnectionState.PLAY_TURN) }
     }
 
     /**
@@ -213,7 +219,11 @@ class NetworkClient(playerName: String,
 
     @GameActionReceiver
     private fun onPlayerNotification(message: PlayerJoinedNotification, sender: String) {
+        check(networkService.connectionState == ConnectionState.WAIT_FOR_PLAYERS){"Wrong State"}
         playersNames += message.sender
+        if(playersNames.size !in 1..3){
+            networkService.updateConnectionState(ConnectionState.ERROR)
+        }
         networkService.onAllRefreshables { refreshAfterPlayerJoin() }
     }
 
