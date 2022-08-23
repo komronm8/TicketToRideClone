@@ -9,6 +9,7 @@ import tools.aqua.bgw.components.uicomponents.Label
 import tools.aqua.bgw.components.uicomponents.TextField
 import tools.aqua.bgw.util.Font
 import tools.aqua.bgw.core.Alignment
+import tools.aqua.bgw.core.BoardGameApplication
 import java.awt.Color
 
 /**
@@ -330,7 +331,7 @@ class ConfigPlayerScene(private val rootService: RootService):
             if( client.playersNames.size  == 3  ){
                 playerList.add(GameService.PlayerData(client.playersNames[2], true))
             }
-            rootService.network.startNewHostedGame(rootService.game.currentState)
+            rootService.gameService.startNewGame(playerList)
             println(client.playersNames)
         }
     }
@@ -457,6 +458,7 @@ class ConfigPlayerScene(private val rootService: RootService):
         val listOfPlayers = rootService.network.client?.playersNames
         checkNotNull(listOfPlayers)
         println("REFRESHABLE CALLED!")
+        removeComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
         player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
         addComponents(player1LobbyLabel)
         if(listOfPlayers.size >= 2){
