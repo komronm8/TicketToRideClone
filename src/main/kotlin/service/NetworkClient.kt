@@ -200,7 +200,7 @@ class NetworkClient(playerName: String,
             DestinationCard(card.score, Pair(cities.first {
                 networkService.readIdentifierFromCSV(card.start.toString(), true) == it.name },
                 cities.first { networkService.readIdentifierFromCSV(card.end.toString(), true) == it.name })) },
-                wagonCards = message.players.map { WagonCard(it.color.maptoGameColor()) }, isRemote = player.second != sender)
+                wagonCards = message.players.map { WagonCard(it.color.maptoGameColor()) }, isRemote = player.second != playerName)
             }
 
         networkService.rootService.game = Game(State(
