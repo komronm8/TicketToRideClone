@@ -18,5 +18,5 @@ class Ferry(
         return "Ferry(${toStringCore()}, ferries: $ferries)"
     }
 
-    override fun reducedToString(): String = "Ferry(length = $length, color = $length, ferries = $ferries)"
+    override fun reducedToString(): String = "Ferry(length: $length, color: $color, ferries: $ferries)"
 }

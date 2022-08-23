@@ -324,16 +324,10 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                         val foundRoute = gameRoute
                         checkNotNull(foundRoute)
 
-                        var claimSuccess: Boolean = true
                         val playerIndex: Int = root.game.currentState.currentPlayerIndex
 
-                        try{
-                            root.playerActionService.claimRoute(foundRoute,
-                                root.game.currentState.currentPlayer.wagonCards.slice(selectedTrainCards))
-                        } catch (e: Exception) {
-                            focusErrorMessage("An error occurred while claiming the route:\n" + e.message)
-                            claimSuccess = false
-                        }
+                        val claimSuccess =root.playerActionService.claimRoute(foundRoute,
+                                root.game.currentState.currentPlayer.wagonCards.slice(selectedTrainCards)) == null
 
                         if(claimSuccess) {
                             if(foundRoute is Tunnel) {
@@ -684,6 +678,10 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     override fun refreshAfterChooseDestinationCard() {
         unFocus()
         showCards(root.game.currentState.currentPlayer)
+        //TODO
+        if (root.game.currentState.currentPlayer is AIPlayer) thread {
+            AIService(root).executePlayerMove { BoardGameApplication.runOnGUIThread(it) }
+        }
     }
 
     override fun refreshAfterNextPlayer() {
@@ -727,7 +725,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         updateDecks()
     }
 
-    override fun refreshAfterClaimRoute() {
+    override fun refreshAfterClaimRoute(route: Route) {
         if(root.game.gameState == GameState.AFTER_CLAIM_TUNNEL) {
             showCards(root.game.currentState.currentPlayer)
             focusPayTunnel()
@@ -759,26 +757,29 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                 break
             }
         }
-        //TODO
-        thread {
-            for (player in root.game.currentState.players.filterIsInstance<AIPlayer>()) {
-                val indices = AIService(root).chooseDestinationCards(player)
-                BoardGameApplication.runOnGUIThread {
-                    root.gameService.chooseDestinationCards(player.name, indices)
-                }
-            }
-        }
 
         initializeOtherPlayerUI()
         updateDecks()
         showCards(root.game.currentState.currentPlayer)
         focusChooseDestCards(0)
         updateRedoUndo()
+        // TODO
+        thread {
+            for (player in root.game.currentState.players.filterIsInstance<AIPlayer>()) {
+                val indices = AIService(root).chooseDestinationCards(player)
+                BoardGameApplication.runOnGUIThread {
+                    root.gameService.chooseDestinationCards(player.name, indices)
+                    println("set message")
+                }
+            }
+        }
     }
 
     override fun refreshAfterOneDestinationCard() {
         selectedDestCards.clear()
-        showCards(root.game.currentState.players[root.gameService.choosenCards.size])
+        root.game.currentState.players.firstOrNull {
+            it.name !in root.gameService.choosenCards
+        }?.also(this::showCards)
     }
     //</editor-fold>
 }

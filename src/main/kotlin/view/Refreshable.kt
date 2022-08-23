@@ -1,6 +1,7 @@
 package view
 
 import entity.Player
+import entity.Route
 
 /**
  * An observer notifying the view of changes performed by the service layer
@@ -34,7 +35,7 @@ interface Refreshable {
     /**
      * Gets called after [service.PlayerActionService.claimRoute]
      */
-    fun refreshAfterClaimRoute() {}
+    fun refreshAfterClaimRoute(route: Route) {}
 
     /**
      * Gets called after [service.PlayerActionService.afterClaimTunnel]

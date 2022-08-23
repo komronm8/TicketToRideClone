@@ -196,7 +196,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 )
             )
             root.game.gameState = GameState.AFTER_CLAIM_TUNNEL
-            onAllRefreshables(Refreshable::refreshAfterClaimRoute)
+            onAllRefreshables { refreshAfterClaimRoute(route) }
             return null
         } else {
             val newPlayer = state.updateCurrentPlayer {
@@ -209,7 +209,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             }
             val newDiscardStack = state.discardStack + usedCards
             root.insert(state.copy(discardStack = newDiscardStack, players = newPlayer))
-            onAllRefreshables(Refreshable::refreshAfterClaimRoute)
+            onAllRefreshables { refreshAfterClaimRoute(route) }
             root.gameService.nextPlayer()
             return null
         }
