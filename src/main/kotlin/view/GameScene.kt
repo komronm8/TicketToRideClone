@@ -2,6 +2,7 @@ package view
 
 import entity.*
 import service.RootService
+import service.ai.AIService
 import tools.aqua.bgw.components.container.LinearLayout
 import tools.aqua.bgw.components.gamecomponentviews.CardView
 import tools.aqua.bgw.components.layoutviews.Pane
@@ -14,6 +15,7 @@ import tools.aqua.bgw.util.Font
 import tools.aqua.bgw.visual.*
 import java.awt.Color
 import javax.xml.crypto.dsig.Transform
+import kotlin.concurrent.thread
 import kotlin.math.*
 
 const val TRAIN_CARDS: String = "GameScene/Cards/Train/"
@@ -561,7 +563,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         }
 
         val focusPlayer: Player = root.game.currentState.players[playerIndex]
-
         if(focusPlayer is AIPlayer || focusPlayer.isRemote) {
             unFocus()
             focusChooseDestCards( playerIndex + 1)
@@ -572,7 +573,9 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             if(selectedDestCards.size >= 2) {
                 unFocus()
                 focusChooseDestCards(playerIndex + 1)
-                root.gameService.chooseDestinationCards(selectedDestCards)
+                root.gameService.chooseDestinationCards(
+                    root.game.currentState.players[playerIndex].name, selectedDestCards
+                )
             }
         }
     }
@@ -673,8 +676,11 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
         setPlayerImages()
         showCards(root.game.currentState.currentPlayer)
-
         updateRedoUndo()
+        //TODO
+        if (root.game.currentState.currentPlayer is AIPlayer) thread {
+            AIService(root).executePlayerMove { BoardGameApplication.runOnGUIThread(it) }
+        }
     }
 
     override fun refreshAfterUndoRedo() {
@@ -732,6 +738,15 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                 playerBanner.remove(redo)
                 playerBanner.remove(undo)
                 break
+            }
+        }
+        //TODO
+        thread {
+            for (player in root.game.currentState.players.filterIsInstance<AIPlayer>()) {
+                val indices = AIService(root).chooseDestinationCards(player)
+                BoardGameApplication.runOnGUIThread {
+                    root.gameService.chooseDestinationCards(player.name, indices)
+                }
             }
         }
 

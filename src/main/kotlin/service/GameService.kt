@@ -20,7 +20,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             root.insert(value)
         }
 
-    var choosenCards: MutableList<List<Int>> = mutableListOf()
+    var choosenCards: MutableMap<String, List<Int>> = mutableMapOf()
 
     /**
      * Starts a game with the given player data. At the end, the game is in a valid state, but the player still needs
@@ -72,34 +72,31 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     /**
      * Is called after all players decided which of their cards to keep
      */
-    fun chooseDestinationCard(cards: List<List<Int>>) {
+    fun chooseDestinationCard(cards: Map<String, List<Int>>) {
         if (root.game.gameState != GameState.CHOOSE_DESTINATION_CARD) {
             throw IllegalStateException("game is not in the right state for choose destination card")
         }
         require(cards.size == state.players.size)
         cards.forEach {
-            assert(it.size in 2..5)
-            assert(it.distinct().size == it.size)
-            it.forEach { index -> assert(index in 0 until 5) }
+            assert(it.value.size in 2..5)
+            assert(it.value.distinct().size == it.value.size)
+            it.value.forEach { index -> assert(index in 0 until 5) }
         }
-        val newPlayers = state.players.zip(cards).map {
-            it.first.copy(destinationCards = it.second.map(it.first.destinationCards::get))
+        val newPlayers = state.players.map {
+            val indices=  requireNotNull(cards[it.name])
+            it.copy(destinationCards = indices.map(it.destinationCards::get))
         }
         root.game.gameState = GameState.DEFAULT
         root.game.states[0] = state.copy(players = newPlayers)
         onAllRefreshables(Refreshable::refreshAfterChooseDestinationCard)
     }
 
-    fun chooseDestinationCards(cards: List<Int>){
-        val selected: MutableList<Int> = mutableListOf()
-        for(index in cards) {
-            selected.add(index)
-        }
-        choosenCards.add(selected)
+    fun chooseDestinationCards(playerName: String, cards: List<Int>){
+        choosenCards[playerName] = cards
 
         if (choosenCards.size >= state.players.size){
             chooseDestinationCard(choosenCards)
-            choosenCards = mutableListOf()
+            choosenCards.clear()
         }
 
         onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)
