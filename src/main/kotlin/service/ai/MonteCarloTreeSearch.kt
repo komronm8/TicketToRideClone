@@ -19,7 +19,11 @@ private data class GameTree(
     var children: List<GameTree>? = null,
     var wonCount: AtomicInteger = AtomicInteger(0),
     var visited: AtomicInteger = AtomicInteger(0),
-)
+) {
+    override fun toString(): String {
+        return "$move"
+    }
+}
 
 private data class PrecomputedChoices(
     val destinationCards: List<AIMove.DrawDestinationCard>,
@@ -174,7 +178,7 @@ private fun GameTree.precomputedChoices(state: State, parentChoices: Precomputed
             if (move.route !is Tunnel || (currentPlayer.claimedRoutes.any { it === move.route })) {
                 newUnclaimed= newUnclaimed.removeFromUnclaimed(move.route, state.players.size > 2)
             }
-            if (move.route is Tunnel) {
+            if (move.route is Tunnel || newDraw.isEmpty()) {
                 newDraw = uniqueDrawWagonCard(state)
             }
             parentChoices.copy(

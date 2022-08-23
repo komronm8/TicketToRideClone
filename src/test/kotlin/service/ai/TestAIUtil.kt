@@ -1,10 +1,7 @@
 package entity.service.ai
 
 import entity.*
-import service.ai.AIMove
-import service.ai.counts
-import service.ai.destinationIndices
-import service.ai.uniqueDrawWagonCard
+import service.ai.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
