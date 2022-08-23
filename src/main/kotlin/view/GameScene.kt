@@ -15,6 +15,7 @@ import tools.aqua.bgw.util.Font
 import tools.aqua.bgw.visual.*
 import java.awt.Color
 import javax.xml.crypto.dsig.Transform
+import kotlin.concurrent.thread
 import kotlin.math.*
 
 const val TRAIN_CARDS: String = "GameScene/Cards/Train/"
@@ -665,7 +666,9 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         showCards(root.game.currentState.currentPlayer)
         updateRedoUndo()
         //TODO
-        AIService(root).executePlayerMove { BoardGameApplication.runOnGUIThread(it) }
+        if (root.game.currentState.currentPlayer is AIPlayer) thread {
+            AIService(root).executePlayerMove { BoardGameApplication.runOnGUIThread(it) }
+        }
     }
 
     override fun refreshAfterUndoRedo() {
@@ -723,6 +726,15 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                 playerBanner.remove(redo)
                 playerBanner.remove(undo)
                 break
+            }
+        }
+        //TODO
+        thread {
+            for (player in root.game.currentState.players.filterIsInstance<AIPlayer>()) {
+                val indices = AIService(root).chooseDestinationCards(player)
+                BoardGameApplication.runOnGUIThread {
+                    root.gameService.chooseDestinationCards(player.name, indices)
+                }
             }
         }
 
