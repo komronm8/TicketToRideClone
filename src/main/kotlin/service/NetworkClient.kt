@@ -229,7 +229,6 @@ class NetworkClient(playerName: String,
         if (networkService.rootService.game.currentState.currentPlayer.name == playerName)
             { networkService.updateConnectionState(ConnectionState.PLAY_TURN) }
 
-        BoardGameApplication.runOnGUIThread { networkService.onAllRefreshables { refreshAfterOneDestinationCard() } }
     }
 
     override fun onPlayerJoined(notification: PlayerJoinedNotification) {
