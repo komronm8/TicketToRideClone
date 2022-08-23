@@ -1,6 +1,7 @@
 package view
 
 import service.*
+import entity.AIPlayer
 import tools.aqua.bgw.core.MenuScene
 import tools.aqua.bgw.visual.ImageVisual
 import tools.aqua.bgw.components.uicomponents.Button
@@ -10,6 +11,11 @@ import tools.aqua.bgw.util.Font
 import tools.aqua.bgw.core.Alignment
 import java.awt.Color
 
+/**
+ * The menuScene for the two modes. After choosing which mode to play, online or solo, this scene will pop up
+ * for the individual modes. For solo mode, the amount of players as well as their names and types can be configured.
+ * For online mode, the options available are joining a game with a sessionID, or creating one yourself by hosting it
+ */
 class ConfigPlayerScene(private val rootService: RootService):
     MenuScene(1920, 1080, ImageVisual("\\ConfigScene\\configBackground.png")), Refreshable{
 
@@ -128,9 +134,11 @@ class ConfigPlayerScene(private val rootService: RootService):
         onMouseClicked = {
             val playerList = mutableListOf<GameService.PlayerData>()
             var checked = false
+            val playerTypeLabels = listOf(player1TypeLabel, player2TypeLabel, player3TypeLabel)
             for(i in 0 until playerCount){
                 if(playerInputs[i].text != ""){
-                    playerList.add( GameService.PlayerData(playerInputs[i].text, false) )
+                    playerList.add( GameService.PlayerData(playerInputs[i].text, false,
+                        getAIStrategy(playerTypeLabels[i])) )
                     checked = true
                 }
                 else{
@@ -139,6 +147,14 @@ class ConfigPlayerScene(private val rootService: RootService):
                 }
             }
             if(checked){ rootService.gameService.startNewGame(playerList) }
+        }
+    }
+
+    private fun getAIStrategy(label: Label): AIPlayer.Strategy?{
+        return when(label.text){
+            "RandomAI" -> { AIPlayer.Strategy.Random }
+            "UnfairAI" -> { AIPlayer.Strategy.MonteCarlo(10) }
+            else -> { null }
         }
     }
 
@@ -225,7 +241,11 @@ class ConfigPlayerScene(private val rootService: RootService):
         visual = ImageVisual("\\ConfigScene\\joinSessionButton.png")
     ).apply {
         onMouseClicked = {
-            showJoinLobby()
+            if( sessionTextField.text != "" && playerNameInput.text != "" ){
+                rootService.network.joinGame("net22c", playerNameInput.text, sessionTextField.text)
+                showJoinLobby()
+                backCount++
+            }
         }
     }
 
@@ -259,14 +279,30 @@ class ConfigPlayerScene(private val rootService: RootService):
         visual = ImageVisual("\\ConfigScene\\hostSessionButton.png")
     ).apply {
         onMouseClicked = {
-            showHostLobby()
+            if( sessionTextField.text != "" && playerNameInput.text != ""  ){
+                rootService.network.hostGame("net22c", playerNameInput.text, sessionTextField.text)
+                hostSessionIDClipboard.text = "SID: " + sessionTextField.text
+                showHostLobby()
+                val players = rootService.network.client?.playersNames
+                if(players != null) {
+//                    player1LobbyLabel.text = "Player1: " + players.get(0)
+//                    println(players)
+                }
+                player1LobbyLabel.text = "Player1: " + playerNameInput.text
+                addComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
+                backCount++
+            }
         }
     }
 
     private val hostRandomSessionIDButton = Button(
         posX = 1320, posY = 352, width = 100, height = 83,
         visual = ImageVisual("\\ConfigScene\\randomButton.png")
-    )
+    ).apply {
+        onMouseClicked = {
+            sessionTextField.text = (1000..9999).random().toString()
+        }
+    }
 
     //OnlineSessionLobby
     private val statusLabel = Label(
@@ -275,11 +311,53 @@ class ConfigPlayerScene(private val rootService: RootService):
     )
 
     private val statusLobbyLabel = Label(
-        posX = 830, posY = 350, width = 600, height = 70, text = "WAITING FOR HOST TO START THE GAME",
-        font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24), alignment = Alignment.CENTER
+        posX = 830, posY = 350, width = 600, height = 70, alignment = Alignment.CENTER,
+        font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
+    )
+
+    private val hostStartButton = Button(
+        posX = 1200, posY = 745, width = 200, height = 60, text = "Start Game", alignment = Alignment.CENTER,
+        visual = ImageVisual("\\ConfigScene\\startHostGameButton.png"),
+        font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
+    ).apply {
+        onMouseClicked = {
+            val client = rootService.network.client
+            checkNotNull(client)
+//            if( client.playersNames.size  in 2..3  ){
+//                rootService.network.startNewHostedGame(client.playersNames.toList() as List<String>)
+//            }
+            println(client.playersNames)
+        }
+    }
+
+    private val hostSessionIDClipboard = Label(
+        posX = 900, posY = 745, width = 250, height = 60, alignment = Alignment.CENTER,
+        visual = ImageVisual("\\ConfigScene\\smallWoodBg.png"),
+        font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
+    )
+
+    private val player1LobbyLabel = Label(
+        posX = 890, posY = 440, width = 500, height = 66, alignment = Alignment.CENTER,
+        visual = ImageVisual("\\ConfigScene\\yellowPlayerLobbyIcon.png"),
+        font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
+    )
+
+    private val player2LobbyLabel = Label(
+        posX = 890, posY = 540, width = 500, height = 66, alignment = Alignment.CENTER,
+        visual = ImageVisual("\\ConfigScene\\purplePlayerLobbyIcon.png"),
+        font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
+    )
+
+    private val player3LobbyLabel = Label(
+        posX = 890, posY = 640, width = 500, height = 66, alignment = Alignment.CENTER,
+        visual = ImageVisual("\\ConfigScene\\redPlayerLobbyIcon.png"),
+        font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
     )
 
     //Methods
+    /**
+     * Function for adding the solo components of the config scene
+     */
     fun addSoloComponents(){
         addComponents(
             player1Label, player2Label,
@@ -289,14 +367,21 @@ class ConfigPlayerScene(private val rootService: RootService):
             startButton, removeButton, addButton, goBackButton, garrySoloIcon)
     }
 
+    /**
+     * Function for adding the online components of the config scene
+     */
     fun addOnlineComponents(){
         addComponents(
             joinButton, hostButton, goBackButton, garryOnlineIcon
         )
     }
 
-    fun remove(i: Int){
-        when(i){
+    /**
+     * This function is used for making it possible to go back in between scenes.
+     * @param sceneDepth is used to make clear which components have to be added/removed when going back
+     */
+    fun remove(sceneDepth: Int){
+        when(sceneDepth){
             0 -> {
                 playerCount = 2
                 for(x in 0 until 3){
@@ -318,6 +403,12 @@ class ConfigPlayerScene(private val rootService: RootService):
                 onlinePlayerTypeButton.visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
                 onlinePlayerTypeLabel.text = "Human"
                 backCount--
+            }
+            2 -> {
+                rootService.network.disconnect()
+                removeComponents(hostStartButton, hostSessionIDClipboard)
+                backCount--
+                remove(backCount)
             }
         }
     }
@@ -344,17 +435,36 @@ class ConfigPlayerScene(private val rootService: RootService):
     }
 
     private fun showJoinLobby(){
+        val listOfPlayers = rootService.network.client?.playersNames
         removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
             onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
         statusLobbyLabel.text = "WAITING FOR HOST TO START THE GAME"
         addComponents(statusLabel, statusLobbyLabel)
+        if (listOfPlayers != null) {
+            player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
+            player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
+            addComponents(player1LobbyLabel, player2LobbyLabel)
+            if(listOfPlayers[2] != null){
+                player3LobbyLabel.text = "Player3: " + listOfPlayers[2]
+                addComponents(player3LobbyLabel)
+            }
+        }
     }
 
     private fun showHostLobby(){
         removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
             onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
         statusLobbyLabel.text = "WAITING FOR PLAYERS TO CONNECT TO LOBBY"
-        addComponents(statusLabel, statusLobbyLabel)
+        addComponents(statusLabel, statusLobbyLabel, hostStartButton, hostSessionIDClipboard)
+//        println(rootService.network.client?.playersNames)
+    }
+
+    override fun refreshAfterPlayerJoin() {
+
+    }
+
+    override fun refreshAfterPlayerDisconnect() {
+
     }
 
 }

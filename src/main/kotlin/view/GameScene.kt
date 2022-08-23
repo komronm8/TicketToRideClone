@@ -256,6 +256,21 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     private val focusPlayer: Label = Label(width = 156, height = 156, posX = 822, posY = 5)
     //</editor-fold>
 
+    //<editor-fold desc="Net and AI">
+    private var tempAISpeed: Int = 0;
+    private val aiSpeedButton: Button = Button(
+        posY = 2, posX = 867, width = 186, height = 74, visual = ImageVisual("GameScene/ai_3x.png")
+    ).apply {
+        onMouseClicked = {
+            when(tempAISpeed) {
+                0 -> { visual = ImageVisual("GameScene/ai_1x.png"); tempAISpeed = 2 }
+                2 -> { visual = ImageVisual("GameScene/ai_2x.png"); tempAISpeed = 1 }
+                1 -> { visual = ImageVisual("GameScene/ai_3x.png"); tempAISpeed = 0 }
+            }
+        }
+    }
+    //</editor-fold>
+
     init {
         opacity = 1.0
         background = ImageVisual("GameScene/background.png")
@@ -278,6 +293,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                 || (it.cities.first === to && it.cities.second === this)
     })
 
+    //<editor-fold desc="Initialize">
     private fun buildMapButtons() {
         for(route in mapRouteButtons) {
             for(fieldIndex in 0..route.size-3) {
@@ -314,16 +330,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                                 tunnelRoute = Triple(gameRoute, route[route.size - 2] as Int,
                                     route)
                             } else {
-                                val routeStart = route[route.size - 2] as Int
-                                for (mapIndex in routeStart..routeStart + route.size - 3) {
-                                    map.elementAt(mapIndex).visual = ImageVisual(
-                                        path = getBoardFieldPath(
-                                            (route[mapIndex - routeStart] as Pair<Any, Boolean>).second,
-                                            playerIndex
-                                        )
-                                    )
-                                    map.elementAt(mapIndex).isDisabled = true
-                                }
+                                placeMapButtons(route[route.size - 2] as Int, route)
                             }
                         }
                     }
@@ -331,6 +338,36 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             }
         }
     }
+
+    private fun initializeOtherPlayerUI(): Unit {
+        if(root.game.currentState.players.size == 2) {
+            otherPlayers.add(Pane(1025, 75, 250, 250))
+        } else {
+            otherPlayers.add(Pane(725, 75, 250, 250))
+            otherPlayers.add(Pane(1350, 75, 250, 250))
+        }
+
+        for(playerUI in otherPlayers) {
+            val trainCarImage: Label = Label( posX = 10, posY = 90, width = 70, height = 70 )
+            val trainCarLabel: Label = Label(
+                posX = 10, posY = 125, width = 70, font = Font(size = 20, fontWeight = Font.FontWeight.BOLD)
+            )
+            val playerImage: Label = Label( posX = 60, posY = 0, width = 180, height = 180 )
+            val playerPoints: Label = Label(
+                posX = 60, posY = 105, width = 180, font = Font(size = 28, fontWeight = Font.FontWeight.BOLD)
+            )
+            val showPlayerCards: Button = Button(
+                width = 250, height = 70, posY = 180, posX = 0, visual = ImageVisual("wood_btn.jpg"),
+                font = Font(size = 28, fontWeight = Font.FontWeight.BOLD, color = Color.WHITE), text = "Show Cards"
+            )
+
+            playerUI.addAll(trainCarImage, trainCarLabel, playerImage, playerPoints, showPlayerCards)
+            addComponents(playerUI)
+        }
+
+        setPlayerImages()
+    }
+    //</editor-fold>
 
     private fun getBoardFieldPath(isTrain: Boolean, playerIndex: Int): String {
         return when(isTrain) {
@@ -398,35 +435,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         right.opacity = when(right.isDisabled) { true -> 0.5; false -> 1.0 }
     }
 
-    private fun initializeOtherPlayerUI(): Unit {
-        if(root.game.currentState.players.size == 2) {
-            otherPlayers.add(Pane(1025, 75, 250, 250))
-        } else {
-            otherPlayers.add(Pane(725, 75, 250, 250))
-            otherPlayers.add(Pane(1350, 75, 250, 250))
-        }
-
-        for(playerUI in otherPlayers) {
-            val trainCarImage: Label = Label( posX = 10, posY = 90, width = 70, height = 70 )
-            val trainCarLabel: Label = Label(
-                posX = 10, posY = 125, width = 70, font = Font(size = 20, fontWeight = Font.FontWeight.BOLD)
-            )
-            val playerImage: Label = Label( posX = 60, posY = 0, width = 180, height = 180 )
-            val playerPoints: Label = Label(
-                posX = 60, posY = 105, width = 180, font = Font(size = 28, fontWeight = Font.FontWeight.BOLD)
-            )
-            val showPlayerCards: Button = Button(
-                width = 250, height = 70, posY = 180, posX = 0, visual = ImageVisual("wood_btn.jpg"),
-                font = Font(size = 28, fontWeight = Font.FontWeight.BOLD, color = Color.WHITE), text = "Show Cards"
-            )
-
-            playerUI.addAll(trainCarImage, trainCarLabel, playerImage, playerPoints, showPlayerCards)
-            addComponents(playerUI)
-        }
-
-        setPlayerImages()
-    }
-
     private fun setPlayerImages(): Unit {
         val currentPlayerIndex = root.game.currentState.currentPlayerIndex
 
@@ -484,6 +492,18 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         }
     }
 
+    private fun placeMapButtons(routeStart: Int, route: Array<Any>) {
+        for (mapIndex in routeStart..routeStart + route.size - 3) {
+            map.elementAt(mapIndex).visual = ImageVisual(
+                path = getBoardFieldPath(
+                    (route[mapIndex - routeStart] as Pair<Any, Boolean>).second,
+                    root.game.currentState.currentPlayerIndex
+                )
+            )
+            map.elementAt(mapIndex).isDisabled = true
+        }
+    }
+
     //<editor-fold desc="Focus Functions">
     private fun focusUI(toFocus: Any, focusText: String, playerIndex: Int, focusAction: (MouseEvent) -> Unit): Unit {
         val focus = when(toFocus){
@@ -522,7 +542,9 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         val focusPlayer: Player = root.game.currentState.players[playerIndex]
 
         if(focusPlayer is AIPlayer || focusPlayer.isRemote) {
+            unFocus()
             focusChooseDestCards( playerIndex + 1)
+            return
         }
 
         selectedDestCards.clear()
@@ -672,19 +694,17 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
         val tunnel = tunnelRoute
         checkNotNull(tunnel)
-        val routeStart = tunnel.second
-        for (mapIndex in routeStart..routeStart + tunnel.third.size - 3) {
-            map.elementAt(mapIndex).visual = ImageVisual(
-                path = getBoardFieldPath(
-                    (tunnel.third[mapIndex - routeStart] as Pair<Any, Boolean>).second,
-                    root.game.currentState.currentPlayerIndex
-                )
-            )
-            map.elementAt(mapIndex).isDisabled = true
-        }
+        placeMapButtons(tunnel.second, tunnel.third)
     }
 
     override fun refreshAfterStartNewGame() {
+        for(player in root.game.currentState.players) {
+            if(player is AIPlayer) {
+                addComponents(aiSpeedButton)
+                break
+            }
+        }
+
         initializeOtherPlayerUI()
         updateDecks()
         focusChooseDestCards(0)
