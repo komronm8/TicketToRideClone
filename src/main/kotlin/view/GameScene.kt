@@ -271,10 +271,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         )
 
         buildMapButtons()
-        initializeOtherPlayerUI()
-        updateDecks()
-
-        focusChooseDestCards(0)
     }
 
     private fun City.findRoute(to: City): Route = checkNotNull(routes.find {
@@ -686,6 +682,12 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             )
             map.elementAt(mapIndex).isDisabled = true
         }
+    }
+
+    override fun refreshAfterStartNewGame() {
+        initializeOtherPlayerUI()
+        updateDecks()
+        focusChooseDestCards(0)
     }
     //</editor-fold>
 }

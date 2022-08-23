@@ -52,13 +52,6 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
     }
 
     init {
-//        rootService.gameService.startNewGame(listOf(
-//            GameService.PlayerData("a", false),
-//            GameService.PlayerData("b", false),
-//            GameService.PlayerData("c", false)))
-//        gameScene = GameScene(rootService)
-        this.showGameScene(gameScene)
-
         this.showMenuScene(mainMenuScene)
 
         rootService.addRefreshables(
@@ -76,6 +69,7 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
 
     override fun refreshAfterStartNewGame() {
         this.hideMenuScene()
+        this.showGameScene(gameScene)
     }
 
     override fun refreshAfterEndGame(winner: Player) {
