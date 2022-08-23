@@ -91,6 +91,14 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         root.game.gameState = GameState.DEFAULT
         root.game.states[0] = state.copy(players = newPlayers)
         onAllRefreshables(Refreshable::refreshAfterChooseDestinationCard)
+
+        if (root.game.currentState.players.any { it.isRemote }){
+            root.network.updateConnectionState(when (root.network.client?.playerName){
+                state.currentPlayer.name -> ConnectionState.PLAY_TURN
+                else -> ConnectionState.WAIT_FOR_TURN
+            })
+        }
+
     }
 
     fun chooseDestinationCards(playerName: String, cards: List<Int>){
