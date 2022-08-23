@@ -587,7 +587,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             }
 
             if(routeClaimed == false)
-                clearMapButtons(route[route.size - 1] as Int, route)
+                clearMapButtons(route[route.size - 2] as Int, route)
         }
     }
 
