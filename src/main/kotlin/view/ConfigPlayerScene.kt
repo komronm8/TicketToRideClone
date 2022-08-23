@@ -17,7 +17,7 @@ import java.awt.Color
  * For online mode, the options available are joining a game with a sessionID, or creating one yourself by hosting it
  */
 class ConfigPlayerScene(private val rootService: RootService):
-    MenuScene(1920, 1080, ImageVisual("\\ConfigScene\\configBackground.png")), Refreshable{
+    MenuScene(1920, 1080, ImageVisual("ConfigScene/configBackground.png")), Refreshable{
 
     private var playerCount = 2
     private var player1Type = arrayOf("Human", "RandomAI", "UnfairAI")
@@ -31,7 +31,7 @@ class ConfigPlayerScene(private val rootService: RootService):
     private val player1Label = Label(
         posX = 800, posY = 350, width = 177, height = 55, text = "Player1",
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 28),
-        alignment = Alignment.TOP_CENTER, visual = ImageVisual("\\ConfigScene\\yellowPlayerLabel.png")
+        alignment = Alignment.TOP_CENTER, visual = ImageVisual("ConfigScene/yellowPlayerLabel.png")
     )
 
     private val player1Input = TextField(
@@ -41,7 +41,7 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val bot1Button = Button(
         posX = 1275, posY = 350, width = 45, height = 45,
-        visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+        visual = ImageVisual("ConfigScene/changeToAIButton.png")
     ).apply {
         onMouseClicked = {
             changeTypeButton(this, player1TypeLabel, player1Type)
@@ -51,19 +51,19 @@ class ConfigPlayerScene(private val rootService: RootService):
     private val player1TypeLabel = Label(
         posX = 1025, posY = 390, width = 200, height = 50, text = "Human",
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24),
-        visual = ImageVisual("\\ConfigScene\\smallWoodBg.png")
+        visual = ImageVisual("ConfigScene/smallWoodBg.png")
     )
 
     private val player1Icon = Button(
         posX = 1370, posY = 300, width = 81, height = 117,
-        visual = ImageVisual("\\ConfigScene\\yellowPlayerIcon.png")
+        visual = ImageVisual("ConfigScene/yellowPlayerIcon.png")
     )
 
     //Player2
     private val player2Label = Label(
         posX = 800, posY = 475, width = 177, height = 55, text = "Player2",
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 28),
-        alignment = Alignment.TOP_CENTER, visual = ImageVisual("\\ConfigScene\\purplePlayerLabel.png")
+        alignment = Alignment.TOP_CENTER, visual = ImageVisual("ConfigScene/purplePlayerLabel.png")
     )
 
     private val player2Input = TextField(
@@ -73,7 +73,7 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val bot2Button = Button(
         posX = 1275, posY = 475, width = 45, height = 45,
-        visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+        visual = ImageVisual("ConfigScene/changeToAIButton.png")
     ).apply {
         onMouseClicked = {
             changeTypeButton(this, player2TypeLabel, player2Type)
@@ -83,19 +83,19 @@ class ConfigPlayerScene(private val rootService: RootService):
     private val player2TypeLabel = Label(
         posX = 1025, posY = 515, width = 200, height = 50, text = "Human",
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24),
-        visual = ImageVisual("\\ConfigScene\\smallWoodBg.png")
+        visual = ImageVisual("ConfigScene/smallWoodBg.png")
     )
 
     private val player2Icon = Button(
         posX = 1365, posY = 425, width = 96, height = 128,
-        visual = ImageVisual("\\ConfigScene\\purplePlayerIcon.png")
+        visual = ImageVisual("ConfigScene/purplePlayerIcon.png")
     )
 
     //Player3
     private val player3Label = Label(
         posX = 800, posY = 600, width = 177, height = 55, text = "Player3",
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 28),
-        alignment = Alignment.TOP_CENTER, visual = ImageVisual("\\ConfigScene\\redPlayerLabel.png")
+        alignment = Alignment.TOP_CENTER, visual = ImageVisual("ConfigScene/redPlayerLabel.png")
     )
 
     private val player3Input = TextField(
@@ -105,7 +105,7 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val bot3Button = Button(
         posX = 1275, posY = 600, width = 45, height = 45,
-        visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+        visual = ImageVisual("ConfigScene/changeToAIButton.png")
     ).apply{
         onMouseClicked = {
             changeTypeButton(this, player3TypeLabel, player3Type)
@@ -115,12 +115,12 @@ class ConfigPlayerScene(private val rootService: RootService):
     private val player3TypeLabel = Label(
         posX = 1025, posY = 640, width = 200, height = 50, text = "Human",
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24),
-        visual = ImageVisual("\\ConfigScene\\smallWoodBg.png")
+        visual = ImageVisual("ConfigScene/smallWoodBg.png")
     )
 
     private val player3Icon = Button(
         posX = 1375, posY = 550, width = 80, height = 130,
-        visual = ImageVisual("\\ConfigScene\\redPlayerIcon.png")
+        visual = ImageVisual("ConfigScene/redPlayerIcon.png")
     )
 
     private val playerInputs = arrayOf(player1Input, player2Input, player3Input)
@@ -129,7 +129,7 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val startButton = Button(
         posX = 850, posY = 720, width = 401, height = 83,
-        visual = ImageVisual("\\ConfigScene\\startGameButton.png")
+        visual = ImageVisual("ConfigScene/startGameButton.png")
     ).apply {
         onMouseClicked = {
             val playerList = mutableListOf<GameService.PlayerData>()
@@ -153,14 +153,14 @@ class ConfigPlayerScene(private val rootService: RootService):
     private fun getAIStrategy(label: Label): AIPlayer.Strategy?{
         return when(label.text){
             "RandomAI" -> { AIPlayer.Strategy.Random }
-            "UnfairAI" -> { AIPlayer.Strategy.MonteCarlo(10) }
+            "UnfairAI" -> { AIPlayer.Strategy.MonteCarlo(2000) }
             else -> { null }
         }
     }
 
     private val removeButton = Button(
         posX = 1350, posY = 735, width = 66, height = 67,
-        visual = ImageVisual("\\ConfigScene\\removeButton.png")
+        visual = ImageVisual("ConfigScene/removeButton.png")
     ).apply {
         onMouseClicked = {
             if(playerCount == 3){
@@ -173,7 +173,7 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val addButton = Button(
         posX = 1420, posY = 745, width = 45, height = 46,
-        visual = ImageVisual("\\ConfigScene\\addButton.png")
+        visual = ImageVisual("ConfigScene/addButton.png")
     ).apply {
         onMouseClicked = {
             if(playerCount == 2) {
@@ -185,18 +185,18 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val garrySoloIcon = Label(
         posX = 95, posY = 175, width = 600, height = 911,
-        visual = ImageVisual("\\ConfigScene\\GarrySolo.png")
+        visual = ImageVisual("ConfigScene/GarrySolo.png")
     )
 
     val goBackButton = Button(
         posX = 5, posY = 5, width = 137, height = 135,
-        visual = ImageVisual("\\ConfigScene\\backButton.png")
+        visual = ImageVisual("ConfigScene/backButton.png")
     )
 
     //Online menu
     private val joinButton = Button(
         posX = 900, posY = 450, width = 283.53, height = 170,
-        visual = ImageVisual("\\ConfigScene\\joinButton.png")
+        visual = ImageVisual("ConfigScene/joinButton.png")
     ).apply {
         onMouseClicked = {
             backCount++
@@ -208,7 +208,7 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val hostButton = Button(
         posX = 1180, posY = 450, width = 212.5, height = 170,
-        visual = ImageVisual("\\ConfigScene\\createButton.png")
+        visual = ImageVisual("ConfigScene/createButton.png")
     ).apply {
         onMouseClicked = {
             backCount++
@@ -220,13 +220,13 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val garryOnlineIcon = Label(
         posX = 95, posY = 175, width = 600, height = 911,
-        visual = ImageVisual("\\ConfigScene\\GarryOnline.png")
+        visual = ImageVisual("ConfigScene/GarryOnline.png")
     )
 
     //Join/Host components
     private val sessionLabel = Label(
         posX = 930, posY = 350, width = 418, height = 85,
-        visual = ImageVisual("\\ConfigScene\\textBg.png")
+        visual = ImageVisual("ConfigScene/textBg.png")
     )
 
     private val sessionTextField = TextField(
@@ -236,26 +236,24 @@ class ConfigPlayerScene(private val rootService: RootService):
         opacity = 0.5
     }
 
-    private var joinLobby = false
     private var hostLobby = false
 
     private val joinSessionButton = Button(
         posX = 1015, posY = 650, width = 250, height = 84,
-        visual = ImageVisual("\\ConfigScene\\joinSessionButton.png")
+        visual = ImageVisual("ConfigScene/joinSessionButton.png")
     ).apply {
         onMouseClicked = {
             if( sessionTextField.text != "" && playerNameInput.text != "" ){
                 rootService.network.joinGame("net22c", playerNameInput.text, sessionTextField.text)
                 showJoinLobby()
                 backCount++
-                joinLobby = true
             }
         }
     }
 
     private val playerNameLabel = Label(
         posX = 840, posY = 450, width = 600, height = 119,
-        visual = ImageVisual("\\ConfigScene\\playerNameLabel.png")
+        visual = ImageVisual("ConfigScene/playerNameLabel.png")
     )
 
     private val playerNameInput = TextField(
@@ -265,7 +263,7 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val onlinePlayerTypeButton = Button(
         posX = 1325, posY = 495, width = 45, height = 45,
-        visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+        visual = ImageVisual("ConfigScene/changeToAIButton.png")
     ).apply {
         onMouseClicked = {
             changeTypeButton(this, onlinePlayerTypeLabel, onlinePlayerType)
@@ -275,12 +273,12 @@ class ConfigPlayerScene(private val rootService: RootService):
     private val onlinePlayerTypeLabel = Label(
         posX = 1040, posY = 550, width = 200, height = 50, text = "Human",
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24),
-        visual = ImageVisual("\\ConfigScene\\smallWoodBg.png")
+        visual = ImageVisual("ConfigScene/smallWoodBg.png")
     )
 
     private val hostSessionButton = Button(
         posX = 1015, posY = 650, width = 250, height = 84,
-        visual = ImageVisual("\\ConfigScene\\hostSessionButton.png")
+        visual = ImageVisual("ConfigScene/hostSessionButton.png")
     ).apply {
         onMouseClicked = {
             if( sessionTextField.text != "" && playerNameInput.text != ""  ){
@@ -297,7 +295,7 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val hostRandomSessionIDButton = Button(
         posX = 1320, posY = 352, width = 100, height = 83,
-        visual = ImageVisual("\\ConfigScene\\randomButton.png")
+        visual = ImageVisual("ConfigScene/randomButton.png")
     ).apply {
         onMouseClicked = {
             sessionTextField.text = (1000..9999).random().toString()
@@ -307,7 +305,7 @@ class ConfigPlayerScene(private val rootService: RootService):
     //OnlineSessionLobby
     private val statusLabel = Label(
         posX = 790, posY = 250, width = 700, height = 570,
-        visual = ImageVisual("\\ConfigScene\\lobbyBg.png")
+        visual = ImageVisual("ConfigScene/lobbyBg.png")
     )
 
     private val statusLobbyLabel = Label(
@@ -317,7 +315,7 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val hostStartButton = Button(
         posX = 1200, posY = 745, width = 200, height = 60, text = "Start Game", alignment = Alignment.CENTER,
-        visual = ImageVisual("\\ConfigScene\\startHostGameButton.png"),
+        visual = ImageVisual("ConfigScene/startHostGameButton.png"),
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
     ).apply {
         onMouseClicked = {
@@ -336,26 +334,32 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private val hostSessionIDClipboard = Label(
         posX = 900, posY = 745, width = 250, height = 60, alignment = Alignment.CENTER,
-        visual = ImageVisual("\\ConfigScene\\smallWoodBg.png"),
+        visual = ImageVisual("ConfigScene/smallWoodBg.png"),
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
     )
 
     private val player1LobbyLabel = Label(
         posX = 890, posY = 440, width = 500, height = 66, alignment = Alignment.CENTER,
-        visual = ImageVisual("\\ConfigScene\\yellowPlayerLobbyIcon.png"),
+        visual = ImageVisual("ConfigScene/yellowPlayerLobbyIcon.png"),
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
     )
 
     private val player2LobbyLabel = Label(
         posX = 890, posY = 540, width = 500, height = 66, alignment = Alignment.CENTER,
-        visual = ImageVisual("\\ConfigScene\\purplePlayerLobbyIcon.png"),
+        visual = ImageVisual("ConfigScene/purplePlayerLobbyIcon.png"),
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
     )
 
     private val player3LobbyLabel = Label(
         posX = 890, posY = 640, width = 500, height = 66, alignment = Alignment.CENTER,
-        visual = ImageVisual("\\ConfigScene\\redPlayerLobbyIcon.png"),
+        visual = ImageVisual("ConfigScene/redPlayerLobbyIcon.png"),
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
+    )
+
+    //host disconnect notification
+    private val hostDisconnected = Label(
+        posX = 400, posY = 40, width = 373, height = 187, alignment = Alignment.CENTER,
+        visual = ImageVisual("\\ConfigScene\\bubble.png")
     )
 
     //Methods
@@ -391,7 +395,7 @@ class ConfigPlayerScene(private val rootService: RootService):
                 for(x in 0 until 3){
                     playerInputs[x].text = ""
                     playerTypeLabels[x].text = "Human"
-                    botButtons[x].visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+                    botButtons[x].visual = ImageVisual("ConfigScene/changeToAIButton.png")
                 }
                 bot3Button.apply {
                 }
@@ -404,7 +408,7 @@ class ConfigPlayerScene(private val rootService: RootService):
                 addComponents(joinButton, hostButton)
                 sessionTextField.text = ""
                 playerNameInput.text = ""
-                onlinePlayerTypeButton.visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+                onlinePlayerTypeButton.visual = ImageVisual("ConfigScene/changeToAIButton.png")
                 onlinePlayerTypeLabel.text = "Human"
                 backCount--
             }
@@ -413,27 +417,28 @@ class ConfigPlayerScene(private val rootService: RootService):
                 removeComponents(hostStartButton, hostSessionIDClipboard,
                     player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
                 backCount--
+                hostLobby = false
                 remove(backCount)
             }
         }
     }
 
     private fun removeOnlineComponents(){
-        removeComponents(joinButton, hostButton)
+        removeComponents(joinButton, hostButton, hostDisconnected)
     }
 
     private fun changeTypeButton( button: Button, label: Label, typeArray: Array<String> ){
         when(label.text){
             "Human" -> {
-                button.visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+                button.visual = ImageVisual("ConfigScene/changeToAIButton.png")
                 label.text = typeArray[1]
             }
             "RandomAI" -> {
-                button.visual = ImageVisual("\\ConfigScene\\changeToHumanButton.png")
+                button.visual = ImageVisual("ConfigScene/changeToHumanButton.png")
                 label.text = typeArray[2]
             }
             "UnfairAI" -> {
-                button.visual = ImageVisual("\\ConfigScene\\changeToAIButton.png")
+                button.visual = ImageVisual("ConfigScene/changeToAIButton.png")
                 label.text = typeArray[0]
             }
         }
@@ -456,9 +461,15 @@ class ConfigPlayerScene(private val rootService: RootService):
     override fun refreshAfterPlayerJoin() {
         val listOfPlayers = rootService.network.client?.playersNames
         checkNotNull(listOfPlayers)
+        if( !hostLobby && playerNameInput.text == listOfPlayers[0] ){
+            remove(backCount)
+            addComponents(hostDisconnected)
+        }
         removeComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
-        player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
-        addComponents(player1LobbyLabel)
+        if( rootService.network.client != null && listOfPlayers.size > 0){
+            player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
+            addComponents(player1LobbyLabel)
+        }
         if(listOfPlayers.size >= 2){
             player2LobbyLabel.text = "Player2: " + listOfPlayers[1]
             addComponents(player2LobbyLabel)

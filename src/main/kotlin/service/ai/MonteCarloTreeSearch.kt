@@ -51,11 +51,11 @@ private class WinnerReporter(private var winner: Player? = null) : Refreshable {
 fun RootService.monteCarloMove(c: Double, timeLimit: Int, execute: (() -> Unit) -> Unit) {
     val move = game.currentState.findMoveMonteCarlo(c, timeLimit)
     execute {
+        println(move)
         executeMontyMove(move)
     }
 }
 
-//TODO improve algorithm
 fun RootService.monteCarloChooseDestinationCards(player: AIPlayer): List<Int> {
     val destinationCards = ArrayList(player.destinationCards)
     val destCardChooser = AIChooseDestinationCard()
@@ -261,6 +261,7 @@ private inline fun RootService.claimRoutesMoves(
 ) {
     val cardCount = currentPlayer.wagonCards.size
     val counts = currentPlayer.wagonCards.counts()
+    var count2: IntArray? = null
     var maxWithoutLocomotive = Color.BLUE
     var maxWithLocomotive = Color.BLUE
 
@@ -277,10 +278,16 @@ private inline fun RootService.claimRoutesMoves(
             emptyList()
     }
     val locomotiveCount = if (maxWithLocomotive == Color.JOKER) 0 else counts[Color.JOKER.ordinal]
+    var uniqueReplacements: LongArray? = null
+    var uniqueReplacementsCount = 0
     for (route in unclaimedRoutes) {
         if (currentPlayer.trainCarsAmount < route.completeLength) continue
         val canClaim = when (route) {
             is Ferry -> {
+                if (route.color == Color.JOKER && count2 == null) {
+                    count2 = IntArray(9) { 0 }
+                    uniqueReplacements = LongArray(9) { 0 }
+                }
                 val color = if (route.color != Color.JOKER) route.color else maxWithoutLocomotive
                 val colorCards = counts[color.ordinal]
                 val realLocomotiveCount = counts[Color.JOKER.ordinal]
@@ -297,10 +304,25 @@ private inline fun RootService.claimRoutesMoves(
         }
         if (canClaim != null || (doubleRoutes && currentPlayer.claimedRoutes.any { route === it })) continue
         monteCarloClaimRoute(route, coloredCards) {
+            if (route is Ferry && route.color == Color.JOKER) {
+                it.usedCards.counts(checkNotNull(count2))
+                var hash = 0L
+                for (i in 0..8) {
+                    hash = hash * 9 + count2[i]
+                }
+                for (i in 0 until uniqueReplacementsCount) {
+                    if (checkNotNull(uniqueReplacements)[i] == hash) {
+                        return@monteCarloClaimRoute
+                    }
+                }
+                checkNotNull(uniqueReplacements)[uniqueReplacementsCount] = hash
+                uniqueReplacementsCount++
+            }
             emit(it)
             game.gameState = GameState.DEFAULT
             game.currentStateIndex = 0
         }
+        uniqueReplacementsCount = 0
     }
 }
 
@@ -325,17 +347,22 @@ private inline fun RootService.monteCarloClaimRoute(
                     val locomotiveCards = allLocomotiveCards
                         .subList(0, min(route.ferries + (route.length - primaryCards.size), allLocomotiveCards.size))
                     var cards = primaryCards + locomotiveCards
+                    var oneOption = false
                     if (cards.size < route.completeLength) {
                         val remainingPrimaries = allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
                         val rest = currentPlayer.wagonCards.filterOther(
                             remainingPrimaries, primaryColor, allPrimaryCards.size, allLocomotiveCards.size
                         )
-                        cards = cards + rest.shuffled().take((route.completeLength - cards.size) * 3)
+                        rest.shuffle()
+                        val used = rest.subList(0, min((route.completeLength - cards.size) * 3, rest.size))
+                        oneOption = used.size == rest.size
+                        cards = cards + used
                     }
                     // if the route cannot be claimed with the cards given, do not emit the move
                     if (playerActionService.canClaimRoute(route, cards, true) == null) {
                         emit(AIMove.ClaimRoute(route, cards, null))
                     }
+                    if (locomotiveCards.size == cards.size || oneOption) break
                 }
             } else {
                 val primaryColor = route.color
@@ -349,7 +376,9 @@ private inline fun RootService.monteCarloClaimRoute(
                     val remainingPrimaries = allPrimaryCards.subList(primaryCards.size, allPrimaryCards.size)
                     val rest = currentPlayer.wagonCards
                         .filterOther(remainingPrimaries, primaryColor, allPrimaryCards.size, allLocomotiveCards.size)
-                    cards = cards + rest.shuffled().subList(0, (route.completeLength - cards.size) * 3)
+                    rest.shuffle()
+                    val used = rest.subList(0, min((route.completeLength - cards.size) * 3, rest.size))
+                    cards = cards + used
                 }
                 emit(AIMove.ClaimRoute(route, cards, null))
             }
@@ -358,17 +387,42 @@ private inline fun RootService.monteCarloClaimRoute(
         is Tunnel -> {
             //prioritise using colored cards over using locomotives
             val allPrimaryCards = colorLists[route.color.ordinal]
+            val allLocomotive = colorLists[Color.JOKER.ordinal]
             var used = allPrimaryCards.subList(0, min(route.length, allPrimaryCards.size))
+            val primaryUsed = used.size
             if (used.size < route.length) {
-                val allLocomotive = colorLists[Color.JOKER.ordinal]
                 used = used + allLocomotive.subList(0, min(route.length - used.size, allLocomotive.size))
             }
-            playerActionService.claimRoute(route, used)
-            if (game.gameState != GameState.AFTER_CLAIM_TUNNEL) {
-                emit(AIMove.ClaimRoute(route, used, null))
-                return
+            val locomotiveUsed = used.size - primaryUsed
+
+            val used2 = if (game.currentState.wagonCardsStack.size >= 3) {
+                val required = game.currentState.wagonCardsStack.run { subList(max(0, size - 3), size) }
+                val remainingLocomotives = allLocomotive.subList(locomotiveUsed, allLocomotive.size)
+                //only locomotives
+                if (primaryUsed == 0) {
+                    val requiredCount = required.count { it.color == Color.JOKER }
+                    if (allLocomotive.size - locomotiveUsed >= requiredCount)
+                        allLocomotive.subList(locomotiveUsed, locomotiveUsed + requiredCount)
+                    else
+                        null
+                } else {
+                    val requiredCount = required.count { it.color == Color.JOKER || it.color == route.color }
+                    var used2 = allPrimaryCards.subList(
+                        primaryUsed, min(primaryUsed + requiredCount, allPrimaryCards.size)
+                    )
+                    if (used2.size < requiredCount) used2 = used2 + allLocomotive.subList(
+                        locomotiveUsed, min(locomotiveUsed + (requiredCount - used2.size), allLocomotive.size)
+                    )
+                    used2
+                }
+            } else {
+                playerActionService.claimRoute(route, used)
+                if (game.gameState != GameState.AFTER_CLAIM_TUNNEL) {
+                    emit(AIMove.ClaimRoute(route, used, null))
+                    return
+                }
+                game.currentState.monteCarloPayTunnel(route, used)
             }
-            val used2 = game.currentState.monteCarloPayTunnel(route, used)
             emit(AIMove.ClaimRoute(route, used, used2))
         }
 
@@ -466,7 +520,7 @@ private fun List<WagonCard>.filterOther(
     primaryColor: Color,
     primaryColorCount: Int,
     locomotiveCount: Int
-): List<WagonCard> {
+): MutableList<WagonCard> {
     val target = ArrayList<WagonCard>(size - primaryColorCount - locomotiveCount + remainingPrimaries.size)
     filterTo(target) {
         it.color != Color.JOKER && it.color != primaryColor

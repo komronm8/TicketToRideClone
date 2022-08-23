@@ -10,13 +10,14 @@ class Ferry(
     length: Int,
     color: Color,
     cities: Pair<City, City>,
+    id: Int,
     sibling: Route? = null,
-): Route(length, color, cities, sibling) {
+): Route(length, color, cities, id, sibling) {
     override val completeLength: Int
         get() = super.completeLength + ferries
     override fun toString(): String {
         return "Ferry(${toStringCore()}, ferries: $ferries)"
     }
 
-    override fun reducedToString(): String = "Ferry(length = $length, color = $length, ferries = $ferries)"
+    override fun reducedToString(): String = "Ferry(length: $length, color: $color, ferries: $ferries)"
 }

@@ -2,6 +2,7 @@ package service.ai
 
 import entity.AIPlayer
 import entity.Player
+import entity.Route
 import service.GameService
 import service.RootService
 import view.Refreshable
@@ -22,7 +23,7 @@ class AIService(private val root: RootService) {
                 override fun refreshAfterEndGame(winner: Player) {
                     println("winner: ${winner.name}")
                     ended = winner
-                    }
+                }
             }
             root.addRefreshable(refreshable)
             val aiService = AIService(root)
@@ -46,6 +47,18 @@ class AIService(private val root: RootService) {
                 GameService.PlayerData("randy", false, AIPlayer.Strategy.Random),
             )
         )
+
+        fun checkRun(times: Int, players: List<GameService.PlayerData>) {
+            val winners = HashMap<String, Int>(players.size)
+            players.forEach { winners[it.name] = 0 }
+            repeat(times) {
+                val winner = runWithAI(players)
+                winners.computeIfPresent(winner.name) { _, wins -> wins + 1 }
+                val runs = (it + 1).toDouble()
+                println(winners.map { "${it.key}: ${it.value.toDouble() / runs}" }.joinToString(separator = ", "))
+            }
+            println(winners)
+        }
     }
 
     /**
