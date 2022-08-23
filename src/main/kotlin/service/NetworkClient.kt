@@ -209,7 +209,8 @@ class NetworkClient(playerName: String,
                 networkService.readIdentifierFromCSV(card.start.toString(), true) == it.name },
                 cities.first { networkService.readIdentifierFromCSV(card.end.toString(), true) == it.name })) },
             cities = cities, players = players, openCards = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(0,5),
-            wagonCardsStack = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(5, message.trainCardStack.size)))
+            wagonCardsStack = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(5, message.trainCardStack.size),
+            /*currentPlayerIndex = players.indexOfFirst { !it.isRemote }*/))
         networkService.updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE)
         networkService.rootService.game.gameState = GameState.CHOOSE_DESTINATION_CARD
 

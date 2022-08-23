@@ -110,9 +110,11 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             chosenCards.clear()
         }
 
-        if (root.game.currentState.players.any { it.isRemote } && playerName == root.network.client?.playerName){
-            root.network.GameInitResponseMessage(cards.map(state.players.first { it.name == playerName }.destinationCards::get))
-            BoardGameApplication.runOnGUIThread {onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)}
+        if (root.game.currentState.players.any { it.isRemote }) {
+            if(playerName == root.network.client?.playerName){
+                root.network.GameInitResponseMessage(cards.map(state.players.first { it.name == playerName }.destinationCards::get))
+                BoardGameApplication.runOnGUIThread {onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)}
+            }
         }
         else{
             BoardGameApplication.runOnGUIThread {onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)}
