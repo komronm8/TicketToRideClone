@@ -105,7 +105,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             root.network.GameInitResponseMessage(cards.map(state.players.first { it.name == playerName }.destinationCards::get))
         }
 
-        BoardGameApplication.runOnGUIThread { onAllRefreshables(Refreshable::refreshAfterOneDestinationCard) }
+        onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)
     }
 
     /**
