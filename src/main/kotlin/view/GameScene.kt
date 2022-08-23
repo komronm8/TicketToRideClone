@@ -560,7 +560,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             if(selectedDestCards.size >= 2) {
                 unFocus()
                 focusChooseDestCards(playerIndex + 1)
-                println(selectedDestCards)
                 root.gameService.chooseDestinationCards(selectedDestCards)
             }
         }
