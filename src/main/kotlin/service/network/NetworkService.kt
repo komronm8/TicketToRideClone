@@ -255,7 +255,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
                 mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))))
         }
 
-        val message = GameInitResponseMessage(tmp.toList())
+        val message = DrawDestinationTicketMessage(tmp.toList())
         client?.sendGameActionMessage(message)
         updateConnectionState(ConnectionState.WAIT_FOR_TURN)
     }
@@ -269,7 +269,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
                 mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))))
         }
 
-        val message = GameInitResponseMessage(tmp.toList())
+        val message = GameInitResponseMessage(tmp.toList(), isGameInitResponse = true)
         client?.sendGameActionMessage(message)
         updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE)
     }

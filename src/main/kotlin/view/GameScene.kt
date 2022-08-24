@@ -597,7 +597,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         }
     }
 
-    private fun claimRouteById(routeId: Int): Unit {
+    private fun claimRouteById(routeId: Int, playerIndex: Int = root.game.currentState.currentPlayerIndex): Unit {
         val routeToClaim =
             checkNotNull(mapRouteButtons.find { (it.last() as Triple<String, String, Int>).third == routeId })
         placeMapButtons(routeToClaim[routeToClaim.size - 2] as Int,
@@ -848,12 +848,13 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     }
 
     override fun refreshAfterClaimRoute(route: Route, cardsUsed: List<WagonCard>) {
+        val claimingPlayer = root.game.currentState.currentPlayerIndex
         BoardGameApplication.runOnGUIThread {
             if (root.game.gameState == GameState.AFTER_CLAIM_TUNNEL) {
                 showCards(root.game.currentState.currentPlayer)
                 focusPayTunnel(route, cardsUsed)
             } else {
-                claimRouteById(route.id)
+                claimRouteById(route.id, claimingPlayer)
             }
         }
     }

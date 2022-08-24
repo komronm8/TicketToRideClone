@@ -489,7 +489,7 @@ class ConfigPlayerScene(private val rootService: RootService):
         if( hostLobby ) showHostLobby() else showJoinLobby()
         if( !hostLobby && playerNameInput.text == listOfPlayers[0] ){
             remove(backCount)
-            errorLabel.visual = ImageVisual("ConfigScene/bubble/hostDisconnected.png")
+            errorLabel.visual = ImageVisual("ConfigScene/Bubble/hostDisconnected.png")
             addComponents(errorLabel)
         }
         if( rootService.network.client != null && listOfPlayers.size > 0){
@@ -521,13 +521,13 @@ class ConfigPlayerScene(private val rootService: RootService):
     override fun refreshAfterError(error: String) {
         when(error) {
             "SID EXISTS" -> {
-                errorLabel.visual = ImageVisual("ConfigScene/bubble/sidExists.png")
+                errorLabel.visual = ImageVisual("ConfigScene/Bubble/sidExists.png")
             }
             "INVALID SID" -> {
-                errorLabel.visual = ImageVisual("ConfigScene/bubble/sidInvalid.png")
+                errorLabel.visual = ImageVisual("ConfigScene/Bubble/sidInvalid.png")
             }
             "PLAYER NAME EXISTS" -> {
-                errorLabel.visual = ImageVisual("ConfigScene/bubble/nameExists.png")
+                errorLabel.visual = ImageVisual("ConfigScene/Bubble/nameExists.png")
             }
         }
         removeComponents(errorLabel)

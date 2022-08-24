@@ -10,10 +10,10 @@ import tools.aqua.bgw.net.common.annotations.GameActionClass
 @GameActionClass
 data class GameInitResponseMessage (
     val selectedDestinationTickets: List<DestinationTicket>,
-    val isGameInitResponse: Boolean = true
+    val isGameInitResponse: Boolean
 ) : GameAction() {
     override fun toString(): String {
-        return "[GameInitResponse] $selectedDestinationTickets"
+        return "[GameInitResponse:$isGameInitResponse] $selectedDestinationTickets"
     }
 
 

@@ -15,6 +15,7 @@ import tools.aqua.bgw.net.common.response.CreateGameResponse
 import tools.aqua.bgw.net.common.response.CreateGameResponseStatus
 import tools.aqua.bgw.net.common.response.JoinGameResponse
 import tools.aqua.bgw.net.common.response.JoinGameResponseStatus
+import kotlin.math.max
 import kotlin.math.min
 
 
@@ -52,10 +53,12 @@ class NetworkClient(
                     playersNames += playerName
                     networkService.onAllRefreshables { refreshAfterPlayerJoin() }
                 }
+
                 CreateGameResponseStatus.SESSION_WITH_ID_ALREADY_EXISTS -> {
                     networkService.disconnect()
                     networkService.onAllRefreshables { refreshAfterError("SID EXISTS") }
                 }
+
                 else -> disconnectAndError(response.status)
             }
         }
@@ -84,14 +87,17 @@ class NetworkClient(
                     networkService.updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT)
                     networkService.onAllRefreshables { refreshAfterPlayerJoin() }
                 }
+
                 JoinGameResponseStatus.INVALID_SESSION_ID -> {
                     networkService.disconnect()
                     networkService.onAllRefreshables { refreshAfterError("INVALID SID") }
                 }
+
                 JoinGameResponseStatus.PLAYER_NAME_ALREADY_TAKEN -> {
                     networkService.disconnect()
                     networkService.onAllRefreshables { refreshAfterError("PLAYER NAME EXISTS") }
                 }
+
                 else -> disconnectAndError(response.status)
             }
         }
@@ -162,9 +168,19 @@ class NetworkClient(
      */
     @GameActionReceiver
     private fun onDrawDestinationTicketMessageReceivedAction(message: DrawDestinationTicketMessage, sender: String) {
-        val cards = networkService.rootService.game.currentState.destinationCards.subList(0, 2)
+        /* val cards = networkService.rootService.game.currentState.destinationCards.subList(0, 3)
         val ints: MutableList<Int> = mutableListOf()
-        for (i in 0 until min(3, networkService.rootService.game.currentState.destinationCards.size)) {
+        val (chosen, old) = networkService.rootService.game.currentState.destinationCards.partition {
+            message.selectedDestinationTickets.any { ticket ->
+                it.points == ticket.score &&
+                        ((it.cities == Pair(getCity(ticket.start.toString()), getCity(ticket.end.toString())) ||
+                                it.cities == Pair(getCity(ticket.end.toString()), getCity(ticket.start.toString()))))
+            }
+        }
+        networkService.rootService.run {
+            insert(game.currentState.copy(destinationCards =  old + chosen))
+        }
+        /*for (i in 0 until min(3, networkService.rootService.game.currentState.destinationCards.size)) {
             if (message.selectedDestinationTickets.any {
                     cards[i].points == it.score &&
                             (cards[i].cities == Pair(getCity(it.start.toString()), getCity(it.end.toString())) ||
@@ -172,8 +188,20 @@ class NetworkClient(
                 }) {
                 ints += i
             }
-        }
-        networkService.rootService.playerActionService.drawDestinationCards(ints)
+        }*/
+        println(chosen)
+        networkService.rootService.playerActionService.drawDestinationCards(chosen.indices.toList()) */
+
+        println("öcvhdaulvaeulvaeluiveuilv hjk bv-äoaoh fävhnöeoihv ")
+        val destinationIndices = message.selectedDestinationTickets
+            .map { card: DestinationTicket-> networkService.rootService.game.currentState.destinationCards
+                .indexOfFirst { it.points == card.score && it.cities.first == getCity(card.start.toString())
+                        && it.cities.second == getCity(card.end.toString()) }
+            }
+            .map {
+                it - max(networkService.rootService.game.currentState.destinationCards.size - 3, 0)
+            }
+        networkService.rootService.playerActionService.drawDestinationCards(destinationIndices)
         if (networkService.rootService.game.currentState.currentPlayer.name == playerName) {
             networkService.updateConnectionState(ConnectionState.PLAY_TURN)
         }
@@ -192,7 +220,8 @@ class NetworkClient(
         val expectedCount = expectedWagonCards.groupBy { it.color }.mapValues { it.value.count() }
         val wagonCards = expectedCount.flatMap { checkNotNull(playerCards[it.key]).subList(0, it.value) }
         if (networkService.rootService.playerActionService.claimRoute(
-                route, wagonCards)
+                route, wagonCards
+            )
             == PlayerActionService.ClaimRouteFailure.RouteAlreadyClaimed && sibling != null
         ) {
             networkService.rootService.playerActionService.claimRoute(
@@ -289,7 +318,8 @@ class NetworkClient(
      */
     @GameActionReceiver
     private fun onGameInitResponseMessageReceived(message: GameInitResponseMessage, sender: String) {
-        //check(networkService.connectionState == ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE){"Not in right state"}
+        //check(networkService.connectionState == ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE || networkService.connectionState == ConnectionState.BUILD_GAMEINIT_RESPONSE){"Not in right state"}
+        println(message)
         BoardGameApplication.runOnGUIThread {
             networkService.rootService.gameService.chooseDestinationCards(sender,
                 message.selectedDestinationTickets.map { card: DestinationTicket ->

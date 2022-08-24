@@ -95,6 +95,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             else -> throw IllegalStateException("illegal state for draw destination card")
         }
         val drawAmount = min(state.destinationCards.size, 3)
+        println(cards)
         check(drawAmount >= cards.size)
         check(cards.isNotEmpty())
         cards.forEach { check(it in 0 until drawAmount) }
