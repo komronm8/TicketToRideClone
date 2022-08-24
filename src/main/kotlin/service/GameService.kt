@@ -1,6 +1,7 @@
 package service
 
 import entity.*
+import tools.aqua.bgw.core.BoardGameApplication
 import view.Refreshable
 import java.util.*
 
@@ -89,17 +90,40 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         root.game.gameState = GameState.DEFAULT
         root.game.states[0] = state.copy(players = newPlayers)
         onAllRefreshables(Refreshable::refreshAfterChooseDestinationCard)
+
+        if (root.game.currentState.players.any { it.isRemote }){
+            root.network.updateConnectionState(when (root.network.client?.playerName){
+                state.currentPlayer.name -> ConnectionState.PLAY_TURN
+                else -> ConnectionState.WAIT_FOR_TURN
+            })
+        }
+
     }
 
     fun chooseDestinationCards(playerName: String, cards: List<Int>){
         chosenCards[playerName] = cards
+
+        if (root.game.currentState.players.any { it.isRemote }) {
+            if(playerName == root.network.client?.playerName){
+                root.network.GameInitResponseMessage(cards.map(state.players.first { it.name == playerName }
+                    .destinationCards::get))
+                BoardGameApplication.runOnGUIThread {onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)}
+            }
+        }
 
         if (chosenCards.size >= state.players.size){
             chooseDestinationCard(chosenCards)
             chosenCards.clear()
         }
 
-        onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)
+        if (root.game.currentState.players.any { it.isRemote }) {
+            if(playerName == root.network.client?.playerName){
+                BoardGameApplication.runOnGUIThread {onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)}
+            }
+        }
+        else{
+            BoardGameApplication.runOnGUIThread {onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)}
+        }
     }
 
     /**

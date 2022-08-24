@@ -1,4 +1,4 @@
-package service.message
+package service.network.message
 
 import entity.Color
 

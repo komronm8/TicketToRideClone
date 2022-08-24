@@ -288,6 +288,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                 } catch (e: Exception) {
                     println("Message send failure: " + e.message)
                 }
+                chatRecieved.items.add("[You]: " + text)
                 text = ""
             }
         }
@@ -680,6 +681,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             return
         }
 
+        showCards(root.game.currentState.players[playerIndex])
         focusUI(showDestCards, "Choose at least two cards and continue...", playerIndex) {
             if (selectedDestCards.size >= 2) {
                 unFocus()
@@ -872,7 +874,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
         initializeOtherPlayerUI()
         updateDecks()
-        showCards(root.game.currentState.currentPlayer)
+        //showCards(root.game.currentState.currentPlayer)
         focusChooseDestCards(0)
         updateRedoUndo()
         // TODO
