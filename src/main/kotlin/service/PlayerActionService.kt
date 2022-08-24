@@ -222,7 +222,8 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      * @param usedCards the cards which are used to claim the route
      * @param exhaustive sets whether the [usedCards] must suffice exactly to claim the route
      */
-    fun validateClaimRoute(currentPlayer: Player, route: Route, usedCards: List<WagonCard>, exhaustive: Boolean): ClaimRouteFailure? {
+    fun validateClaimRoute(currentPlayer: Player, route: Route,
+                           usedCards: List<WagonCard>, exhaustive: Boolean): ClaimRouteFailure? {
         if (currentPlayer.trainCarsAmount < route.completeLength) {
             return ClaimRouteFailure.NotEnoughTrainCars
         }
