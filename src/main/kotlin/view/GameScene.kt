@@ -601,7 +601,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         val routeToClaim =
             checkNotNull(mapRouteButtons.find { (it.last() as Triple<String, String, Int>).third == routeId })
         placeMapButtons(routeToClaim[routeToClaim.size - 2] as Int,
-            routeToClaim, root.game.currentState.currentPlayerIndex)
+            routeToClaim, playerIndex)
     }
 
     private fun redrawAllMapButtons(): Unit {
