@@ -852,7 +852,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         BoardGameApplication.runOnGUIThread {
             if (root.game.gameState == GameState.AFTER_CLAIM_TUNNEL) {
                 showCards(root.game.currentState.currentPlayer)
-                focusPayTunnel(route, cardsUsed)
+                if(!(root.game.currentState.currentPlayer.isRemote || root.game.currentState.currentPlayer is AIPlayer))
+                    focusPayTunnel(route, cardsUsed)
             } else {
                 claimRouteById(route.id, claimingPlayer)
             }
@@ -861,7 +862,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
     override fun refreshAfterAfterClaimTunnel(route: Route) {
         BoardGameApplication.runOnGUIThread {
-            unFocus()
+            if (components.contains(topFocus))
+                unFocus()
             claimRouteById(route.id)
         }
     }
