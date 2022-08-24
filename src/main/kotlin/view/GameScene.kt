@@ -860,9 +860,10 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     }
 
     override fun refreshAfterAfterClaimTunnel(route: Route) {
+        val currentPlayer = root.game.currentStateIndex
         BoardGameApplication.runOnGUIThread {
             unFocus()
-            claimRouteById(route.id)
+            claimRouteById(route.id,  currentPlayer)
         }
     }
 
@@ -893,7 +894,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         focusChooseDestCards(0)
         updateRedoUndo()
         // TODO
-        println("hababa: " + root.game.currentState.players)
         thread {
             for (player in root.game.currentState.players.filterIsInstance<AIPlayer>()) {
                 val indices = AIService(root).chooseDestinationCards(player)

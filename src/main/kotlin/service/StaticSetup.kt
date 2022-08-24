@@ -93,13 +93,12 @@ private fun MutableList<City>.constructGraph() {
     (trom to hon).ferry(2, 4, PURPLE)
     (nar to trom).ferry(1, 3, YELLOW)
     (moi to nar).ferry(2, 4, ORANGE)
-    (tron to moi).ferry(2, 6, RED)
-    (tron to moi).tunnel(5, GREEN)
+    (tron to moi).tunnel(5, GREEN, (tron to moi).ferry(2, 6, RED))
     (and to tron).ferry(1, 2, WHITE)
     (ber to and).ferry(2, 5, BLACK)
     (sta to ber).ferry(1, 2, PURPLE)
-    (kri to sta).ferry(1, 3, ORANGE)// doppelroute?
-    (kri to sta).tunnel(2, GREEN)
+    // doppelroute?
+    (kri to sta).tunnel(2, GREEN, (kri to sta).ferry(1, 3, ORANGE))
     (kri to osl).route(2,  BLACK)
     (osl to ber).tunnel(4, RED, (osl to ber).tunnel(4, BLUE))
     (osl to  lil).tunnel(2, PURPLE)
