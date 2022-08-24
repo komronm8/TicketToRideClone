@@ -1,6 +1,4 @@
-package service.message
-
-import entity.Color
+package service.network.message
 
 /**
  * Enum representing the different colors a player may have,

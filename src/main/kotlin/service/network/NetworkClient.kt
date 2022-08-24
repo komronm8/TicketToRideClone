@@ -1,10 +1,12 @@
-package service
+package service.network
 
 import entity.*
 import entity.City
-import service.message.*
-import service.message.Color
-import service.message.Player
+import service.ConnectionState
+import service.PlayerActionService
+import service.constructGraph
+import service.network.message.*
+import service.network.message.Color
 import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.net.client.BoardGameClient
 import tools.aqua.bgw.net.client.NetworkLogging

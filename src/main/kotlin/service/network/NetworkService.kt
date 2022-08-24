@@ -1,10 +1,14 @@
-package service
+package service.network
 
 import entity.*
-import service.message.*
-import service.message.City
-import service.message.Color
-import service.message.Player
+import service.AbstractRefreshingService
+import service.ConnectionState
+import service.RootService
+import service.network.*
+import service.network.message.*
+import service.network.message.City
+import service.network.message.Color
+import service.network.message.Player
 import tools.aqua.bgw.util.Stack
 import java.io.File
 import java.io.InputStream
@@ -156,12 +160,17 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val message = GameInitMessage(
             (game.openCards + game.wagonCardsStack).map { it.color.maptoMessageColor() },
-            game.players.map { player -> Player(isBot = player is AIPlayer,
-                trainCards = player.wagonCards.map { it.color.maptoMessageColor() },
-                color = colors.pop(),
-                destinationTickets = player.destinationCards.map {
-                    DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
-                        mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) }) },
+            game.players.map { player ->
+                Player(isBot = player is AIPlayer,
+                    trainCards = player.wagonCards.map { it.color.maptoMessageColor() },
+                    color = colors.pop(),
+                    destinationTickets = player.destinationCards.map {
+                        DestinationTicket(
+                            it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                            mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))
+                        )
+                    })
+            },
             game.destinationCards.map {
                 DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
                     mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) })
@@ -245,8 +254,10 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val tmp: MutableList<DestinationTicket> = mutableListOf()
         selectedDestinationTickets.forEach{
-            tmp.add(DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
-                mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))))
+            tmp.add(
+                DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false)))
+            )
         }
 
         val message = GameInitResponseMessage(tmp.toList())
@@ -258,8 +269,10 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val tmp: MutableList<DestinationTicket> = mutableListOf()
         selectedCards.forEach{
-            tmp.add(DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
-                mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))))
+            tmp.add(
+                DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false)))
+            )
         }
 
         val message = GameInitResponseMessage(tmp.toList())
@@ -370,7 +383,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         client?.sendGameActionMessage(ChatMessage(text))
     }
 
-    fun mapToCityEnum(str: String): City{
+    fun mapToCityEnum(str: String): City {
         when(str){
             "ALB" ->return City.ALB;"AND" ->return City.AND;"ARH" ->return City.ARH;"BER"->return City.BER;"BOD"->return City.BOD;
             "GOT"->return City.GOT;

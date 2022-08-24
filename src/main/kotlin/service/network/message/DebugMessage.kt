@@ -1,4 +1,4 @@
-package service.message
+package service.network.message
 
 import tools.aqua.bgw.net.common.GameAction
 import tools.aqua.bgw.net.common.annotations.GameActionClass
