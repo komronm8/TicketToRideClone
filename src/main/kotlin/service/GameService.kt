@@ -138,7 +138,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     }
 
     fun nextGame() {
-        startNewGame(state.players.map { PlayerData(it.name, it.isRemote) })
+        startNewGame(state.players.map { PlayerData(it.name, it.isRemote, (it as? AIPlayer)?.strategy) })
     }
 
     private fun updateWithFinalScore(): Player {

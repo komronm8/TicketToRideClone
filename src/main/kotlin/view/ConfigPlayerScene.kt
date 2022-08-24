@@ -372,6 +372,13 @@ class ConfigPlayerScene(private val rootService: RootService):
      * Function for adding the solo components of the config scene
      */
     fun addSoloComponents(){
+        removeComponents(
+            player1Label, player2Label,
+            player1Input, player2Input,
+            bot1Button, player1TypeLabel, player1Icon,
+            bot2Button, player2TypeLabel, player2Icon,
+            startButton, removeButton, addButton, goBackButton, garrySoloIcon,
+            joinButton, hostButton, goBackButton, garryOnlineIcon)
         addComponents(
             player1Label, player2Label,
             player1Input, player2Input,
@@ -384,6 +391,13 @@ class ConfigPlayerScene(private val rootService: RootService):
      * Function for adding the online components of the config scene
      */
     fun addOnlineComponents(){
+        removeComponents(
+            player1Label, player2Label,
+            player1Input, player2Input,
+            bot1Button, player1TypeLabel, player1Icon,
+            bot2Button, player2TypeLabel, player2Icon,
+            startButton, removeButton, addButton, goBackButton, garrySoloIcon, joinButton,
+            hostButton, goBackButton, garryOnlineIcon)
         addComponents(
             joinButton, hostButton, goBackButton, garryOnlineIcon
         )

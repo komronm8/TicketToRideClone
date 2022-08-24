@@ -388,6 +388,8 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     }
 
     private fun initializeOtherPlayerUI(): Unit {
+        otherPlayers.forEach(this::removeComponents)
+        otherPlayers.clear()
         if (root.game.currentState.players.size == 2) {
             otherPlayers.add(Pane(1025, 75, 250, 250))
         } else {
@@ -855,6 +857,9 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     }
 
     override fun refreshAfterStartNewGame() {
+        redrawAllMapButtons()
+        playerBanner.removeAll(listOf(redo, undo))
+        removeComponents(aiSpeedButton, chat)
         playerBanner.addAll(redo, undo)
         for (player in root.game.currentState.players) {
             if (player is AIPlayer) {
