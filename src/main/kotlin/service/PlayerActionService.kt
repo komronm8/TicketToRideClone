@@ -1,6 +1,7 @@
 package service
 
 import entity.*
+import tools.aqua.bgw.core.BoardGameApplication
 import view.Refreshable
 import kotlin.math.max
 import kotlin.math.min
@@ -170,14 +171,17 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 root.undo()
                 root.insert(newState)
                 root.game.gameState = GameState.DEFAULT
+                println("Reached sending")
                 if (state.players.any { it.isRemote }) {
-                    val prevState = root.game.run { states[currentStateIndex - 1] }
-                    val shuffled = prevState.discardStack.isNotEmpty() && state.discardStack.isEmpty()
-                    val newCardStack = if (shuffled) state.wagonCardsStack else null
-                    val selected = state.currentPlayer.wagonCards.filter {
-                            card -> prevState.currentPlayer.wagonCards.none { card === it}
+                    if(state.currentPlayer.name == root.network.client?.playerName) {
+                        val prevState = root.game.run { states[currentStateIndex - 1] }
+                        val shuffled = prevState.discardStack.isNotEmpty() && state.discardStack.isEmpty()
+                        val newCardStack = if (shuffled) state.wagonCardsStack else null
+                        val selected = state.currentPlayer.wagonCards.filter { card ->
+                            prevState.currentPlayer.wagonCards.none { card === it }
+                        }
+                        root.network.sendDrawTrainCardMessage(selected, newCardStack)
                     }
-                    root.network.sendDrawTrainCardMessage(selected, newCardStack)
                 }
                 root.gameService.nextPlayer()
             }
@@ -250,7 +254,9 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             root.insert(state.copy(discardStack = newDiscardStack, players = newPlayer))
             onAllRefreshables { refreshAfterClaimRoute(route, usedCards) }
             if (root.game.currentState.players.any { it.isRemote }){
-                root.network.sendClaimARounteMessage(route, null, usedCards, null)
+                if(state.currentPlayer.name == root.network.client?.playerName) {
+                    root.network.sendClaimARounteMessage(route, null, usedCards, null)
+                }
             }
             root.gameService.nextPlayer()
             return null
