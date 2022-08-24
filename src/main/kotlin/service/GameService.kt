@@ -101,7 +101,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     }
 
     fun chooseDestinationCards(playerName: String, cards: List<Int>){
-        chosenCards[playerName] = cards
+        chosenCards[playerName] = cards.toList()
 
         if (root.game.currentState.players.any { it.isRemote }) {
             if(playerName == root.network.client?.playerName){

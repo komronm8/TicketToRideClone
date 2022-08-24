@@ -1,4 +1,4 @@
-import service.network.NetworkService
+import service.NetworkService
 import service.RootService
 import view.SopraApplication
 

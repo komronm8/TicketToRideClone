@@ -48,6 +48,9 @@ class AIService(private val root: RootService) {
             )
         )
 
+        /**
+         * Runs the AI with the given [players] [times] times
+         */
         fun checkRun(times: Int, players: List<GameService.PlayerData>) {
             val winners = HashMap<String, Int>(players.size)
             players.forEach { winners[it.name] = 0 }
@@ -74,6 +77,9 @@ class AIService(private val root: RootService) {
         }
     }
 
+    /**
+     * Chooses the destination cards for the given players
+     */
     fun chooseDestinationCards(player: AIPlayer): List<Int> = when (player.strategy) {
         AIPlayer.Strategy.Random -> List(5) { idx -> idx }
             .shuffled()

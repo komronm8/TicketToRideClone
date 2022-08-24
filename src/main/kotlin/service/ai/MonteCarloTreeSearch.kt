@@ -55,6 +55,9 @@ fun RootService.monteCarloMove(c: Double, timeLimit: Int, execute: (() -> Unit) 
     }
 }
 
+/**
+ * Computes chosen cards for the monte-carloai
+ */
 fun RootService.monteCarloChooseDestinationCards(player: AIPlayer): List<Int> {
     val destinationCards = ArrayList(player.destinationCards)
     val destCardChooser = AIChooseDestinationCard()
