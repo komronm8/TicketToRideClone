@@ -1,7 +1,6 @@
 package service
 
 import entity.*
-import tools.aqua.bgw.core.BoardGameApplication
 import view.Refreshable
 import kotlin.math.max
 import kotlin.math.min
@@ -17,38 +16,40 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         /**
          * Specifies that the current player does not have enough train cars
          */
-        object NotEnoughTrainCars: ClaimRouteFailure
+        object NotEnoughTrainCars : ClaimRouteFailure
 
         /**
          * Specifies that the sibling of the route to be claimed has already been claimed by the current player
          */
-        object SiblingClaimedBySamePlayer: ClaimRouteFailure
+        object SiblingClaimedBySamePlayer : ClaimRouteFailure
 
         /**
          * Specifies that the route to be claimed has already been claimed
          */
-        object RouteAlreadyClaimed: ClaimRouteFailure
+        object RouteAlreadyClaimed : ClaimRouteFailure
+
         /**
          * Specifies that the sibling of the route to be claimed has already been claimed by another player and
          * that there are only two players
          */
-        object SiblingClaimedByAnotherPlayer: ClaimRouteFailure
+        object SiblingClaimedByAnotherPlayer : ClaimRouteFailure
 
         /**
          * Specifies that the given cards do not suffice for claiming the route
          */
-        object NotEnoughCards: ClaimRouteFailure
+        object NotEnoughCards : ClaimRouteFailure
 
         /**
          * Specifies that too many cards were given for claiming the route
          */
-        object TooManyCards: ClaimRouteFailure
+        object TooManyCards : ClaimRouteFailure
 
         /**
          * Specifies that there were cards of illegal color in the given cards
          */
-        object IllegalCards: ClaimRouteFailure
+        object IllegalCards : ClaimRouteFailure
     }
+
     private inline val state: State
         get() = root.game.currentState
 
@@ -108,7 +109,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         val newPlayer = state.updateCurrentPlayer { copy(destinationCards = newDestinationCards) }
         root.insert(state.copy(destinationCards = newDestinationStack, players = newPlayer))
         onAllRefreshables(Refreshable::refreshAfterDrawDestinationCards)
-        if (root.game.currentState.players.any { it.isRemote }){
+        if (state.players.any { it.isRemote } && state.currentPlayer.name == root.network.client?.playerName) {
             root.network.sendDrawDestinationTicket(cards.map(drawnCards::get))
         }
         root.gameService.nextPlayer()
@@ -172,16 +173,14 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 root.insert(newState)
                 root.game.gameState = GameState.DEFAULT
                 println("Reached sending")
-                if (state.players.any { it.isRemote }) {
-                    if(state.currentPlayer.name == root.network.client?.playerName) {
-                        val prevState = root.game.run { states[currentStateIndex - 1] }
-                        val shuffled = prevState.discardStack.isNotEmpty() && state.discardStack.isEmpty()
-                        val newCardStack = if (shuffled) state.wagonCardsStack else null
-                        val selected = state.currentPlayer.wagonCards.filter { card ->
-                            prevState.currentPlayer.wagonCards.none { card === it }
-                        }
-                        root.network.sendDrawTrainCardMessage(selected, newCardStack)
+                if (state.players.any { it.isRemote } && state.currentPlayer.name == root.network.client?.playerName) {
+                    val prevState = root.game.run { states[currentStateIndex - 1] }
+                    val shuffled = prevState.discardStack.isNotEmpty() && state.discardStack.isEmpty()
+                    val newCardStack = if (shuffled) state.wagonCardsStack else null
+                    val selected = state.currentPlayer.wagonCards.filter { card ->
+                        prevState.currentPlayer.wagonCards.none { card === it }
                     }
+                    root.network.sendDrawTrainCardMessage(selected, newCardStack)
                 }
                 root.gameService.nextPlayer()
             }
@@ -253,10 +252,8 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             val newDiscardStack = state.discardStack + usedCards
             root.insert(state.copy(discardStack = newDiscardStack, players = newPlayer))
             onAllRefreshables { refreshAfterClaimRoute(route, usedCards) }
-            if (root.game.currentState.players.any { it.isRemote }){
-                if(state.currentPlayer.name == root.network.client?.playerName) {
-                    root.network.sendClaimARounteMessage(route, null, usedCards, null)
-                }
+            if (root.game.currentState.players.any { it.isRemote } && state.currentPlayer.name == root.network.client?.playerName) {
+                root.network.sendClaimARounteMessage(route, null, usedCards, null)
             }
             root.gameService.nextPlayer()
             return null
@@ -270,8 +267,10 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      * @param usedCards the cards which are used to claim the route
      * @param exhaustive sets whether the [usedCards] must suffice exactly to claim the route
      */
-    fun validateClaimRoute(currentPlayer: Player, route: Route,
-                           usedCards: List<WagonCard>, exhaustive: Boolean): ClaimRouteFailure? {
+    fun validateClaimRoute(
+        currentPlayer: Player, route: Route,
+        usedCards: List<WagonCard>, exhaustive: Boolean
+    ): ClaimRouteFailure? {
         if (currentPlayer.trainCarsAmount < route.completeLength) {
             return ClaimRouteFailure.NotEnoughTrainCars
         }
@@ -428,6 +427,11 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                     wagonCardsStack = newDraw
                 )
             )
+            if (root.game.currentState.players.any { it.isRemote } && state.currentPlayer.name == root.network.client?.playerName) {
+                val shuffled = previousState.discardStack.isNotEmpty() && newDiscard.isEmpty()
+                val newCardStack = if (shuffled) state.wagonCardsStack else null
+                root.network.sendClaimARounteMessage(route, newCardStack, usedCards, null)
+            }
             root.game.gameState = GameState.DEFAULT
             root.gameService.nextPlayer()
             return
@@ -454,6 +458,11 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         )
         root.game.gameState = GameState.DEFAULT
         onAllRefreshables { refreshAfterAfterClaimTunnel(route) }
+        if (root.game.currentState.players.any { it.isRemote } && state.currentPlayer.name == root.network.client?.playerName) {
+            val shuffled = previousState.discardStack.isNotEmpty() && newDiscard.isEmpty()
+            val newCardStack = if (shuffled) state.wagonCardsStack else null
+            root.network.sendClaimARounteMessage(route, newCardStack, usedCards, cards)
+        }
         root.gameService.nextPlayer()
     }
 
@@ -463,7 +472,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         if (colorCard == null) {
             return required.count { it.color == Color.JOKER } to null
         } else {
-            return required.count { it.color == colorCard.color || it.color == Color.JOKER} to colorCard.color
+            return required.count { it.color == colorCard.color || it.color == Color.JOKER } to colorCard.color
         }
     }
 

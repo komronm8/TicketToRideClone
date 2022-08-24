@@ -790,25 +790,27 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     }
 
     override fun refreshAfterNextPlayer() {
-        if (components.contains(topFocus))
-            unFocus()
+        BoardGameApplication.runOnGUIThread {
+            if (components.contains(topFocus))
+                unFocus()
 
-        selectedTrainCards.clear()
-        selectedDestCards.clear()
+            selectedTrainCards.clear()
+            selectedDestCards.clear()
 
-        setPlayerImages()
-        showCards(root.game.currentState.currentPlayer)
-        updateDecks()
-        updateRedoUndo()
-        println(root.game.currentState.currentPlayerIndex)
-        //TODO
-        if (root.game.currentState.currentPlayer is AIPlayer) {
-            val access = Any()
-            aiAccessKey = access
-            thread {
-                AIService(root).executePlayerMove {
-                    if (aiAccessKey === access) {
-                        BoardGameApplication.runOnGUIThread(it)
+            setPlayerImages()
+            showCards(root.game.currentState.currentPlayer)
+            updateDecks()
+            updateRedoUndo()
+            println(root.game.currentState.currentPlayerIndex)
+            //TODO
+            if (root.game.currentState.currentPlayer is AIPlayer) {
+                val access = Any()
+                aiAccessKey = access
+                thread {
+                    AIService(root).executePlayerMove {
+                        if (aiAccessKey === access) {
+                            BoardGameApplication.runOnGUIThread(it)
+                        }
                     }
                 }
             }
@@ -822,38 +824,45 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
     }
 
     override fun refreshAfterDrawWagonCards() {
-        if (root.game.gameState == GameState.DREW_WAGON_CARD) {
-            focusUI(
-                Label(
-                    posX = trainCardDeck.posX, posY = destCardDeck.posY + destCardDeck.height,
-                    width = trainCardDeck.width,
-                    height = trainCardDeck.posY - (destCardDeck.posY + destCardDeck.height) + trainCardDeck.height
-                ), "Choose another card",
-                root.game.currentState.currentPlayerIndex
-            ) {}
-        } else
-            unFocus()
+        BoardGameApplication.runOnGUIThread {
+            if (root.game.gameState == GameState.DREW_WAGON_CARD) {
+                focusUI(
+                    Label(
+                        posX = trainCardDeck.posX, posY = destCardDeck.posY + destCardDeck.height,
+                        width = trainCardDeck.width,
+                        height = trainCardDeck.posY - (destCardDeck.posY + destCardDeck.height) + trainCardDeck.height
+                    ), "Choose another card",
+                    root.game.currentState.currentPlayerIndex
+                ) {}
+            } else
+                unFocus()
 
-        updateDecks()
+            updateDecks()
+        }
     }
 
     override fun refreshAfterDrawDestinationCards() {
-        updateDecks()
+        BoardGameApplication.runOnGUIThread {
+            updateDecks()
+        }
     }
 
     override fun refreshAfterClaimRoute(route: Route, cardsUsed: List<WagonCard>) {
-        if (root.game.gameState == GameState.AFTER_CLAIM_TUNNEL) {
-            showCards(root.game.currentState.currentPlayer)
-            focusPayTunnel(route, cardsUsed)
-        } else {
-            claimRouteById(route.id)
+        BoardGameApplication.runOnGUIThread {
+            if (root.game.gameState == GameState.AFTER_CLAIM_TUNNEL) {
+                showCards(root.game.currentState.currentPlayer)
+                focusPayTunnel(route, cardsUsed)
+            } else {
+                claimRouteById(route.id)
+            }
         }
     }
 
     override fun refreshAfterAfterClaimTunnel(route: Route) {
-        unFocus()
-
-        claimRouteById(route.id)
+        BoardGameApplication.runOnGUIThread {
+            unFocus()
+            claimRouteById(route.id)
+        }
     }
 
     override fun refreshAfterStartNewGame() {

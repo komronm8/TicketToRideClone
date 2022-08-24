@@ -1,6 +1,10 @@
-package service
+package service.network
 
 import entity.*
+import service.AbstractRefreshingService
+import service.ConnectionState
+import service.NetworkClient
+import service.RootService
 import service.network.message.*
 import service.network.message.Player as RemotePlayer
 import service.network.message.Color as MessageColor
@@ -318,6 +322,8 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             mapToCityEnum(readIdentifierFromCSV(claimedRoute.cities.first.name,false)),tmpNewTrainCards,tmpTrainCards,
             claimedRoute.color.maptoMessageColor(),tmpTunnelCards)
 
+        println("Here")
+        println(this.connectionState)
         client?.sendGameActionMessage(message)
     }
     data class CityMapping(

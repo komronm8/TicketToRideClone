@@ -5,14 +5,14 @@ import tools.aqua.bgw.net.common.annotations.GameActionClass
 
 @GameActionClass
 data class DrawTrainCardMessage (
-    val color: List<Color>,
+    val selectedTrainCards: List<Color>,
     val newTrainCardStack: List<Color>?
 ) : GameAction() {
     override fun toString(): String {
-        return "[DrawTrainCard] $color, $newTrainCardStack"
+        return "[DrawTrainCard] $selectedTrainCards, $newTrainCardStack"
     }
 
     init {
-        require(color.size == 2){ "Invalid number of train cards" }
+        require(selectedTrainCards.size == 2){ "Invalid number of train cards" }
     }
 }

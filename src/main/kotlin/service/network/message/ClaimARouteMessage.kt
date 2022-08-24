@@ -9,7 +9,7 @@ data class ClaimARouteMessage (
     val start: City,
     val newTrainCardStack: List<Color>?,
     val playedTrainCards: List<Color>,
-    val color: Color,
+    val railColor: Color,
     val drawnTunnelCards: List<Color>?
 ) : GameAction() {
     override fun toString(): String {

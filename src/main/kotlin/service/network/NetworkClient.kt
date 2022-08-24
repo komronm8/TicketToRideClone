@@ -2,6 +2,7 @@ package service
 
 import entity.*
 import entity.City
+import service.network.NetworkService
 import service.network.message.*
 import service.network.message.Color
 import tools.aqua.bgw.core.BoardGameApplication
@@ -146,7 +147,7 @@ class NetworkClient(
                         + message.newTrainCardStack.map { WagonCard(it.maptoGameColor()) }
             ))
         }
-        message.color.forEach { color: Color ->
+        message.selectedTrainCards.forEach { color: Color ->
             networkService.rootService.playerActionService.drawWagonCard(
                 networkService.rootService.game.currentState.openCards.indexOf(WagonCard(color.maptoGameColor()))
             )
@@ -183,10 +184,15 @@ class NetworkClient(
      */
     @GameActionReceiver
     private fun onClaimARouteMessageReceivedAction(message: ClaimARouteMessage, sender: String) {
-        val route = getRoute(message.start.toString(), message.end.toString(), message.color)
+        val route = getRoute(message.start.toString(), message.end.toString(), message.railColor)
         val sibling = route.sibling
+        val expectedWagonCards = message.playedTrainCards.map { WagonCard(it.maptoGameColor()) }
+        val currentState = networkService.rootService.game.currentState
+        val playerCards = currentState.currentPlayer.wagonCards.groupBy { it.color }
+        val expectedCount = expectedWagonCards.groupBy { it.color }.mapValues { it.value.count() }
+        val wagonCards = expectedCount.flatMap { checkNotNull(playerCards[it.key]).subList(0, it.value) }
         if (networkService.rootService.playerActionService.claimRoute(
-                route, message.playedTrainCards.map { WagonCard(it.maptoGameColor()) })
+                route, wagonCards)
             == PlayerActionService.ClaimRouteFailure.RouteAlreadyClaimed && sibling != null
         ) {
             networkService.rootService.playerActionService.claimRoute(
