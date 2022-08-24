@@ -85,11 +85,10 @@ class EndGameScene(private val rootService: RootService):
     private val players = mutableListOf<Player>()
     private fun configScoreboard(){
         val game = rootService.game.currentState
-        for( i in game.players ){
+        for( i in game.players.sortedByDescending { it.points } ){
             players.add(i)
             listOfPoints.add(i.points)
         }
-        listOfPoints.sortDescending()
         if(game.players.size == 2) configFor2Players() else configFor3Player()
     }
 
