@@ -32,7 +32,7 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
         }
     }
 
-    private var mainMenuScene = NewGameScene(rootService).apply {
+    private var mainMenuScene = NewGameScene().apply {
         soloButton.onMouseClicked = {
             configScene.addSoloComponents()
             this@SopraApplication.hideMenuScene()

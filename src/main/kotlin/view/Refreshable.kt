@@ -68,7 +68,13 @@ interface Refreshable {
      */
     fun refreshAfterPlayerDisconnect() {}
 
+    /**
+     * Gets called after an eroor accourt
+     */
     fun refreshAfterError(error: String){}
 
+    /**
+     * Gets called after chat message
+     */
     fun refreshAfterText(text: String) {}
 }

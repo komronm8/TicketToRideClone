@@ -13,7 +13,11 @@ import tools.aqua.bgw.util.Stack
 import java.io.File
 import java.io.InputStream
 
-
+/**
+ * Handels gamestate for BGW-Net
+ *
+ * @property root Enables access to GUI, Service and Entity
+ */
 class NetworkService(val rootService: RootService): AbstractRefreshingService() {
     companion object {
         /** URL of the BGW net server hosted for SoPra participants */
@@ -241,8 +245,10 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val trainCardStackCount: Int = rootService.game.currentState.wagonCardsStack.size
 
-        if(numOfDestinationCards.toList() != message.numOfDestinationCards || numOfTrainCards.toList() != message.numOfTrainCards
-            || numOfClaimedRoutes.toList() != message.numOfClaimedRoutes || trainCardStackCount != message.trainCardStackCount){
+        if(numOfDestinationCards.toList() != message.numOfDestinationCards
+            || numOfTrainCards.toList() != message.numOfTrainCards
+            || numOfClaimedRoutes.toList() != message.numOfClaimedRoutes
+            || trainCardStackCount != message.trainCardStackCount){
             updateConnectionState(ConnectionState.ERROR)
             consistent = false
         }
@@ -431,16 +437,21 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      */
     fun mapToCityEnum(str: String): MessageCity{
         when(str){
-            "ALB" ->return MessageCity.ALB;"AND" ->return MessageCity.AND;"ARH" ->return MessageCity.ARH;"BER"->return MessageCity.BER;"BOD"->return MessageCity.BOD;
+            "ALB" ->return MessageCity.ALB;"AND" ->return MessageCity.AND;"ARH" ->return MessageCity.ARH;
+            "BER"->return MessageCity.BER;"BOD"->return MessageCity.BOD;
             "GOT"->return MessageCity.GOT;
             "HEL"->return MessageCity.HEL;"HON"->return MessageCity.HON;"IMA"->return MessageCity.IMA;
-        "KAJ" ->return MessageCity.KAJ;"KAR"->return MessageCity.KAR;"KIK" ->return MessageCity.KIK;"KIR" ->return MessageCity.KIR;"KOB" ->return MessageCity.KOB;
+        "KAJ" ->return MessageCity.KAJ;"KAR"->return MessageCity.KAR;"KIK" ->return MessageCity.KIK;
+            "KIR" ->return MessageCity.KIR;"KOB" ->return MessageCity.KOB;
             "KRI" ->return MessageCity.KRI;"KUO" ->return MessageCity.KUO;
             "LAU" ->return MessageCity.LAU;"LIE" ->return MessageCity.LIE;
-        "LIL" ->return MessageCity.LIL;"MOR" ->return MessageCity.MOR;"MUR" ->return MessageCity.MUR;"NAR" ->return MessageCity.NAR;"NOR" ->return MessageCity.NOR;
+        "LIL" ->return MessageCity.LIL;"MOR" ->return MessageCity.MOR;"MUR" ->return MessageCity.MUR;
+            "NAR" ->return MessageCity.NAR;"NOR" ->return MessageCity.NOR;
             "ORE"->return MessageCity.ORE;"OSL"->return MessageCity.OSL;
             "OST"->return MessageCity.OST;"OUL"->return MessageCity.OUL;
-        "ROV" ->return MessageCity.ROV;"STA"->return MessageCity.STA;"STO"->return MessageCity.STO;"SUN"->return MessageCity.SUN;"TAL"->return MessageCity.TAL;"TAM"->return MessageCity.TAM;"TOR"->return MessageCity.TOR;
+        "ROV" ->return MessageCity.ROV;"STA"->return MessageCity.STA;"STO"->return MessageCity.STO;
+            "SUN"->return MessageCity.SUN;"TAL"->return MessageCity.TAL;
+            "TAM"->return MessageCity.TAM;"TOR"->return MessageCity.TOR;
             "TRO"->return MessageCity.TRO;"TRH"->return MessageCity.TRH;
         "TUR"->return MessageCity.TUR;"UME"->return MessageCity.UME;"VAA"->return MessageCity.VAA;
             else -> throw IllegalArgumentException("$str not in enum.")

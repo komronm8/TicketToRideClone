@@ -9,6 +9,9 @@ enum class PlayerColor {
     WHITE,
     PURPLE;
 
+    /**
+     * Maps message to color
+     */
     fun maptoGameColor(): entity.Color {
         return when (this){
             RED -> entity.Color.RED

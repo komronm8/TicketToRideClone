@@ -240,7 +240,7 @@ public class AIChooseDestinationCard {
      * @param destCard Startpunkt
      */
     private fun destCardToPath(destCard: DestinationCard): ArrayDeque<Pair<City, City>> {
-        val vorgaenger = Dijsktra(destCard.cities.first);
+        val vorgaenger = dijsktra(destCard.cities.first);
         var destinationCardPath = ArrayDeque<Pair<City, City>>();
 
         var currentCityIndex = cityToIndex(destCard.cities.second)
@@ -257,7 +257,7 @@ public class AIChooseDestinationCard {
      * Berechnet mit Hilfe vom Dijkstra-Algorithmus ein Vorgängerarray,
      * mit dem alle kürzesten Pfade berechnet werden können
      */
-    private fun Dijsktra(start: City): Array<City?> {
+    private fun dijsktra(start: City): Array<City?> {
 
         // Dijkstra Init ////////////////////////////////////////////
         var abstand = IntArray(39) { Int.MAX_VALUE }

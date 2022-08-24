@@ -2,7 +2,9 @@ import service.network.NetworkService
 import service.RootService
 import view.SopraApplication
 
-
+/**
+ * Starting point for App
+ */
 fun main() {
     //AIService.minMaxAIGame()
     SopraApplication().show()

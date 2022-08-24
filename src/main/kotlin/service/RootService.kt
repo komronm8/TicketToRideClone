@@ -5,6 +5,9 @@ import entity.State
 import service.network.NetworkService
 import view.Refreshable
 
+/**
+ * Rootservice to communicate with entity layer
+ */
 class RootService {
     lateinit var game: Game
     val playerActionService: PlayerActionService = PlayerActionService(this)

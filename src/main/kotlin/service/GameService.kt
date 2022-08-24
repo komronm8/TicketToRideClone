@@ -100,6 +100,10 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
 
     }
 
+    /**
+     * Enables asynchronous choosing of [DestinationCard] via List
+     * Calls [chooseDestinationCard]
+     */
     fun chooseDestinationCards(playerName: String, cards: List<Int>){
         chosenCards[playerName] = cards.toList()
 
@@ -136,6 +140,9 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         onAllRefreshables { refreshAfterEndGame(winner) }
     }
 
+    /**
+     * Starts a new [Game] via old [Player] data
+     */
     fun nextGame() {
         startNewGame(state.players.map { PlayerData(it.name, it.isRemote, (it as? AIPlayer)?.strategy) })
     }

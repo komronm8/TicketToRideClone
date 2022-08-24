@@ -18,6 +18,9 @@ open class Player(
     val claimedRoutes: List<Route> = emptyList(),
     val isRemote: Boolean
 ) {
+    /**
+     * Checks if two Players are equal
+     */
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -34,6 +37,9 @@ open class Player(
         return true
     }
 
+    /**
+     * Generates Hashcode for [Player]
+     */
     override fun hashCode(): Int {
         var result = points
         result = 31 * result + name.hashCode()
@@ -55,6 +61,9 @@ open class Player(
         claimedRoutes: List<Route> = this.claimedRoutes
     ): Player = Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, isRemote)
 
+    /**
+     * Generates an offline Player
+     */
     fun withNotRemote(): Player {
         return if (isRemote) {
             Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, false)
@@ -63,6 +72,9 @@ open class Player(
         }
     }
 
+    /**
+     * Concerts [Player] data to string
+     */
     override fun toString(): String {
         return "Player(points=$points, name='$name', destinationCards=$destinationCards," +
                 " wagonCards=$wagonCards, trainCarsAmount=$trainCarsAmount, claimedRoutes=$claimedRoutes)"

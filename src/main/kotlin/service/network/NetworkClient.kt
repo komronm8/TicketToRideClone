@@ -298,8 +298,6 @@ class NetworkClient(
      */
     @GameActionReceiver
     private fun onGameInitResponseMessageReceived(message: GameInitResponseMessage, sender: String) {
-        //check(networkService.connectionState == ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE || networkService.connectionState == ConnectionState.BUILD_GAMEINIT_RESPONSE){"Not in right state"}
-        println(message)
         BoardGameApplication.runOnGUIThread {
             networkService.rootService.gameService.chooseDestinationCards(sender,
                 message.selectedDestinationTickets.map { card: DestinationTicket ->

@@ -10,7 +10,7 @@ import tools.aqua.bgw.components.uicomponents.Button
  * This menu is displayed directly at program start.
  * There is also a [closeButton]  to end the program.
  */
-class NewGameScene(private val rootService: RootService):
+class NewGameScene:
     MenuScene(1920, 1080, ImageVisual("MenuScene/MainMenuScreen.png")), Refreshable{
 
     val soloButton = Button(
