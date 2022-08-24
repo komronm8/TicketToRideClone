@@ -21,16 +21,16 @@ class EndGameScene(private val rootService: RootService):
     private val restartButton = Button(
         posX = 693, posY = 940, width = 250, height = 57,
         visual = ImageVisual("EndScene/restartButton.png")
-    )
+    ).apply {
+        onMouseClicked = {
+            rootService.gameService.nextGame()
+        }
+    }
 
     val startButton = Button(
         posX = 943, posY = 940, width = 250, height = 57,
         visual = ImageVisual("EndScene/newGameButton.png")
-    ). apply {
-        onMouseClicked = {
-
-        }
-    }
+    )
 
     val exitButton = Button(
         posX = 1790, posY = 5, width = 142, height = 113,
