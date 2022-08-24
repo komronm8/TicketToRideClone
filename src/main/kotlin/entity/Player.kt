@@ -55,6 +55,12 @@ open class Player(
         claimedRoutes: List<Route> = this.claimedRoutes
     ): Player = Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, isRemote)
 
+    fun withNotRemote(): Player {
+        if (isRemote) {
+            Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, isRemote)
+        }
+    }
+
     override fun toString(): String {
         return "Player(points=$points, name='$name', destinationCards=$destinationCards," +
                 " wagonCards=$wagonCards, trainCarsAmount=$trainCarsAmount, claimedRoutes=$claimedRoutes)"

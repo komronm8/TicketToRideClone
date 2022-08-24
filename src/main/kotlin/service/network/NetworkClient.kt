@@ -223,7 +223,7 @@ class NetworkClient(
                         cities.first { networkService.readIdentifierFromCSV(card.end.toString(), true) == it.name })
                 )
             }
-            val wagonCards = message.players.map { WagonCard(it.color.maptoGameColor()) }
+            val wagonCards = player.first.trainCards.map { WagonCard(it.maptoGameColor()) }
             val isRemote = player.second != playerName
             val clientAI = clientAI
             if (!isRemote && clientAI != null) {
@@ -258,7 +258,6 @@ class NetworkClient(
                 openCards = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(0, 5),
                 wagonCardsStack = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }
                     .subList(5, message.trainCardStack.size),
-                /*currentPlayerIndex = players.indexOfFirst { !it.isRemote }*/
             )
         )
         networkService.updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
@@ -286,7 +285,7 @@ class NetworkClient(
                 })
         }
         //networkService.updateConnectionState(ConnectionState.WAIT_FOR_TURN)
-        networkService.sendDebugMessage()
+        //networkService.sendDebugMessage()
     }
 
     override fun onPlayerJoined(notification: PlayerJoinedNotification) {

@@ -166,8 +166,10 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
                 DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
                     mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) })
 
-        updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE   )
+        updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
         client?.sendGameActionMessage(message)
+
+        sendDebugMessage()
 
     }
 
@@ -287,7 +289,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
     }
 
     fun sendClaimARounteMessage(claimedRoute: Route,newTrainCardStack: List<WagonCard>?,
-                                playedTrainCards: List<WagonCard>, drawnTunnelCards: List<Tunnel>?){
+                                playedTrainCards: List<WagonCard>, drawnTunnelCards: List<WagonCard>?){
         val tmpTrainCards: MutableList<MessageColor> = mutableListOf()
         playedTrainCards.forEach {
             tmpTrainCards.add(it.color.maptoMessageColor())
