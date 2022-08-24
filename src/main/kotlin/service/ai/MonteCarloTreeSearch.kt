@@ -51,7 +51,6 @@ private class WinnerReporter(private var winner: Player? = null) : Refreshable {
 fun RootService.monteCarloMove(c: Double, timeLimit: Int, execute: (() -> Unit) -> Unit) {
     val move = game.currentState.findMoveMonteCarlo(c, timeLimit)
     execute {
-        println(move)
         executeMontyMove(move)
     }
 }
@@ -397,7 +396,6 @@ private inline fun RootService.monteCarloClaimRoute(
 
             val used2 = if (game.currentState.wagonCardsStack.size >= 3) {
                 val required = game.currentState.wagonCardsStack.run { subList(max(0, size - 3), size) }
-                val remainingLocomotives = allLocomotive.subList(locomotiveUsed, allLocomotive.size)
                 //only locomotives
                 if (primaryUsed == 0) {
                     val requiredCount = required.count { it.color == Color.JOKER }

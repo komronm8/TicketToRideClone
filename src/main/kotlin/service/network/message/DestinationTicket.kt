@@ -1,6 +1,4 @@
-package service.message
-
-import entity.DestinationCard
+package service.network.message
 
 /**
  * Object used to represent a single destination ticket,

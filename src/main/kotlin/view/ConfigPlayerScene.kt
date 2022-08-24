@@ -146,8 +146,13 @@ class ConfigPlayerScene(private val rootService: RootService):
                     break
                 }
             }
-            if(checked){ rootService.gameService.startNewGame(playerList) }
+            if(checked && !checkIfSame()){ rootService.gameService.startNewGame(playerList) }
         }
+    }
+
+    private fun checkIfSame(): Boolean{
+        return player1Input.text == player2Input.text || player1Input.text == player3Input.text ||
+                player2Input.text == player3Input.text
     }
 
     private fun getAIStrategy(label: Label): AIPlayer.Strategy?{
@@ -359,7 +364,7 @@ class ConfigPlayerScene(private val rootService: RootService):
     //host disconnect notification
     private val hostDisconnected = Label(
         posX = 400, posY = 40, width = 373, height = 187, alignment = Alignment.CENTER,
-        visual = ImageVisual("\\ConfigScene\\bubble.png")
+        visual = ImageVisual("ConfigScene/bubble.png")
     )
 
     //Methods

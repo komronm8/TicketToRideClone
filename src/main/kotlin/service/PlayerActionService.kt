@@ -9,13 +9,43 @@ import kotlin.math.min
  * The service responsible for actions performed by the player
  */
 class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
+    /**
+     * The failures that can upon claiming a route
+     */
     sealed interface ClaimRouteFailure {
+        /**
+         * Specifies that the current player does not have enough train cars
+         */
         object NotEnoughTrainCars: ClaimRouteFailure
+
+        /**
+         * Specifies that the sibling of the route to be claimed has already been claimed by the current player
+         */
         object SiblingClaimedBySamePlayer: ClaimRouteFailure
+
+        /**
+         * Specifies that the route to be claimed has already been claimed
+         */
         object RouteAlreadyClaimed: ClaimRouteFailure
+        /**
+         * Specifies that the sibling of the route to be claimed has already been claimed by another player and
+         * that there are only two players
+         */
         object SiblingClaimedByAnotherPlayer: ClaimRouteFailure
+
+        /**
+         * Specifies that the given cards do not suffice for claiming the route
+         */
         object NotEnoughCards: ClaimRouteFailure
+
+        /**
+         * Specifies that too many cards were given for claiming the route
+         */
         object TooManyCards: ClaimRouteFailure
+
+        /**
+         * Specifies that there were cards of illegal color in the given cards
+         */
         object IllegalCards: ClaimRouteFailure
     }
     private inline val state: State
@@ -222,7 +252,8 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      * @param usedCards the cards which are used to claim the route
      * @param exhaustive sets whether the [usedCards] must suffice exactly to claim the route
      */
-    fun validateClaimRoute(currentPlayer: Player, route: Route, usedCards: List<WagonCard>, exhaustive: Boolean): ClaimRouteFailure? {
+    fun validateClaimRoute(currentPlayer: Player, route: Route,
+                           usedCards: List<WagonCard>, exhaustive: Boolean): ClaimRouteFailure? {
         if (currentPlayer.trainCarsAmount < route.completeLength) {
             return ClaimRouteFailure.NotEnoughTrainCars
         }

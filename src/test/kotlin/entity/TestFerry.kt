@@ -15,8 +15,8 @@ class TestFerry {
         val city1 = City(name = "asdad", emptyList())
         val ferry = Ferry(3, 13, Color.JOKER, city1 to city1, 43,  Route(3, Color.BLUE, city1 to city1, 42))
         assertEquals(
-            "Ferry(City(name = asdad) to City(name = asdad), " +
-                    "length=13, color=JOKER, sibling: Route(length = 3, color = BLUE), ferries: 3)",
+            "Ferry(City(name = asdad) to City(name = asdad), length=13, color=JOKER, " +
+                    "sibling: Route(length = 3, color = BLUE), id: 43, ferries: 3)",
             ferry.toString()
         )
     }

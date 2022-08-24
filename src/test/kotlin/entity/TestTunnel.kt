@@ -15,7 +15,7 @@ class TestTunnel {
         val city1 = City(name = "asdad", emptyList())
         val tunnel = Tunnel(13, Color.JOKER, city1 to city1, 42)
         assertEquals(
-            "Tunnel(City(name = asdad) to City(name = asdad), length=13, color=JOKER, sibling: ())",
+            "Tunnel(City(name = asdad) to City(name = asdad), length=13, color=JOKER, sibling: (), id: 42)",
             tunnel.toString()
         )
     }

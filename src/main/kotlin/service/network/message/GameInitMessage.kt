@@ -1,4 +1,4 @@
-package service.message
+package service.network.message
 
 import tools.aqua.bgw.net.common.GameAction
 import tools.aqua.bgw.net.common.annotations.GameActionClass
@@ -24,7 +24,8 @@ data class GameInitMessage (
     }
 
     init{
-        require(destinationTickets.size == 31 || destinationTickets.size == 36){ "invalid number of Destination Tickets" }
+        require(destinationTickets.size == 31 || destinationTickets.size == 36)
+        { "invalid number of Destination Tickets" }
         require(players.size == 2 || players.size == 3){ "invalid Number of Players" }
         require(trainCardStack.size == 98 || trainCardStack.size == 102){ "invalid number of TrainCards" }
     }

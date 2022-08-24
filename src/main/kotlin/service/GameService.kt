@@ -93,10 +93,10 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         onAllRefreshables(Refreshable::refreshAfterChooseDestinationCard)
 
         if (root.game.currentState.players.any { it.isRemote }){
-            /**root.network.updateConnectionState(when (root.network.client?.playerName){
-               state.currentPlayer.name -> ConnectionState.PLAY_TURN
-               else -> ConnectionState.WAIT_FOR_TURN
-            })**/
+            root.network.updateConnectionState(when (root.network.client?.playerName){
+                state.currentPlayer.name -> ConnectionState.PLAY_TURN
+                else -> ConnectionState.WAIT_FOR_TURN
+            })
         }
 
     }

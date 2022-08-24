@@ -166,7 +166,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
                 DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
                     mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) })
 
-        updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
+        updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE)
         client?.sendGameActionMessage(message)
 
     }
@@ -232,8 +232,6 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             || numOfClaimedRoutes.toList() != message.numOfClaimedRoutes || trainCardStackCount != message.trainCardStackCount){
             updateConnectionState(ConnectionState.ERROR)
             consistent = false
-            println("[CUSTOMDEBUG] " + consistent + ": ${numOfDestinationCards.toList() != message.numOfDestinationCards}," +
-                    "${numOfTrainCards.toList() != message.numOfTrainCards},${numOfClaimedRoutes.toList() != message.numOfClaimedRoutes},${trainCardStackCount != message.trainCardStackCount}," )
         }
 
         val message = DebugResponseMessage(consistent)
@@ -256,7 +254,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         updateConnectionState(ConnectionState.WAIT_FOR_TURN)
     }
     fun GameInitResponseMessage(selectedCards: List<DestinationCard>){
-        check(connectionState == ConnectionState.BUILD_GAMEINIT_RESPONSE) { "${connectionState}" }
+        check(connectionState == ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE) { "Not in a state to send GameInitResponse" }
 
         val tmp: MutableList<DestinationTicket> = mutableListOf()
         selectedCards.forEach{
