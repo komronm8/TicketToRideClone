@@ -7,7 +7,6 @@ import service.PlayerActionService
 import service.constructGraph
 import service.network.message.*
 import service.network.message.Color
-import service.network.message.message.*
 import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.net.client.BoardGameClient
 import tools.aqua.bgw.net.client.NetworkLogging
