@@ -359,7 +359,7 @@ class ConfigPlayerScene(private val rootService: RootService):
     //host disconnect notification
     private val hostDisconnected = Label(
         posX = 400, posY = 40, width = 373, height = 187, alignment = Alignment.CENTER,
-        visual = ImageVisual("\\ConfigScene\\bubble.png")
+        visual = ImageVisual("ConfigScene/bubble.png")
     )
 
     //Methods
