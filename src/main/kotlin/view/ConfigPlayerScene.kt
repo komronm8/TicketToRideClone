@@ -530,6 +530,7 @@ class ConfigPlayerScene(private val rootService: RootService):
                 errorLabel.visual = ImageVisual("ConfigScene/bubble/nameExists.png")
             }
         }
+        removeComponents(errorLabel)
         addComponents(errorLabel)
     }
 
