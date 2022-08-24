@@ -1,12 +1,10 @@
-package service.network
+package service
 
 import entity.*
 import entity.City
-import service.ConnectionState
-import service.PlayerActionService
-import service.constructGraph
-import service.network.message.*
-import service.network.message.Color
+import service.message.*
+import service.message.Color
+import service.message.Player
 import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.net.client.BoardGameClient
 import tools.aqua.bgw.net.client.NetworkLogging
@@ -94,8 +92,7 @@ class NetworkClient(playerName: String,
      * Returns the [City] for the [City] Enum [toString]
      */
     fun getCity(name: String): City{
-        return networkService.rootService.game.currentState.cities
-            .first { it.name == networkService.readIdentifierFromCSV(name, true) }
+        return networkService.rootService.game.currentState.cities.first { it.name == networkService.readIdentifierFromCSV(name, true) }
     }
 
     /**
@@ -145,8 +142,7 @@ class NetworkClient(playerName: String,
             if (message.selectedDestinationTickets.any {
                     cards[i].points == it.score &&
                             (cards[i].cities == Pair(getCity(it.start.toString()), getCity(it.end.toString())) ||
-                                    cards[i].cities == Pair(getCity(it.end.toString()), getCity(it.start.toString())))})
-            {
+                                    cards[i].cities == Pair(getCity(it.end.toString()), getCity(it.start.toString()))) }) {
                 ints += i
             }
         }
@@ -200,26 +196,20 @@ class NetworkClient(playerName: String,
         val cities = constructGraph()
 
         val players = message.players.zip(playersNames).map { player ->
-            entity.Player(name = player.second, destinationCards = player.first.destinationTickets
-                .map { card: DestinationTicket ->
+            entity.Player(name = player.second, destinationCards = player.first.destinationTickets.map { card: DestinationTicket ->
             DestinationCard(card.score, Pair(cities.first {
                 networkService.readIdentifierFromCSV(card.start.toString(), true) == it.name },
-                cities
-                    .first { networkService.readIdentifierFromCSV(card.end.toString(), true) == it.name })) },
-                wagonCards = message.players
-                    .map { WagonCard(it.color.maptoGameColor()) }, isRemote = player.second != playerName)
+                cities.first { networkService.readIdentifierFromCSV(card.end.toString(), true) == it.name })) },
+                wagonCards = message.players.map { WagonCard(it.color.maptoGameColor()) }, isRemote = player.second != playerName)
             }
 
         networkService.rootService.game = Game(State(
             destinationCards = message.destinationTickets.map { card ->
                 DestinationCard(card.score, Pair(cities.first {
                 networkService.readIdentifierFromCSV(card.start.toString(), true) == it.name },
-                cities
-                    .first { networkService.readIdentifierFromCSV(card.end.toString(), true) == it.name })) },
-            cities = cities, players = players, openCards = message.trainCardStack
-                .map { WagonCard(it.maptoGameColor()) }.subList(0,5),
-            wagonCardsStack = message.trainCardStack
-                .map { WagonCard(it.maptoGameColor()) }.subList(5, message.trainCardStack.size),
+                cities.first { networkService.readIdentifierFromCSV(card.end.toString(), true) == it.name })) },
+            cities = cities, players = players, openCards = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(0,5),
+            wagonCardsStack = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(5, message.trainCardStack.size),
             /*currentPlayerIndex = players.indexOfFirst { !it.isRemote }*/))
         networkService.updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
         networkService.rootService.game.gameState = GameState.CHOOSE_DESTINATION_CARD
