@@ -88,7 +88,7 @@ private fun MutableList<City>.constructGraph() {
     val sta = city("Stavanger")
     val kri = city("Kristiansand")
     (hon to kirk).ferry(1, 2, GREEN)
-    (kirk to mur).ferry(1, 2, WHITE)
+    (kirk to mur).ferry(1, 3, WHITE)
     (kirk to rov).route(5,  BLUE)
     (trom to hon).ferry(2, 4, PURPLE)
     (nar to trom).ferry(1, 3, YELLOW)
@@ -98,7 +98,7 @@ private fun MutableList<City>.constructGraph() {
     (and to tron).ferry(1, 2, WHITE)
     (ber to and).ferry(2, 5, BLACK)
     (sta to ber).ferry(1, 2, PURPLE)
-    (kri to sta).ferry(1, 3, ORANGE)
+    (kri to sta).ferry(1, 3, ORANGE)// doppelroute?
     (kri to sta).tunnel(2, GREEN)
     (kri to osl).route(2,  BLACK)
     (osl to ber).tunnel(4, RED, (osl to ber).tunnel(4, BLUE))
