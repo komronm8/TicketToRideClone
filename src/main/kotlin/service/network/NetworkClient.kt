@@ -16,9 +16,15 @@ import tools.aqua.bgw.net.common.response.CreateGameResponseStatus
 import tools.aqua.bgw.net.common.response.JoinGameResponse
 import tools.aqua.bgw.net.common.response.JoinGameResponseStatus
 import kotlin.math.max
-import kotlin.math.min
 
 
+/**
+ * Handels incoming BGW-Net messages
+ *
+ * @property playerName Name of the Player
+ * @property host Name of the Host
+ * @property secret Verificationcode for the Server
+ */
 class NetworkClient(
     playerName: String,
     host: String,
@@ -30,7 +36,6 @@ class NetworkClient(
 
     /** the name of the opponent player; can be null if no message from the opponent received yet */
     var playersNames: MutableList<String> = mutableListOf()
-    var test: String = ""
     var clientAI: AIPlayer.Strategy? = null
 
     /**
@@ -168,31 +173,6 @@ class NetworkClient(
      */
     @GameActionReceiver
     private fun onDrawDestinationTicketMessageReceivedAction(message: DrawDestinationTicketMessage, sender: String) {
-        /* val cards = networkService.rootService.game.currentState.destinationCards.subList(0, 3)
-        val ints: MutableList<Int> = mutableListOf()
-        val (chosen, old) = networkService.rootService.game.currentState.destinationCards.partition {
-            message.selectedDestinationTickets.any { ticket ->
-                it.points == ticket.score &&
-                        ((it.cities == Pair(getCity(ticket.start.toString()), getCity(ticket.end.toString())) ||
-                                it.cities == Pair(getCity(ticket.end.toString()), getCity(ticket.start.toString()))))
-            }
-        }
-        networkService.rootService.run {
-            insert(game.currentState.copy(destinationCards =  old + chosen))
-        }
-        /*for (i in 0 until min(3, networkService.rootService.game.currentState.destinationCards.size)) {
-            if (message.selectedDestinationTickets.any {
-                    cards[i].points == it.score &&
-                            (cards[i].cities == Pair(getCity(it.start.toString()), getCity(it.end.toString())) ||
-                                    cards[i].cities == Pair(getCity(it.end.toString()), getCity(it.start.toString())))
-                }) {
-                ints += i
-            }
-        }*/
-        println(chosen)
-        networkService.rootService.playerActionService.drawDestinationCards(chosen.indices.toList()) */
-
-        println("öcvhdaulvaeulvaeluiveuilv hjk bv-äoaoh fävhnöeoihv ")
         val destinationIndices = message.selectedDestinationTickets
             .map { card: DestinationTicket-> networkService.rootService.game.currentState.destinationCards
                 .indexOfFirst { it.points == card.score && it.cities.first == getCity(card.start.toString())
@@ -331,8 +311,6 @@ class NetworkClient(
                         }
                 })
         }
-        //networkService.updateConnectionState(ConnectionState.WAIT_FOR_TURN)
-        //networkService.sendDebugMessage()
     }
 
     override fun onPlayerJoined(notification: PlayerJoinedNotification) {

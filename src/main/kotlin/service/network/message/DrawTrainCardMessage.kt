@@ -3,6 +3,12 @@ package service.network.message
 import tools.aqua.bgw.net.common.GameAction
 import tools.aqua.bgw.net.common.annotations.GameActionClass
 
+/**
+ * This message is used to draw additional [entity.WagonCard]s
+ *
+ * @property selectedTrainCards The dawn [entity.WagonCard]s
+ * @property newTrainCardStack If the Discardstack had to be shuffled in if not null
+ */
 @GameActionClass
 data class DrawTrainCardMessage (
     val selectedTrainCards: List<Color>,

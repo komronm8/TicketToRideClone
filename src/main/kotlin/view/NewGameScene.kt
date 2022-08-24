@@ -1,13 +1,13 @@
 package view
 
-import service.*
 import tools.aqua.bgw.core.MenuScene
 import tools.aqua.bgw.visual.ImageVisual
 import tools.aqua.bgw.components.uicomponents.Button
 
 /**
- * [MenuScene] that is used for choosing which mode to play, solo or online. By pressing [soloButton] or [onlineButton]
- * the configPlayerScene will be shown. This menu is displayed directly at program start.
+ * [MenuScene] that is used for choosing which mode to play, solo or online.
+ * By pressing [soloButton] or [onlineButton] the configPlayerScene will be shown.
+ * This menu is displayed directly at program start.
  * There is also a [closeButton]  to end the program.
  */
 class NewGameScene(private val rootService: RootService):
