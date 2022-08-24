@@ -1,10 +1,10 @@
 package service
 
 import entity.*
-import service.message.*
-import service.message.City
-import service.message.Color
-import service.message.Player
+import service.network.message.*
+import service.network.message.Player as RemotePlayer
+import service.network.message.Color as MessageColor
+import service.network.message.City as MessageCity
 import tools.aqua.bgw.util.Stack
 import java.io.File
 import java.io.InputStream
@@ -156,7 +156,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val message = GameInitMessage(
             (game.openCards + game.wagonCardsStack).map { it.color.maptoMessageColor() },
-            game.players.map { player -> Player(isBot = player is AIPlayer,
+            game.players.map { player -> RemotePlayer(isBot = player is AIPlayer,
                 trainCards = player.wagonCards.map { it.color.maptoMessageColor() },
                 color = colors.pop(),
                 destinationTickets = player.destinationCards.map {
@@ -268,12 +268,12 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
     }
 
     fun sendDrawTrainCardMessage(selectedTrainCards: List<WagonCard>,newTrainCardStack: List<WagonCard>?){
-        val tmpWC: MutableList<Color> = mutableListOf()
+        val tmpWC: MutableList<MessageColor> = mutableListOf()
         selectedTrainCards.forEach{
             tmpWC.add(it.color.maptoMessageColor())
         }
         if(newTrainCardStack != null) {
-            val tmpNewStack: MutableList<Color> = mutableListOf()
+            val tmpNewStack: MutableList<MessageColor> = mutableListOf()
             newTrainCardStack.forEach{
                 tmpWC.add(it.color.maptoMessageColor())
             }
@@ -287,13 +287,13 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
     fun sendClaimARounteMessage(claimedRoute: Route,newTrainCardStack: List<WagonCard>?,
                                 playedTrainCards: List<WagonCard>, drawnTunnelCards: List<Tunnel>?){
-        val tmpTrainCards: MutableList<Color> = mutableListOf()
+        val tmpTrainCards: MutableList<MessageColor> = mutableListOf()
         playedTrainCards.forEach {
             tmpTrainCards.add(it.color.maptoMessageColor())
         }
 
-        var tmpNewTrainCards: MutableList<Color>? = mutableListOf()
-        var tmpTunnelCards: MutableList<Color>? = mutableListOf()
+        var tmpNewTrainCards: MutableList<MessageColor>? = mutableListOf()
+        var tmpTunnelCards: MutableList<MessageColor>? = mutableListOf()
 
         if (newTrainCardStack != null){
             newTrainCardStack.forEach {
@@ -370,20 +370,20 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         client?.sendGameActionMessage(ChatMessage(text))
     }
 
-    fun mapToCityEnum(str: String): City{
+    fun mapToCityEnum(str: String): MessageCity{
         when(str){
-            "ALB" ->return City.ALB;"AND" ->return City.AND;"ARH" ->return City.ARH;"BER"->return City.BER;"BOD"->return City.BOD;
-            "GOT"->return City.GOT;
-            "HEL"->return City.HEL;"HON"->return City.HON;"IMA"->return City.IMA;
-        "KAJ" ->return City.KAJ;"KAR"->return City.KAR;"KIK" ->return City.KIK;"KIR" ->return City.KIR;"KOB" ->return City.KOB;
-            "KRI" ->return City.KRI;"KUO" ->return City.KUO;
-            "LAU" ->return City.LAU;"LIE" ->return City.LIE;
-        "LIL" ->return City.LIL;"MOR" ->return City.MOR;"MUR" ->return City.MUR;"NAR" ->return City.NAR;"NOR" ->return City.NOR;
-            "ORE"->return City.ORE;"OSL"->return City.OSL;
-            "OST"->return City.OST;"OUL"->return City.OUL;
-        "ROV" ->return City.ROV;"STA"->return City.STA;"STO"->return City.STO;"SUN"->return City.SUN;"TAL"->return City.TAL;"TAM"->return City.TAM;"TOR"->return City.TOR;
-            "TRO"->return City.TRO;"TRH"->return City.TRH;
-        "TUR"->return City.TUR;"UME"->return City.UME;"VAA"->return City.VAA;
+            "ALB" ->return MessageCity.ALB;"AND" ->return MessageCity.AND;"ARH" ->return MessageCity.ARH;"BER"->return MessageCity.BER;"BOD"->return MessageCity.BOD;
+            "GOT"->return MessageCity.GOT;
+            "HEL"->return MessageCity.HEL;"HON"->return MessageCity.HON;"IMA"->return MessageCity.IMA;
+        "KAJ" ->return MessageCity.KAJ;"KAR"->return MessageCity.KAR;"KIK" ->return MessageCity.KIK;"KIR" ->return MessageCity.KIR;"KOB" ->return MessageCity.KOB;
+            "KRI" ->return MessageCity.KRI;"KUO" ->return MessageCity.KUO;
+            "LAU" ->return MessageCity.LAU;"LIE" ->return MessageCity.LIE;
+        "LIL" ->return MessageCity.LIL;"MOR" ->return MessageCity.MOR;"MUR" ->return MessageCity.MUR;"NAR" ->return MessageCity.NAR;"NOR" ->return MessageCity.NOR;
+            "ORE"->return MessageCity.ORE;"OSL"->return MessageCity.OSL;
+            "OST"->return MessageCity.OST;"OUL"->return MessageCity.OUL;
+        "ROV" ->return MessageCity.ROV;"STA"->return MessageCity.STA;"STO"->return MessageCity.STO;"SUN"->return MessageCity.SUN;"TAL"->return MessageCity.TAL;"TAM"->return MessageCity.TAM;"TOR"->return MessageCity.TOR;
+            "TRO"->return MessageCity.TRO;"TRH"->return MessageCity.TRH;
+        "TUR"->return MessageCity.TUR;"UME"->return MessageCity.UME;"VAA"->return MessageCity.VAA;
             else -> throw IllegalArgumentException("$str not in enum.")
         }
     }

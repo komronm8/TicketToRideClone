@@ -2,7 +2,6 @@ package service
 
 import entity.Game
 import entity.State
-import service.network.NetworkService
 import view.Refreshable
 
 class RootService {

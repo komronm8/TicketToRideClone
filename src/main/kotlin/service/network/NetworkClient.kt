@@ -2,9 +2,9 @@ package service
 
 import entity.*
 import entity.City
-import service.message.*
-import service.message.Color
-import service.message.Player
+import service.network.message.*
+import service.network.message.Color
+import service.network.message.Player
 import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.net.client.BoardGameClient
 import tools.aqua.bgw.net.client.NetworkLogging

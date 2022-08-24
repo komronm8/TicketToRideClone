@@ -883,12 +883,12 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
         focusChooseDestCards(0)
         updateRedoUndo()
         // TODO
+        println("hababa: " + root.game.currentState.players)
         thread {
             for (player in root.game.currentState.players.filterIsInstance<AIPlayer>()) {
                 val indices = AIService(root).chooseDestinationCards(player)
                 BoardGameApplication.runOnGUIThread {
                     root.gameService.chooseDestinationCards(player.name, indices)
-                    println("set message")
                 }
             }
         }
