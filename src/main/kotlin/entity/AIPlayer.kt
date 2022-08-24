@@ -39,4 +39,8 @@ class AIPlayer(
     ): Player {
         return AIPlayer(this.name, destinationCards, wagonCards, points, trainCarsAmount, claimedRoutes, this.strategy)
     }
+
+    override fun toString(): String {
+        return "AI"
+    }
 }

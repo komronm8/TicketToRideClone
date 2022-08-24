@@ -250,6 +250,7 @@ class ConfigPlayerScene(private val rootService: RootService):
         onMouseClicked = {
             if( sessionTextField.text != "" && playerNameInput.text != "" ){
                 rootService.network.joinGame("net22c", playerNameInput.text, sessionTextField.text)
+                rootService.network.client?.also { it.clientAI = getAIStrategy(onlinePlayerTypeLabel) }
                 showJoinLobby()
                 backCount++
             }

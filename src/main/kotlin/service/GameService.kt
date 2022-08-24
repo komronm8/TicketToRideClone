@@ -1,7 +1,6 @@
 package service
 
 import entity.*
-import service.message.DestinationTicket
 import tools.aqua.bgw.core.BoardGameApplication
 import view.Refreshable
 import java.util.*
