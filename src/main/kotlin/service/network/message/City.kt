@@ -1,4 +1,4 @@
-package service.message
+package service.network.message
 
 /**
  * Enum used to represent all possible city names

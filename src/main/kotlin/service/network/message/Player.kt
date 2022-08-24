@@ -1,4 +1,4 @@
-package service.message
+package service.network.message
 
 /**
  * Object used to represent a single player,
