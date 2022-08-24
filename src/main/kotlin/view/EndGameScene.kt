@@ -10,23 +10,27 @@ import tools.aqua.bgw.util.Font
 import tools.aqua.bgw.visual.ImageVisual
 import java.awt.Color
 
-
+/**
+ * [MenuScene] that is displayed when the game is finished. It shows the final result of the game
+ * as well as the winner. Also, there are three buttons: one for starting a new game with the same players,
+ * one to go to the start page of the game and one for quitting the program.
+ */
 class EndGameScene(private val rootService: RootService):
     MenuScene(1920, 1080, ImageVisual("EndScene/background.png")), Refreshable{
 
     private val restartButton = Button(
         posX = 693, posY = 940, width = 250, height = 57,
         visual = ImageVisual("EndScene/restartButton.png")
-    ).apply {
-        onMouseClicked = {
-            rootService.gameService.nextGame()
-        }
-    }
+    )
 
     val startButton = Button(
         posX = 943, posY = 940, width = 250, height = 57,
         visual = ImageVisual("EndScene/newGameButton.png")
-    )
+    ). apply {
+        onMouseClicked = {
+
+        }
+    }
 
     val exitButton = Button(
         posX = 1790, posY = 5, width = 142, height = 113,
@@ -34,40 +38,34 @@ class EndGameScene(private val rootService: RootService):
     )
 
     //PLayer icons
-    private val playerYellowIcon = Label(
-        posX = 750, posY = 500, width = 81, height = 117,
-        visual = ImageVisual("EndScene/yellowPlayerIcon.png")
-    )
+    private val firstPlaceIcon = Label(
+        posX = 887, posY = 432, width = 100, height = 131)
 
-    private val playerRedIcon = Label(
-        posX = 897, posY = 430, width = 80, height = 130,
-        visual = ImageVisual("EndScene/redPlayerIcon.png")
-    )
+    private val secondPlaceIcon = Label(
+        posX = 735, posY = 490, width = 100, height = 131)
 
-    private val playerPurpleIcon = Label(
-        posX = 1035, posY = 520, width = 96, height = 128,
-        visual = ImageVisual("EndScene/purplePlayerIcon.png")
-    )
+    private val thirdPlaceIcon = Label(
+        posX = 1035, posY = 510, width = 100, height = 131)
 
     //first place labels
     private val firstPlaceLabel = Label(
-        posX = 860, posY = 590, width = 150, height = 30, text = "Player1", alignment = Alignment.CENTER,
+        posX = 862, posY = 590, width = 150, height = 30, text = "Player1", alignment = Alignment.CENTER,
         font = Font(color = Color.BLACK, fontWeight = Font.FontWeight.BOLD, size = 20)
     )
 
     private val firstPlacePointsLabel = Label(
-        posX = 885, posY = 610, width = 100, height = 30, text = "50 Points",
+        posX = 887, posY = 610, width = 100, height = 30, text = "50 Points",
         font = Font(color = Color.BLACK, fontWeight = Font.FontWeight.BOLD, size = 20)
     )
 
     //second place labels
     private val secondPlaceLabel = Label(
-        posX = 715, posY = 620, width = 150, height = 30, text = "Player2", alignment = Alignment.CENTER,
+        posX = 712, posY = 620, width = 150, height = 30, text = "Player2", alignment = Alignment.CENTER,
         font = Font(color = Color.BLACK, fontWeight = Font.FontWeight.BOLD, size = 20)
     )
 
     private val secondPlacePointsLabel = Label(
-        posX = 740, posY = 640, width = 100, height = 30, text = "40 Points",
+        posX = 737, posY = 640, width = 100, height = 30, text = "40 Points",
         font = Font(color = Color.BLACK, fontWeight = Font.FontWeight.BOLD, size = 20)
     )
 
@@ -95,24 +93,27 @@ class EndGameScene(private val rootService: RootService):
         if(game.players.size == 2) configFor2Players() else configFor3Player()
     }
 
-    //TODO Configure player icons for scoreboard
-
     private fun configFor2Players(){
         //if the first place points are from player1
         if(listOfPoints[0] == players[0].points){
             firstPlaceLabel.text = players[0].name
             firstPlacePointsLabel.text = "${listOfPoints[0]} Points"
+            changeIcon(players[0], firstPlaceIcon)
             secondPlaceLabel.text = players[1].name
             secondPlacePointsLabel.text = "${listOfPoints[1]} Points"
+            changeIcon(players[1], secondPlaceIcon)
         }
         //else the first place points are from player2
         else{
             firstPlaceLabel.text = players[1].name
             firstPlacePointsLabel.text = "${listOfPoints[1]} Points"
+            changeIcon(players[1], firstPlaceIcon)
             secondPlaceLabel.text = players[0].name
             secondPlacePointsLabel.text = "${listOfPoints[0]} Points"
+            changeIcon(players[0], secondPlaceIcon)
         }
-        addComponents(firstPlaceLabel, firstPlacePointsLabel, secondPlaceLabel, secondPlacePointsLabel)
+        addComponents(firstPlaceLabel, firstPlacePointsLabel, secondPlaceLabel, secondPlacePointsLabel,
+            firstPlaceIcon, secondPlaceIcon)
     }
 
     private fun configFor3Player(){
@@ -121,26 +122,38 @@ class EndGameScene(private val rootService: RootService):
                 listOfPoints[0] -> {
                     firstPlaceLabel.text = i.name
                     firstPlacePointsLabel.text = "${listOfPoints[0]} Points"
+                    changeIcon(i, firstPlaceIcon)
                 }
                 listOfPoints[1] -> {
                     secondPlaceLabel.text = i.name
                     secondPlacePointsLabel.text = "${listOfPoints[1]} Points"
+                    changeIcon(i, secondPlaceIcon)
                 }
                 else -> {
                     thirdPlaceLabel.text = i.name
                     thirdPlacePointsLabel.text = "${listOfPoints[2]} Points"
+                    changeIcon(i, thirdPlaceIcon)
                 }
             }
         }
         addComponents(firstPlaceLabel, firstPlacePointsLabel, secondPlaceLabel, secondPlacePointsLabel,
-        thirdPlaceLabel, thirdPlacePointsLabel)
+        thirdPlaceLabel, thirdPlacePointsLabel, firstPlaceIcon, secondPlaceIcon, thirdPlaceIcon)
+    }
+
+    private fun changeIcon(player: Player, icon: Label){
+        val playerIcons = arrayOf("yellowPlayerIcon.png", "purplePlayerIcon.png", "redPlayerIcon.png")
+        for( i in 0 until players.size){
+            if( players[i] == player ){
+                icon.visual = ImageVisual("EndScene/" + playerIcons[i])
+                print(i)
+            }
+        }
     }
 
     override fun refreshAfterEndGame(winner: Player) {
         clearComponents()
-        addComponents(restartButton, startButton, exitButton, playerYellowIcon, playerRedIcon, playerPurpleIcon)
+        addComponents(restartButton, startButton, exitButton)
         configScoreboard()
     }
-
 
 }
