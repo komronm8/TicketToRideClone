@@ -49,8 +49,12 @@ class NetworkClient(
                     networkService.updateConnectionState(ConnectionState.WAIT_FOR_PLAYERS)
                     sID = response.sessionID
                     playersNames += playerName
+                    networkService.onAllRefreshables { refreshAfterPlayerJoin() }
                 }
-
+                CreateGameResponseStatus.SESSION_WITH_ID_ALREADY_EXISTS -> {
+                    networkService.disconnect()
+                    networkService.onAllRefreshables { refreshAfterError("SID EXISTS") }
+                }
                 else -> disconnectAndError(response.status)
             }
         }
@@ -77,11 +81,18 @@ class NetworkClient(
                         playersNames.add(playerName)
                     }
                     networkService.updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT)
+                    networkService.onAllRefreshables { refreshAfterPlayerJoin() }
                 }
-
+                JoinGameResponseStatus.INVALID_SESSION_ID -> {
+                    networkService.disconnect()
+                    networkService.onAllRefreshables { refreshAfterError("INVALID SID") }
+                }
+                JoinGameResponseStatus.PLAYER_NAME_ALREADY_TAKEN -> {
+                    networkService.disconnect()
+                    networkService.onAllRefreshables { refreshAfterError("PLAYER NAME EXISTS") }
+                }
                 else -> disconnectAndError(response.status)
             }
-            networkService.onAllRefreshables { refreshAfterPlayerJoin() }
         }
     }
 

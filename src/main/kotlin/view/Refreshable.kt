@@ -68,5 +68,7 @@ interface Refreshable {
      */
     fun refreshAfterPlayerDisconnect() {}
 
+    fun refreshAfterError(error: String){}
+
     fun refreshAfterText(text: String) {}
 }

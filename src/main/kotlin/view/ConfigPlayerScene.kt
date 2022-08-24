@@ -251,8 +251,6 @@ class ConfigPlayerScene(private val rootService: RootService):
             if( sessionTextField.text != "" && playerNameInput.text != "" ){
                 rootService.network.joinGame("net22c", playerNameInput.text, sessionTextField.text)
                 rootService.network.client?.also { it.clientAI = getAIStrategy(onlinePlayerTypeLabel) }
-                showJoinLobby()
-                backCount++
             }
         }
     }
@@ -289,11 +287,6 @@ class ConfigPlayerScene(private val rootService: RootService):
         onMouseClicked = {
             if( sessionTextField.text != "" && playerNameInput.text != ""  ){
                 rootService.network.hostGame("net22c", playerNameInput.text, sessionTextField.text)
-                hostSessionIDClipboard.text = "SID: " + sessionTextField.text
-                showHostLobby()
-                player1LobbyLabel.text = "Player1: " + playerNameInput.text
-                addComponents(player1LobbyLabel)
-                backCount++
                 hostLobby = true
             }
         }
@@ -324,6 +317,7 @@ class ConfigPlayerScene(private val rootService: RootService):
         visual = ImageVisual("ConfigScene/startHostGameButton.png"),
         font = Font(color = Color.WHITE, fontWeight = Font.FontWeight.BOLD, size = 24)
     ).apply {
+        this.isDisabled = true
         onMouseClicked = {
             val client = rootService.network.client
             checkNotNull(client)
@@ -369,9 +363,8 @@ class ConfigPlayerScene(private val rootService: RootService):
     )
 
     //host disconnect notification
-    private val hostDisconnected = Label(
-        posX = 400, posY = 40, width = 373, height = 187, alignment = Alignment.CENTER,
-        visual = ImageVisual("ConfigScene/bubble.png")
+    private val errorLabel = Label(
+        posX = 400, posY = 40, width = 373, height = 187
     )
 
     //Methods
@@ -430,7 +423,7 @@ class ConfigPlayerScene(private val rootService: RootService):
             1 -> {
                 removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
                     onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton,
-                    statusLabel, statusLobbyLabel)
+                    statusLabel, statusLobbyLabel, errorLabel)
                 addComponents(joinButton, hostButton)
                 sessionTextField.text = ""
                 playerNameInput.text = ""
@@ -438,11 +431,11 @@ class ConfigPlayerScene(private val rootService: RootService):
                 onlinePlayerTypeLabel.text = "Human"
                 backCount--
             }
-            2 -> {
+            else -> {
                 rootService.network.disconnect()
                 removeComponents(hostStartButton, hostSessionIDClipboard,
                     player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
-                backCount--
+                backCount = 1
                 hostLobby = false
                 remove(backCount)
             }
@@ -450,7 +443,7 @@ class ConfigPlayerScene(private val rootService: RootService):
     }
 
     private fun removeOnlineComponents(){
-        removeComponents(joinButton, hostButton, hostDisconnected)
+        removeComponents(joinButton, hostButton, errorLabel)
     }
 
     private fun changeTypeButton( button: Button, label: Label, typeArray: Array<String> ){
@@ -472,26 +465,33 @@ class ConfigPlayerScene(private val rootService: RootService):
 
     private fun showJoinLobby(){
         removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
-            onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
+            onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton,
+            statusLabel, statusLobbyLabel)
         statusLobbyLabel.text = "WAITING FOR HOST TO START THE GAME"
         addComponents(statusLabel, statusLobbyLabel)
+        backCount++
     }
 
     private fun showHostLobby(){
         removeComponents(sessionLabel, sessionTextField, hostSessionButton, playerNameLabel, playerNameInput,
-            onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton)
+            onlinePlayerTypeButton, onlinePlayerTypeLabel, hostRandomSessionIDButton, joinSessionButton,
+            hostSessionIDClipboard, statusLabel, statusLobbyLabel, hostStartButton)
         statusLobbyLabel.text = "WAITING FOR PLAYERS TO CONNECT TO LOBBY"
         addComponents(statusLabel, statusLobbyLabel, hostStartButton, hostSessionIDClipboard)
+        hostSessionIDClipboard.text = "SID: " + sessionTextField.text
+        backCount++
     }
 
     override fun refreshAfterPlayerJoin() {
         val listOfPlayers = rootService.network.client?.playersNames
         checkNotNull(listOfPlayers)
+        removeComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel, errorLabel)
+        if( hostLobby ) showHostLobby() else showJoinLobby()
         if( !hostLobby && playerNameInput.text == listOfPlayers[0] ){
             remove(backCount)
-            addComponents(hostDisconnected)
+            errorLabel.visual = ImageVisual("ConfigScene/bubble/hostDisconnected.png")
+            addComponents(errorLabel)
         }
-        removeComponents(player1LobbyLabel, player2LobbyLabel, player3LobbyLabel)
         if( rootService.network.client != null && listOfPlayers.size > 0){
             player1LobbyLabel.text = "Player1: " + listOfPlayers[0]
             addComponents(player1LobbyLabel)
@@ -506,14 +506,31 @@ class ConfigPlayerScene(private val rootService: RootService):
         }
         if(hostLobby && listOfPlayers.size >= 2){
             statusLobbyLabel.text = "GAME READY TO BE STARTED"
+            hostStartButton.isDisabled = false
         }
         if(hostLobby && listOfPlayers.size < 2){
             statusLobbyLabel.text = "WAITING FOR PLAYERS TO CONNECT TO LOBBY"
+            hostStartButton.isDisabled = true
         }
     }
 
     override fun refreshAfterPlayerDisconnect() {
         refreshAfterPlayerJoin()
+    }
+
+    override fun refreshAfterError(error: String) {
+        when(error) {
+            "SID EXISTS" -> {
+                errorLabel.visual = ImageVisual("ConfigScene/bubble/sidExists.png")
+            }
+            "INVALID SID" -> {
+                errorLabel.visual = ImageVisual("ConfigScene/bubble/sidInvalid.png")
+            }
+            "PLAYER NAME EXISTS" -> {
+                errorLabel.visual = ImageVisual("ConfigScene/bubble/nameExists.png")
+            }
+        }
+        addComponents(errorLabel)
     }
 
 }
