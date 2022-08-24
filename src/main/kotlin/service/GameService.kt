@@ -4,6 +4,7 @@ import entity.*
 import tools.aqua.bgw.core.BoardGameApplication
 import view.Refreshable
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * A service responsible for performing the system actions
@@ -21,7 +22,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             root.insert(value)
         }
 
-    var chosenCards: MutableMap<String, List<Int>> = mutableMapOf()
+    var chosenCards: MutableMap<String, List<Int>> = ConcurrentHashMap()
 
     /**
      * Starts a game with the given player data. At the end, the game is in a valid state, but the player still needs
@@ -91,17 +92,17 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         root.game.states[0] = state.copy(players = newPlayers)
         onAllRefreshables(Refreshable::refreshAfterChooseDestinationCard)
 
-        if (root.game.currentState.players.any { it.isRemote }){
-            root.network.updateConnectionState(when (root.network.client?.playerName){
-                state.currentPlayer.name -> ConnectionState.PLAY_TURN
-                else -> ConnectionState.WAIT_FOR_TURN
-            })
+            if (root.game.currentState.players.any { it.isRemote }){
+                root.network.updateConnectionState(when (root.network.client?.playerName){
+                    state.currentPlayer.name -> ConnectionState.PLAY_TURN
+                    else -> ConnectionState.WAIT_FOR_TURN
+                })
         }
 
     }
 
     fun chooseDestinationCards(playerName: String, cards: List<Int>){
-        chosenCards[playerName] = cards
+        chosenCards[playerName] = cards.toList()
 
         if (root.game.currentState.players.any { it.isRemote }) {
             if(playerName == root.network.client?.playerName){
@@ -113,7 +114,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
 
         if (chosenCards.size >= state.players.size){
             chooseDestinationCard(chosenCards)
-            chosenCards.clear()
+            chosenCards = mutableMapOf()
         }
 
         if (root.game.currentState.players.any { it.isRemote }) {
@@ -212,6 +213,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     fun nextPlayer() {
         if (state.currentPlayer.name == state.endPlayer?.name) {
             endGame()
+            return
         }
         val oldState = state
         root.undo()
