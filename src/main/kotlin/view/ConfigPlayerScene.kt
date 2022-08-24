@@ -327,14 +327,20 @@ class ConfigPlayerScene(private val rootService: RootService):
         onMouseClicked = {
             val client = rootService.network.client
             checkNotNull(client)
-            val playerList = mutableListOf<GameService.PlayerData>()
-            playerList.add(GameService.PlayerData(playerNameInput.text, false,
-                getAIStrategy(onlinePlayerTypeLabel)))
-            playerList.add(GameService.PlayerData(client.playersNames[1], true))
-            if( client.playersNames.size  == 3  ){
-                playerList.add(GameService.PlayerData(client.playersNames[2], true))
+            if (client.playersNames.size in 2..3) {
+                val playerList = mutableListOf<GameService.PlayerData>()
+                playerList.add(
+                    GameService.PlayerData(
+                        playerNameInput.text, false,
+                        getAIStrategy(onlinePlayerTypeLabel)
+                    )
+                )
+                playerList.add(GameService.PlayerData(client.playersNames[1], true))
+                if (client.playersNames.size == 3) {
+                    playerList.add(GameService.PlayerData(client.playersNames[2], true))
+                }
+                rootService.gameService.startNewGame(playerList)
             }
-            rootService.gameService.startNewGame(playerList)
         }
     }
 

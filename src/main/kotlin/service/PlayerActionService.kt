@@ -170,6 +170,15 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 root.undo()
                 root.insert(newState)
                 root.game.gameState = GameState.DEFAULT
+                if (state.players.any { it.isRemote }) {
+                    val prevState = root.game.run { states[currentStateIndex - 1] }
+                    val shuffled = prevState.discardStack.isNotEmpty() && state.discardStack.isEmpty()
+                    val newCardStack = if (shuffled) state.wagonCardsStack else null
+                    val selected = state.currentPlayer.wagonCards.filter {
+                            card -> prevState.currentPlayer.wagonCards.none { card === it}
+                    }
+                    root.network.sendDrawTrainCardMessage(selected, newCardStack)
+                }
                 root.gameService.nextPlayer()
             }
 

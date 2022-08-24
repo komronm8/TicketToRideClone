@@ -11,8 +11,17 @@ In order to start the game, all player must have non-empty unique names.
 To Play on online game click the button labeled "online" after starting the game.
 Now you can either host a game by clicking on "create a game" or join a game by clicking on "join a game"
 #### Hosting a game
-    
-
+After clicking "create a game", a new scene should appear. In order to play a game with other people, one must enter
+a code to share into the top center text field, alternatively a code can be generated using the blue button next to the 
+text field. Also name of the host must be entered. After that the "create" button can be pressed, which finalizes the 
+name and the code. Afterwards the one must wait until enough other players join. During that
+time the code can still be viewed left to the start game button. Once enough players
+have joined, the start game button can be pressed to start the game
+#### Joining a game 
+After clicking "join a game", a new scene should appear. The code of the game you want to enter must be
+set in the text box at the top labeled "Session ID". After that you can set the name using the text field in the 
+middle. To make the player an AI click the <img height="40" src="cycAiButton.png" width="40"/> button.
+After you join, you simply have to wait for the host to start the game.
 
 ## Playing the Game
 
@@ -48,4 +57,5 @@ The arrow buttons on the bottom right can be used to un- and redo turns. This op
 
 ## End of the game
 When the game is over, the resulting points will be shown together with the placement of the players.
-Then either a new game can be started, the same game can be restarted or the game can be exited.
+Then either a new game can be started "start game" or the game can be restarted with the players in the same configuration
+using the "restart game" button or the game can be exited.

@@ -56,8 +56,10 @@ open class Player(
     ): Player = Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, isRemote)
 
     fun withNotRemote(): Player {
-        if (isRemote) {
-            Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, isRemote)
+        return if (isRemote) {
+            Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, false)
+        } else {
+            this
         }
     }
 
