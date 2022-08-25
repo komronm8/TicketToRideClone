@@ -32,7 +32,7 @@ class NetworkClient(
     host: String,
     secret: String,
     var networkService: NetworkService,
-) : BoardGameClient(playerName, host, secret, NetworkLogging.ERRORS) {
+) : BoardGameClient(playerName, host, secret, NetworkLogging.INFO) {
     /** the identifier of this game session; can be null if no session started yet. */
     var sID: String? = null
 
@@ -242,7 +242,6 @@ class NetworkClient(
         val sibling = route.sibling
         val game = networkService.rootService.game
         val wagonCards = mapMessageWagonToEntityWagon(message.playedTrainCards, game.currentState.currentPlayer.wagonCards)
-        val beforePlayer = game.currentState.currentPlayer.name
         var claimRouteResult = networkService.rootService.playerActionService.claimRoute(route, wagonCards)
         if (claimRouteResult == PlayerActionService.ClaimRouteFailure.RouteAlreadyClaimed && sibling != null) {
             claimRouteResult = networkService.rootService.playerActionService.claimRoute(sibling, wagonCards)
@@ -384,8 +383,6 @@ class NetworkClient(
     }
 
     fun sendIsCorrect() {
-        val state = networkService.rootService.game.currentState
-        networkService.sendChatMessage("DBG!oc:${state.openCards.counts().toList()}|p:${playerText()}|wc:${state.wagonCardsStack}")
     }
 
     fun playerText(): String {

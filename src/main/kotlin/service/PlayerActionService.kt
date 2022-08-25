@@ -153,7 +153,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         }
         var insertCard = newDrawStack.last()
         newDrawStack = newDrawStack.subList(0, newDrawStack.size - 1)
-        if (cardIndex in openCards.indices) {
+        if (cardIndex in openCards.indices && openCards[cardIndex] != insertCard) {
             openCards = openCards.toMutableList().also {
                 val exchanged = it[cardIndex]
                 it[cardIndex] = insertCard
