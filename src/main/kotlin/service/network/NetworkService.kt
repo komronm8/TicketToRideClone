@@ -323,6 +323,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             val message = DrawTrainCardMessage(tmpWC,null)
             client?.sendGameActionMessage(message)
         }
+        updateConnectionState(ConnectionState.WAIT_FOR_TURN)
     }
 
     /**
@@ -337,7 +338,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      */
     fun sendClaimARounteMessage(claimedRoute: Route,newTrainCardStack: List<WagonCard>?,
                                 playedTrainCards: List<WagonCard>, drawnTunnelCards: List<WagonCard>?){
-        check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send GameInitResponse" }
+        check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send ClaimARounteMessage" }
         val tmpTrainCards: MutableList<MessageColor> = mutableListOf()
         playedTrainCards.forEach {
             tmpTrainCards.add(it.color.maptoMessageColor())
@@ -367,6 +368,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             claimedRoute.color.maptoMessageColor(),tmpTunnelCards)
 
         client?.sendGameActionMessage(message)
+        updateConnectionState(ConnectionState.WAIT_FOR_TURN)
     }
     private data class CityMapping(
         val identifier: String,

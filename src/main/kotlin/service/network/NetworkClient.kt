@@ -339,6 +339,7 @@ class NetworkClient(
 
     override fun onPlayerJoined(notification: PlayerJoinedNotification) {
         super.onPlayerJoined(notification)
+        if (notification.sender.startsWith("Spectator", true)) {return}
         check(networkService.connectionState == ConnectionState.WAIT_FOR_PLAYERS) { "Wrong State" }
         playersNames += notification.sender
         if (playersNames.size !in 1..3) {
