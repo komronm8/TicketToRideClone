@@ -232,6 +232,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             endPlayer = oldState.endPlayer ?: endPlayer
         )
         root.insert(newState)
+        println("z" + state.players.joinToString("\nz") { it.wagonCards.toString() })
         onAllRefreshables(Refreshable::refreshAfterNextPlayer)
     }
 

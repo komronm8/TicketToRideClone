@@ -154,14 +154,22 @@ class NetworkClient(
     private fun onDrawTrainCardMessageReceivedAction(message: DrawTrainCardMessage, sender: String) {
         if (message.newTrainCardStack != null) {
             networkService.rootService.insert(networkService.rootService.game.currentState.copy(
-                wagonCardsStack = networkService.rootService.game.currentState.wagonCardsStack
-                        + message.newTrainCardStack.map { WagonCard(it.maptoGameColor()) }
+                wagonCardsStack = message.newTrainCardStack.map { WagonCard(it.maptoGameColor()) } +
+                        networkService.rootService.game.currentState.wagonCardsStack,
+                discardStack = emptyList()
             ))
         }
+        val gamePlayer = networkService.rootService.game.currentState.currentPlayerIndex
         message.selectedTrainCards.forEach { color: Color ->
-            networkService.rootService.playerActionService.drawWagonCard(
-                networkService.rootService.game.currentState.openCards.indexOf(WagonCard(color.maptoGameColor()))
-            )
+            val indexOf = networkService.rootService.game.currentState.openCards.indexOf(WagonCard(color.maptoGameColor()))
+            networkService.rootService.playerActionService.drawWagonCard(indexOf)
+        }
+        require(
+            networkService.rootService.game.currentState.players[gamePlayer].wagonCards.takeLast(2).toSet() ==
+            message.selectedTrainCards.map { WagonCard(it.maptoGameColor()) }.toSet()
+        ) {
+            "expected: ${networkService.rootService.game.currentState.players[gamePlayer].wagonCards.takeLast(2).toSet()}," +
+                    " gotten: ${message.selectedTrainCards.map { it.maptoGameColor() }.toSet()}"
         }
         if (networkService.rootService.game.currentState.currentPlayer.name == playerName) {
             networkService.updateConnectionState(ConnectionState.PLAY_TURN)
@@ -209,9 +217,13 @@ class NetworkClient(
             networkService.rootService.playerActionService.claimRoute(sibling, wagonCards)
             route = sibling
         }
+        if (message.newTrainCardStack != null) {
+            networkService.rootService.insert(networkService.rootService.game.currentState.copy(
+                wagonCardsStack = message.newTrainCardStack.map { WagonCard(it.maptoGameColor()) }
+            ))
+        }
         if (route is Tunnel){
-            if (message.drawnTunnelCards == null || message.drawnTunnelCards.isEmpty()
-                && networkService.rootService.playerActionService.tunnelPayAmount(message.playedTrainCards.map { WagonCard(it.maptoGameColor()) }).first != 0){
+            if (message.drawnTunnelCards == null) {
                 networkService.rootService.playerActionService.afterClaimTunnel(route, null)
             }
             else {
@@ -221,6 +233,7 @@ class NetworkClient(
                 networkService.rootService.playerActionService.afterClaimTunnel(route, usedCards2)
             }
         }
+
         if (networkService.rootService.game.currentState.currentPlayer.name == playerName) {
             networkService.updateConnectionState(ConnectionState.PLAY_TURN)
         }

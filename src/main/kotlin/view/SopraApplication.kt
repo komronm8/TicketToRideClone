@@ -72,7 +72,9 @@ class SopraApplication : BoardGameApplication("Zug um Zug", windowMode = WindowM
     }
 
     override fun refreshAfterEndGame(winner: Player) {
-        this.showMenuScene(endScene)
+        runOnGUIThread {
+            this.showMenuScene(endScene)
+        }
     }
 
 }

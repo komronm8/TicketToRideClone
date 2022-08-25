@@ -181,6 +181,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                     val selected = state.currentPlayer.wagonCards.filter { card ->
                         prevState.currentPlayer.wagonCards.none { card === it }
                     }
+
                     root.network.sendDrawTrainCardMessage(selected, newCardStack)
                 }
                 root.gameService.nextPlayer()
@@ -432,7 +433,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             if (root.game.currentState.players.any { it.isRemote } &&
                 state.currentPlayer.name == root.network.client?.playerName) {
                 val shuffled = previousState.discardStack.isNotEmpty() && newDiscard.isEmpty()
-                val newCardStack = if (shuffled) state.wagonCardsStack else null
+                val newCardStack = if (shuffled) betweenState.wagonCardsStack else null
                 root.network.sendClaimARounteMessage(route, newCardStack, usedCards, null)
             }
             root.game.gameState = GameState.DEFAULT
@@ -441,7 +442,8 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         }
         val (required, allowedColor) = tunnelPayAmount(usedCards)
         val given = cards.count { it.color == Color.JOKER || it.color == allowedColor }
-        check(required == given && given == cards.size)
+        check(required == given) { "required($required) != given($given)" }
+        check(given == cards.size) { "given($given) != cards($cards)" }
         val newPlayerHand = betweenState.currentPlayer.wagonCards.filter { card -> cards.none { it === card } }
         val newPlayers = betweenState.updateCurrentPlayer {
             copy(
@@ -464,7 +466,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         if (root.game.currentState.players.any { it.isRemote } &&
             state.currentPlayer.name == root.network.client?.playerName) {
             val shuffled = previousState.discardStack.isNotEmpty() && newDiscard.isEmpty()
-            val newCardStack = if (shuffled) state.wagonCardsStack else null
+            val newCardStack = if (shuffled) betweenState.wagonCardsStack else null
             root.network.sendClaimARounteMessage(route, newCardStack, usedCards, cards)
         }
         root.gameService.nextPlayer()

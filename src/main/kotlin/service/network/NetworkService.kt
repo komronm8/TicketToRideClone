@@ -310,14 +310,12 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      */
     fun sendDrawTrainCardMessage(selectedTrainCards: List<WagonCard>,newTrainCardStack: List<WagonCard>?){
         check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send GameInitResponse" }
-        val tmpWC: MutableList<MessageColor> = mutableListOf()
-        selectedTrainCards.forEach{
-            tmpWC.add(it.color.maptoMessageColor())
+        val tmpWC: List<MessageColor> = selectedTrainCards.map {
+            it.color.maptoMessageColor()
         }
         if(newTrainCardStack != null) {
-            val tmpNewStack: MutableList<MessageColor> = mutableListOf()
-            newTrainCardStack.forEach{
-                tmpWC.add(it.color.maptoMessageColor())
+            val tmpNewStack: List<MessageColor> = newTrainCardStack.map {
+                it.color.maptoMessageColor()
             }
             val message = DrawTrainCardMessage(tmpWC,tmpNewStack)
             client?.sendGameActionMessage(message)

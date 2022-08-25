@@ -5,6 +5,7 @@ import service.RootService
 import tools.aqua.bgw.components.uicomponents.Button
 import tools.aqua.bgw.components.uicomponents.Label
 import tools.aqua.bgw.core.Alignment
+import tools.aqua.bgw.core.BoardGameApplication
 import tools.aqua.bgw.core.MenuScene
 import tools.aqua.bgw.util.Font
 import tools.aqua.bgw.visual.ImageVisual
@@ -150,9 +151,11 @@ class EndGameScene(private val rootService: RootService):
     }
 
     override fun refreshAfterEndGame(winner: Player) {
-        clearComponents()
-        addComponents(restartButton, startButton, exitButton)
-        configScoreboard()
+        BoardGameApplication.runOnGUIThread {
+            clearComponents()
+            addComponents(restartButton, startButton, exitButton)
+            configScoreboard()
+        }
     }
 
 }
