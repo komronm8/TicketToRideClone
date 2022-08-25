@@ -3,25 +3,25 @@ package entity
 /**
  * The state of the current game round.
  */
-enum class GameState {
+sealed interface GameState {
     /**
      * The Default state of the round; no complex interaction
      * has been used
      */
-    DEFAULT,
+    object DEFAULT: GameState
 
     /**
      * The game state after the player drew one wagon card,
      * and has yet to draw a second one
      */
-    DREW_WAGON_CARD,
+    data class DREW_WAGON_CARD(val shuffled: List<WagonCard>? = null): GameState
 
     /**
      * The game state after the player drew one card
      * The used cards are pushed onto the discard stack,
      * while the required cards are on top of the draw stack
      */
-    AFTER_CLAIM_TUNNEL,
+    object AFTER_CLAIM_TUNNEL: GameState
 
-    CHOOSE_DESTINATION_CARD
+    object CHOOSE_DESTINATION_CARD: GameState
 }

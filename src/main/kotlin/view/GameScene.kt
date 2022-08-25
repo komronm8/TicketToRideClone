@@ -808,7 +808,6 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
                 aiAccessKey = access
                 val player = root.game.currentState.currentPlayer.name
                 thread {
-                    println("turn for player $player")
                     AIService(root).executePlayerMove {
                         if (aiAccessKey === access) {
                             BoardGameApplication.runOnGUIThread(it)
@@ -827,7 +826,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
     override fun refreshAfterDrawWagonCards() {
         BoardGameApplication.runOnGUIThread {
-            if (root.game.gameState == GameState.DREW_WAGON_CARD) {
+            if (root.game.gameState is GameState.DREW_WAGON_CARD) {
                 focusUI(
                     Label(
                         posX = trainCardDeck.posX, posY = destCardDeck.posY + destCardDeck.height,

@@ -2,6 +2,7 @@ package service
 
 import entity.*
 import entity.City
+import service.ai.counts
 import service.network.NetworkService
 import service.network.message.*
 import service.network.message.Color
@@ -15,6 +16,7 @@ import tools.aqua.bgw.net.common.response.CreateGameResponse
 import tools.aqua.bgw.net.common.response.CreateGameResponseStatus
 import tools.aqua.bgw.net.common.response.JoinGameResponse
 import tools.aqua.bgw.net.common.response.JoinGameResponseStatus
+import java.lang.Exception
 import kotlin.math.max
 
 
@@ -30,7 +32,7 @@ class NetworkClient(
     host: String,
     secret: String,
     var networkService: NetworkService,
-) : BoardGameClient(playerName, host, secret, NetworkLogging.VERBOSE) {
+) : BoardGameClient(playerName, host, secret, NetworkLogging.ERRORS) {
     /** the identifier of this game session; can be null if no session started yet. */
     var sID: String? = null
 
@@ -144,6 +146,28 @@ class NetworkClient(
      */
     @GameActionReceiver
     private fun onChatMessageReceivedAction(message: ChatMessage, sender: String) {
+        if (message.text.startsWith("DBG!") && false) {
+            val text = message.text.removePrefix("DBG!")
+            text.split("|").forEach {
+                when {
+                    it.startsWith("oc:") -> {
+                        val required = it.removePrefix("oc:").strip()
+                        val given = networkService.rootService.game.currentState.openCards.counts().toList().toString()
+                        checkState { require(required == given) { "\n${required}(req)\n$given(giv)" } }
+                    }
+                    it.startsWith("p:") -> {
+                        val required = it.removePrefix("p:").strip()
+                        val given = playerText()
+                        checkState { require(required == given) { "\n${required}(req)\n${given}(giv)" } }
+                    }
+                    it.startsWith("wc:") -> {
+                        val required = it.removePrefix("wc:").strip()
+                        val given = networkService.rootService.game.currentState.wagonCardsStack.toString()
+                        checkState { require(required == given) { "\n${required}(req)\n${given}(giv)" } }
+                    }
+                }
+            }
+        }
         BoardGameApplication.runOnGUIThread { networkService.onAllRefreshables { refreshAfterText("[$sender] $message") } }
     }
 
@@ -164,11 +188,12 @@ class NetworkClient(
             val indexOf = networkService.rootService.game.currentState.openCards.indexOfFirst { color.maptoGameColor() == it.color }
             networkService.rootService.playerActionService.drawWagonCard(indexOf)
         }
+        require(networkService.rootService.game.currentState.players[gamePlayer].wagonCards.size >= 2)
         require(
-            networkService.rootService.game.currentState.players[gamePlayer].wagonCards.takeLast(2).sortedBy { it.color.ordinal } ==
-            message.selectedTrainCards.map { WagonCard(it.maptoGameColor()) }.sortedBy { it.color.ordinal }
+            networkService.rootService.game.currentState.players[gamePlayer].wagonCards.takeLast(2).toSet() ==
+            message.selectedTrainCards.map { WagonCard(it.maptoGameColor()) }.toSet()
         ) {
-            "expected: ${networkService.rootService.game.currentState.players[gamePlayer].wagonCards.takeLast(2).toSet()}," +
+            "expected: ${networkService.rootService.game.currentState.players[gamePlayer].wagonCards.takeLast(2)}," +
                     " gotten: ${message.selectedTrainCards.map { it.maptoGameColor() }.toSet()}"
         }
         if (networkService.rootService.game.currentState.currentPlayer.name == playerName) {
@@ -208,20 +233,22 @@ class NetworkClient(
     @GameActionReceiver
     private fun onClaimARouteMessageReceivedAction(message: ClaimARouteMessage, sender: String) {
         var route = getRoute(message.start.toString(), message.end.toString(), message.railColor)
+        if (message.newTrainCardStack != null) {
+            networkService.rootService.insert(networkService.rootService.game.currentState.copy(
+                wagonCardsStack = message.newTrainCardStack.map { WagonCard(it.maptoGameColor()) },
+                discardStack = emptyList()
+            ))
+        }
         val sibling = route.sibling
         val game = networkService.rootService.game
         val wagonCards = mapMessageWagonToEntityWagon(message.playedTrainCards, game.currentState.currentPlayer.wagonCards)
-        if (networkService.rootService.playerActionService.claimRoute(route, wagonCards)
-            == PlayerActionService.ClaimRouteFailure.RouteAlreadyClaimed && sibling != null
-        ) {
-            networkService.rootService.playerActionService.claimRoute(sibling, wagonCards)
+        val beforePlayer = game.currentState.currentPlayer.name
+        var claimRouteResult = networkService.rootService.playerActionService.claimRoute(route, wagonCards)
+        if (claimRouteResult == PlayerActionService.ClaimRouteFailure.RouteAlreadyClaimed && sibling != null) {
+            claimRouteResult = networkService.rootService.playerActionService.claimRoute(sibling, wagonCards)
             route = sibling
         }
-        if (message.newTrainCardStack != null) {
-            networkService.rootService.insert(networkService.rootService.game.currentState.copy(
-                wagonCardsStack = message.newTrainCardStack.map { WagonCard(it.maptoGameColor()) }
-            ))
-        }
+        require(claimRouteResult == null)
         if (route is Tunnel){
             if (message.drawnTunnelCards == null) {
                 networkService.rootService.playerActionService.afterClaimTunnel(route, null)
@@ -233,7 +260,6 @@ class NetworkClient(
                 networkService.rootService.playerActionService.afterClaimTunnel(route, usedCards2)
             }
         }
-
         if (networkService.rootService.game.currentState.currentPlayer.name == playerName) {
             networkService.updateConnectionState(ConnectionState.PLAY_TURN)
         }
@@ -357,4 +383,22 @@ class NetworkClient(
         BoardGameApplication.runOnGUIThread { networkService.onAllRefreshables { refreshAfterPlayerDisconnect() } }
     }
 
+    fun sendIsCorrect() {
+        val state = networkService.rootService.game.currentState
+        networkService.sendChatMessage("DBG!oc:${state.openCards.counts().toList()}|p:${playerText()}|wc:${state.wagonCardsStack}")
+    }
+
+    fun playerText(): String {
+        return networkService.rootService.game.currentState.players.associate {
+            it.name.trim() to "${it.points}?${it.wagonCards.counts().toList()}?${it.trainCardsAmount}"
+        }.toString()
+    }
+    fun checkState(check: () -> Unit) {
+        try {
+            check()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            disconnectAndError(e.message!!)
+        }
+    }
 }

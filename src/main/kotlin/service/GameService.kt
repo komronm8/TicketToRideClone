@@ -219,6 +219,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
     fun nextPlayer() {
         if (state.currentPlayer.name == state.endPlayer?.name) {
             endGame()
+            return
         }
         val oldState = state
         root.undo()
@@ -231,9 +232,14 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
             currentPlayerIndex = oldState.run { (currentPlayerIndex + 1) % players.size },
             endPlayer = oldState.endPlayer ?: endPlayer
         )
+        if (state.currentPlayer.name == root.network.client?.playerName) {
+            root.network.client?.sendIsCorrect()
+        }
+        println("${state.currentPlayer.name}:${state.currentPlayer.wagonCards}")
         root.insert(newState)
         //println("z" + state.players.joinToString("\nz") { it.wagonCards.toString() })
         //root.network.sendDebugMessage()
+
         onAllRefreshables(Refreshable::refreshAfterNextPlayer)
     }
 

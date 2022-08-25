@@ -6,19 +6,18 @@ import service.ConnectionState
 import service.NetworkClient
 import service.RootService
 import service.network.message.*
-import service.network.message.Player as RemotePlayer
-import service.network.message.Color as MessageColor
-import service.network.message.City as MessageCity
 import tools.aqua.bgw.util.Stack
-import java.io.File
 import java.io.InputStream
+import service.network.message.City as MessageCity
+import service.network.message.Color as MessageColor
+import service.network.message.Player as RemotePlayer
 
 /**
  * Handels gamestate for BGW-Net
  *
  * @property root Enables access to GUI, Service and Entity
  */
-class NetworkService(val rootService: RootService): AbstractRefreshingService() {
+class NetworkService(val rootService: RootService) : AbstractRefreshingService() {
     companion object {
         /** URL of the BGW net server hosted for SoPra participants */
         const val SERVER_ADDRESS = "sopra.cs.tu-dortmund.de:80/bgw-net-test/connect"
@@ -26,6 +25,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         /** Name of the game as registered with the server */
         const val GAME_ID = "TicketToRide"
     }
+
     /** Network client. Nullable for offline games. */
     var client: NetworkClient? = null
         private set
@@ -67,7 +67,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      * @throws IllegalArgumentException if secret or name is blank
      * @throws IllegalStateException if already connected to another game
      */
-     fun connect(secret: String, name: String): Boolean {
+    fun connect(secret: String, name: String): Boolean {
         require(connectionState == ConnectionState.DISCONNECTED && client == null)
         { "already connected to another game" }
 
@@ -118,9 +118,9 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         this.connectionState = newState
         /**
         onAllRefreshables {
-            refreshConnectionState(newState)
+        refreshConnectionState(newState)
         }
-        */
+         */
     }
 
     /**
@@ -159,20 +159,30 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         rootService.gameService.startNewGame(playerData.toList())
         val game = rootService.game.currentState
-        */
+         */
         val colors = Stack(PlayerColor.RED, PlayerColor.WHITE, PlayerColor.PURPLE)
 
-        val message = GameInitMessage(
-            (game.openCards + game.wagonCardsStack).map { it.color.maptoMessageColor() },
-            game.players.map { player -> RemotePlayer(isBot = player is AIPlayer,
+        val cards = (game.openCards + game.wagonCardsStack).map { it.color.maptoMessageColor() }
+        val players = game.players.map { player ->
+            RemotePlayer(isBot = player is AIPlayer,
                 trainCards = player.wagonCards.map { it.color.maptoMessageColor() },
                 color = colors.pop(),
                 destinationTickets = player.destinationCards.map {
-                    DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
-                        mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) }) },
+                    DestinationTicket(
+                        it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                        mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))
+                    )
+                })
+        }
+        val message = GameInitMessage(
+            trainCardStack = cards,
+            players = players,
             game.destinationCards.map {
-                DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
-                    mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))) })
+                DestinationTicket(
+                    it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                    mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))
+                )
+            })
 
         updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
         client?.sendGameActionMessage(message)
@@ -191,17 +201,17 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         check(connectionState != ConnectionState.DISCONNECTED) { "Not connected to a game" }
 
         val numOfDestinationCards: MutableList<Int> = mutableListOf()
-        rootService.game.currentState.players.forEach {p ->
+        rootService.game.currentState.players.forEach { p ->
             numOfDestinationCards.add(p.destinationCards.size)
         }
 
         val numOfTrainCards: MutableList<Int> = mutableListOf()
-        rootService.game.currentState.players.forEach {p ->
+        rootService.game.currentState.players.forEach { p ->
             numOfTrainCards.add(p.wagonCards.size)
         }
 
         val numOfClaimedRoutes: MutableList<Int> = mutableListOf()
-        rootService.game.currentState.players.forEach {p ->
+        rootService.game.currentState.players.forEach { p ->
             numOfClaimedRoutes.add(p.claimedRoutes.size)
         }
 
@@ -215,7 +225,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         )
 
         client?.sendGameActionMessage(message)
-        }
+    }
 
     /**
      * Send a [DebugResponseMessage]
@@ -229,26 +239,27 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         var consistent: Boolean = true
 
         val numOfDestinationCards: MutableList<Int> = mutableListOf()
-        rootService.game.currentState.players.forEach {p ->
+        rootService.game.currentState.players.forEach { p ->
             numOfDestinationCards.add(p.destinationCards.size)
         }
 
         val numOfTrainCards: MutableList<Int> = mutableListOf()
-        rootService.game.currentState.players.forEach {p ->
+        rootService.game.currentState.players.forEach { p ->
             numOfTrainCards.add(p.wagonCards.size)
         }
 
         val numOfClaimedRoutes: MutableList<Int> = mutableListOf()
-        rootService.game.currentState.players.forEach {p ->
+        rootService.game.currentState.players.forEach { p ->
             numOfClaimedRoutes.add(p.claimedRoutes.size)
         }
 
         val trainCardStackCount: Int = rootService.game.currentState.wagonCardsStack.size
 
-        if(numOfDestinationCards.toList() != message.numOfDestinationCards
+        if (numOfDestinationCards.toList() != message.numOfDestinationCards
             || numOfTrainCards.toList() != message.numOfTrainCards
             || numOfClaimedRoutes.toList() != message.numOfClaimedRoutes
-            || trainCardStackCount != message.trainCardStackCount){
+            || trainCardStackCount != message.trainCardStackCount
+        ) {
             updateConnectionState(ConnectionState.ERROR)
             consistent = false
         }
@@ -266,13 +277,17 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      *
      * @throws IllegalStateException If it is not your turn
      */
-    fun sendDrawDestinationTicket(selectedDestinationTickets: List<DestinationCard>){
-        check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send GameInitResponse" }
+    fun sendDrawDestinationTicket(selectedDestinationTickets: List<DestinationCard>) {
+        check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send Draw Destination ticket" }
 
         val tmp: MutableList<DestinationTicket> = mutableListOf()
-        selectedDestinationTickets.forEach{
-            tmp.add(DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
-                mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))))
+        selectedDestinationTickets.forEach {
+            tmp.add(
+                DestinationTicket(
+                    it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                    mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))
+                )
+            )
         }
 
         val message = DrawDestinationTicketMessage(tmp.toList())
@@ -287,13 +302,17 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      *
      * @throws IllegalStateException If the Game has not been initialised
      */
-    fun gameInitResponseMessage(selectedCards: List<DestinationCard>){
+    fun gameInitResponseMessage(selectedCards: List<DestinationCard>) {
         check(connectionState == ConnectionState.BUILD_GAMEINIT_RESPONSE) { "Not in a state to send GameInitResponse" }
 
         val tmp: MutableList<DestinationTicket> = mutableListOf()
-        selectedCards.forEach{
-            tmp.add(DestinationTicket(it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
-                mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))))
+        selectedCards.forEach {
+            tmp.add(
+                DestinationTicket(
+                    it.points, mapToCityEnum(readIdentifierFromCSV(it.cities.first.name, false)),
+                    mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))
+                )
+            )
         }
 
         val message = GameInitResponseMessage(tmp.toList(), isGameInitResponse = true)
@@ -308,20 +327,20 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      *
      * @throws IllegalStateException If it is not your turn
      */
-    fun sendDrawTrainCardMessage(selectedTrainCards: List<WagonCard>,newTrainCardStack: List<WagonCard>?){
+    fun sendDrawTrainCardMessage(selectedTrainCards: List<WagonCard>, newTrainCardStack: List<WagonCard>?) {
         check(connectionState == ConnectionState.PLAY_TURN)
         { "Expected State: PLAY_TURN, Gotten: $connectionState" }
         val tmpWC: List<MessageColor> = selectedTrainCards.map {
             it.color.maptoMessageColor()
         }
-        if(newTrainCardStack != null) {
+        if (newTrainCardStack != null) {
             val tmpNewStack: List<MessageColor> = newTrainCardStack.map {
                 it.color.maptoMessageColor()
             }
-            val message = DrawTrainCardMessage(tmpWC,tmpNewStack)
+            val message = DrawTrainCardMessage(tmpWC, tmpNewStack)
             client?.sendGameActionMessage(message)
-        }else{
-            val message = DrawTrainCardMessage(tmpWC,null)
+        } else {
+            val message = DrawTrainCardMessage(tmpWC, null)
             client?.sendGameActionMessage(message)
         }
         updateConnectionState(ConnectionState.WAIT_FOR_TURN)
@@ -337,8 +356,10 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      *
      * @throws IllegalStateException If it is not your turn
      */
-    fun sendClaimARounteMessage(claimedRoute: Route,newTrainCardStack: List<WagonCard>?,
-                                playedTrainCards: List<WagonCard>, drawnTunnelCards: List<WagonCard>?){
+    fun sendClaimARounteMessage(
+        claimedRoute: Route, newTrainCardStack: List<WagonCard>?,
+        playedTrainCards: List<WagonCard>, drawnTunnelCards: List<WagonCard>?
+    ) {
         println(rootService.game.currentState.currentPlayer.name)
         check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send ClaimARounteMessage" }
         val tmpTrainCards: MutableList<MessageColor> = mutableListOf()
@@ -349,61 +370,68 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         var tmpNewTrainCards: MutableList<MessageColor>? = mutableListOf()
         var tmpTunnelCards: MutableList<MessageColor>? = mutableListOf()
 
-        if (newTrainCardStack != null){
+        if (newTrainCardStack != null) {
             newTrainCardStack.forEach {
                 tmpNewTrainCards?.add(it.color.maptoMessageColor())
             }
-        }else{
+        } else {
             tmpNewTrainCards = null
         }
 
-        if (drawnTunnelCards != null){
+        if (drawnTunnelCards != null) {
             drawnTunnelCards.forEach {
                 tmpTunnelCards?.add(it.color.maptoMessageColor())
             }
-        }else{
+        } else {
             tmpTunnelCards = null
         }
 
-        val message = ClaimARouteMessage(mapToCityEnum(readIdentifierFromCSV(claimedRoute.cities.second.name,false)),
-            mapToCityEnum(readIdentifierFromCSV(claimedRoute.cities.first.name,false)),tmpNewTrainCards,tmpTrainCards,
-            claimedRoute.color.maptoMessageColor(),tmpTunnelCards)
+        val message = ClaimARouteMessage(
+            mapToCityEnum(readIdentifierFromCSV(claimedRoute.cities.second.name, false)),
+            mapToCityEnum(readIdentifierFromCSV(claimedRoute.cities.first.name, false)),
+            tmpNewTrainCards,
+            tmpTrainCards,
+            claimedRoute.color.maptoMessageColor(),
+            tmpTunnelCards
+        )
 
         client?.sendGameActionMessage(message)
         updateConnectionState(ConnectionState.WAIT_FOR_TURN)
     }
+
     private data class CityMapping(
         val identifier: String,
         val cityName: String
     )
-    private fun readCsvAndSearchName(inputStream: InputStream, cityNameToFind: String): String{
+
+    private fun readCsvAndSearchName(inputStream: InputStream, cityNameToFind: String): String {
         val reader = inputStream.bufferedReader()
         val values = reader.lineSequence()
             .filter { it.isNotBlank() }
             .map {
                 val (cityCode, cityName) = it.split(',', ignoreCase = false, limit = 2)
-                CityMapping(cityCode,cityName)
+                CityMapping(cityCode, cityName)
             }.toList()
         val filtVal = values.filter { it.cityName == cityNameToFind }
-        if(filtVal.isEmpty()){
+        if (filtVal.isEmpty()) {
             return ""
-        }else {
+        } else {
             return filtVal[0].identifier
         }
     }
 
-    private fun readCsvAndSearchIdentifier(inputStream: InputStream, cityNameToFind: String): String{
+    private fun readCsvAndSearchIdentifier(inputStream: InputStream, cityNameToFind: String): String {
         val reader = inputStream.bufferedReader()
         val values = reader.lineSequence()
             .filter { it.isNotBlank() }
             .map {
                 val (cityCode, cityName) = it.split(',', ignoreCase = false, limit = 2)
-                CityMapping(cityCode,cityName)
+                CityMapping(cityCode, cityName)
             }.toList()
         val filtVal = values.filter { it.identifier == cityNameToFind }
-        if(filtVal.isEmpty()){
+        if (filtVal.isEmpty()) {
             return ""
-        }else {
+        } else {
             return filtVal[0].cityName
         }
     }
@@ -414,91 +442,91 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      * @param cityName The [String] to map
      * @param isIdentifier false -> [City] to the [service.network.message.City]
      */
-    fun readIdentifierFromCSV(cityName: String, isIdentifier: Boolean): String{
-        if(isIdentifier){
+    fun readIdentifierFromCSV(cityName: String, isIdentifier: Boolean): String {
+        if (isIdentifier) {
             return when (cityName) {
-                "ALB"->"Ålborg"
-                "AND"->"Åndalsnes"
-                "ARH"->"Århus"
-                "BER"->"Bergen"
-                "BOD"->"Boden"
-                "GOT"->"Göteborg"
-                "HEL"->"Helsinki"
-                "HON"->"Honningsvåg"
-                "IMA"->"Imatra"
-                "KAJ"->"Kajaani"
-                "KAR"->"Karlskrona"
-                "KIK"->"Kirkenes"
-                "KIR"->"Kiruna"
-                "KOB"->"København"
-                "KRI"->"Kristiansand"
-                "KUO"->"Kuopio"
-                "LAU"->"Lahti"
-                "LIE"->"Lieksa"
-                "LIL"->"Lillehammer"
-                "MOR"->"Mo I Rana"
-                "MUR"->"Murmansk"
-                "NAR"->"Narvik"
-                "NOR"->"Norrköping"
-                "ORE"->"Örebro"
-                "OSL"->"Oslo"
-                "OST"->"Östersund"
-                "OUL"->"Oulu"
-                "ROV"->"Rovaniemi"
-                "STA"->"Stavanger"
-                "STO"->"Stockholm"
-                "SUN"->"Sundsvall"
-                "TAL"->"Tallinn"
-                "TAM"->"Tampere"
-                "TOR"->"Tornio"
-                "TRO"->"Tromsø"
-                "TRH"->"Trondheim"
-                "TUR"->"Turku"
-                "UME"->"Umeå"
-                "VAA"->"Vaasa"
+                "ALB" -> "Ålborg"
+                "AND" -> "Åndalsnes"
+                "ARH" -> "Århus"
+                "BER" -> "Bergen"
+                "BOD" -> "Boden"
+                "GOT" -> "Göteborg"
+                "HEL" -> "Helsinki"
+                "HON" -> "Honningsvåg"
+                "IMA" -> "Imatra"
+                "KAJ" -> "Kajaani"
+                "KAR" -> "Karlskrona"
+                "KIK" -> "Kirkenes"
+                "KIR" -> "Kiruna"
+                "KOB" -> "København"
+                "KRI" -> "Kristiansand"
+                "KUO" -> "Kuopio"
+                "LAU" -> "Lahti"
+                "LIE" -> "Lieksa"
+                "LIL" -> "Lillehammer"
+                "MOR" -> "Mo I Rana"
+                "MUR" -> "Murmansk"
+                "NAR" -> "Narvik"
+                "NOR" -> "Norrköping"
+                "ORE" -> "Örebro"
+                "OSL" -> "Oslo"
+                "OST" -> "Östersund"
+                "OUL" -> "Oulu"
+                "ROV" -> "Rovaniemi"
+                "STA" -> "Stavanger"
+                "STO" -> "Stockholm"
+                "SUN" -> "Sundsvall"
+                "TAL" -> "Tallinn"
+                "TAM" -> "Tampere"
+                "TOR" -> "Tornio"
+                "TRO" -> "Tromsø"
+                "TRH" -> "Trondheim"
+                "TUR" -> "Turku"
+                "UME" -> "Umeå"
+                "VAA" -> "Vaasa"
                 else -> throw IllegalStateException()
             }
-        }else {
+        } else {
             return when (cityName) {
-                "Ålborg"->"ALB"
-                "Åndalsnes"->"AND"
-                "Århus"->"ARH"
-                "Bergen"->"BER"
-                "Boden"->"BOD"
-                "Göteborg"->"GOT"
-                "Helsinki"->"HEL"
-                "Honningsvåg"->"HON"
-                "Imatra"->"IMA"
-                "Kajaani"->"KAJ"
-                "Karlskrona"->"KAR"
-                "Kirkenes"->"KIK"
-                "Kiruna"->"KIR"
-                "København"->"KOB"
-                "Kristiansand"->"KRI"
-                "Kuopio"->"KUO"
-                "Lahti"->"LAU"
-                "Lieksa"->"LIE"
-                "Lillehammer"->"LIL"
-                "Mo I Rana"->"MOR"
-                "Murmansk"->"MUR"
-                "Narvik"->"NAR"
-                "Norrköping"->"NOR"
-                "Örebro"->"ORE"
-                "Oslo"->"OSL"
-                "Östersund"->"OST"
-                "Oulu"->"OUL"
-                "Rovaniemi"->"ROV"
-                "Stavanger"->"STA"
-                "Stockholm"->"STO"
-                "Sundsvall"->"SUN"
-                "Tallinn"->"TAL"
-                "Tampere"->"TAM"
-                "Tornio"->"TOR"
-                "Tromsø"->"TRO"
-                "Trondheim"->"TRH"
-                "Turku"->"TUR"
-                "Umeå"->"UME"
-                "Vaasa"->"VAA"
+                "Ålborg" -> "ALB"
+                "Åndalsnes" -> "AND"
+                "Århus" -> "ARH"
+                "Bergen" -> "BER"
+                "Boden" -> "BOD"
+                "Göteborg" -> "GOT"
+                "Helsinki" -> "HEL"
+                "Honningsvåg" -> "HON"
+                "Imatra" -> "IMA"
+                "Kajaani" -> "KAJ"
+                "Karlskrona" -> "KAR"
+                "Kirkenes" -> "KIK"
+                "Kiruna" -> "KIR"
+                "København" -> "KOB"
+                "Kristiansand" -> "KRI"
+                "Kuopio" -> "KUO"
+                "Lahti" -> "LAU"
+                "Lieksa" -> "LIE"
+                "Lillehammer" -> "LIL"
+                "Mo I Rana" -> "MOR"
+                "Murmansk" -> "MUR"
+                "Narvik" -> "NAR"
+                "Norrköping" -> "NOR"
+                "Örebro" -> "ORE"
+                "Oslo" -> "OSL"
+                "Östersund" -> "OST"
+                "Oulu" -> "OUL"
+                "Rovaniemi" -> "ROV"
+                "Stavanger" -> "STA"
+                "Stockholm" -> "STO"
+                "Sundsvall" -> "SUN"
+                "Tallinn" -> "TAL"
+                "Tampere" -> "TAM"
+                "Tornio" -> "TOR"
+                "Tromsø" -> "TRO"
+                "Trondheim" -> "TRH"
+                "Turku" -> "TUR"
+                "Umeå" -> "UME"
+                "Vaasa" -> "VAA"
                 else -> throw IllegalStateException("unreachable")
             }
         }
@@ -510,32 +538,32 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      *
      * @param text The Text of the message
      */
-    fun sendChatMessage(text: String){
+    fun sendChatMessage(text: String) {
         client?.sendGameActionMessage(ChatMessage(text))
     }
 
     /**
      * Maps a [String] to the [service.network.message.City] enum
      */
-    fun mapToCityEnum(str: String): MessageCity{
-        when(str){
-            "ALB" ->return MessageCity.ALB;"AND" ->return MessageCity.AND;"ARH" ->return MessageCity.ARH;
-            "BER"->return MessageCity.BER;"BOD"->return MessageCity.BOD;
-            "GOT"->return MessageCity.GOT;
-            "HEL"->return MessageCity.HEL;"HON"->return MessageCity.HON;"IMA"->return MessageCity.IMA;
-        "KAJ" ->return MessageCity.KAJ;"KAR"->return MessageCity.KAR;"KIK" ->return MessageCity.KIK;
-            "KIR" ->return MessageCity.KIR;"KOB" ->return MessageCity.KOB;
-            "KRI" ->return MessageCity.KRI;"KUO" ->return MessageCity.KUO;
-            "LAU" ->return MessageCity.LAU;"LIE" ->return MessageCity.LIE;
-        "LIL" ->return MessageCity.LIL;"MOR" ->return MessageCity.MOR;"MUR" ->return MessageCity.MUR;
-            "NAR" ->return MessageCity.NAR;"NOR" ->return MessageCity.NOR;
-            "ORE"->return MessageCity.ORE;"OSL"->return MessageCity.OSL;
-            "OST"->return MessageCity.OST;"OUL"->return MessageCity.OUL;
-        "ROV" ->return MessageCity.ROV;"STA"->return MessageCity.STA;"STO"->return MessageCity.STO;
-            "SUN"->return MessageCity.SUN;"TAL"->return MessageCity.TAL;
-            "TAM"->return MessageCity.TAM;"TOR"->return MessageCity.TOR;
-            "TRO"->return MessageCity.TRO;"TRH"->return MessageCity.TRH;
-        "TUR"->return MessageCity.TUR;"UME"->return MessageCity.UME;"VAA"->return MessageCity.VAA;
+    fun mapToCityEnum(str: String): MessageCity {
+        when (str) {
+            "ALB" -> return MessageCity.ALB;"AND" -> return MessageCity.AND;"ARH" -> return MessageCity.ARH;
+            "BER" -> return MessageCity.BER;"BOD" -> return MessageCity.BOD;
+            "GOT" -> return MessageCity.GOT;
+            "HEL" -> return MessageCity.HEL;"HON" -> return MessageCity.HON;"IMA" -> return MessageCity.IMA;
+            "KAJ" -> return MessageCity.KAJ;"KAR" -> return MessageCity.KAR;"KIK" -> return MessageCity.KIK;
+            "KIR" -> return MessageCity.KIR;"KOB" -> return MessageCity.KOB;
+            "KRI" -> return MessageCity.KRI;"KUO" -> return MessageCity.KUO;
+            "LAU" -> return MessageCity.LAU;"LIE" -> return MessageCity.LIE;
+            "LIL" -> return MessageCity.LIL;"MOR" -> return MessageCity.MOR;"MUR" -> return MessageCity.MUR;
+            "NAR" -> return MessageCity.NAR;"NOR" -> return MessageCity.NOR;
+            "ORE" -> return MessageCity.ORE;"OSL" -> return MessageCity.OSL;
+            "OST" -> return MessageCity.OST;"OUL" -> return MessageCity.OUL;
+            "ROV" -> return MessageCity.ROV;"STA" -> return MessageCity.STA;"STO" -> return MessageCity.STO;
+            "SUN" -> return MessageCity.SUN;"TAL" -> return MessageCity.TAL;
+            "TAM" -> return MessageCity.TAM;"TOR" -> return MessageCity.TOR;
+            "TRO" -> return MessageCity.TRO;"TRH" -> return MessageCity.TRH;
+            "TUR" -> return MessageCity.TUR;"UME" -> return MessageCity.UME;"VAA" -> return MessageCity.VAA;
             else -> throw IllegalArgumentException("$str not in enum.")
         }
     }
