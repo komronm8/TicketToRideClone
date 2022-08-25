@@ -19,6 +19,6 @@ data class DrawTrainCardMessage (
     }
 
     init {
-        require(selectedTrainCards.size == 2){ "Invalid number of train cards" }
+        require(selectedTrainCards.size in 0..3){ "Invalid number of train cards" }
     }
 }

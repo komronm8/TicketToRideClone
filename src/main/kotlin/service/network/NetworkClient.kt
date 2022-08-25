@@ -187,6 +187,13 @@ class NetworkClient(
         }
     }
 
+    private fun mapMessageWagonToEntityWagon(from: List<Color>, to: List<WagonCard>): List<WagonCard> {
+        val expectedWagonCards = from.map { WagonCard(it.maptoGameColor()) }
+        val playerCards = to.groupBy { it.color }
+        val expectedCount = expectedWagonCards.groupBy { it.color }.mapValues { it.value.count() }
+        return expectedCount.flatMap { checkNotNull(playerCards[it.key]).subList(0, it.value) }
+    }
+
     /**
      * Handel a [ClaimARouteMessage] sent by the Server
      */
@@ -194,29 +201,24 @@ class NetworkClient(
     private fun onClaimARouteMessageReceivedAction(message: ClaimARouteMessage, sender: String) {
         var route = getRoute(message.start.toString(), message.end.toString(), message.railColor)
         val sibling = route.sibling
-        val expectedWagonCards = message.playedTrainCards.map { WagonCard(it.maptoGameColor()) }
-        val currentState = networkService.rootService.game.currentState
-        val playerCards = currentState.currentPlayer.wagonCards.groupBy { it.color }
-        val expectedCount = expectedWagonCards.groupBy { it.color }.mapValues { it.value.count() }
-        val wagonCards = expectedCount.flatMap { checkNotNull(playerCards[it.key]).subList(0, it.value) }
-        if (networkService.rootService.playerActionService.claimRoute(
-                route, wagonCards
-            )
+        val game = networkService.rootService.game
+        val wagonCards = mapMessageWagonToEntityWagon(message.playedTrainCards, game.currentState.currentPlayer.wagonCards)
+        if (networkService.rootService.playerActionService.claimRoute(route, wagonCards)
             == PlayerActionService.ClaimRouteFailure.RouteAlreadyClaimed && sibling != null
         ) {
-            networkService.rootService.playerActionService.claimRoute(
-                sibling, message.playedTrainCards.map { WagonCard(it.maptoGameColor()) })
+            networkService.rootService.playerActionService.claimRoute(sibling, wagonCards)
             route = sibling
         }
-        if (message.drawnTunnelCards != null && route is Tunnel){
-            if (message.drawnTunnelCards.isEmpty()
+        if (route is Tunnel){
+            if (message.drawnTunnelCards == null || message.drawnTunnelCards.isEmpty()
                 && networkService.rootService.playerActionService.tunnelPayAmount(message.playedTrainCards.map { WagonCard(it.maptoGameColor()) }).first != 0){
                 networkService.rootService.playerActionService.afterClaimTunnel(route, null)
             }
             else {
-                networkService.rootService.playerActionService.afterClaimTunnel(
-                    route,
-                    message.drawnTunnelCards.map { WagonCard(it.maptoGameColor()) })
+                val usedCards2 = mapMessageWagonToEntityWagon(
+                    message.drawnTunnelCards, game.currentState.currentPlayer.wagonCards
+                )
+                networkService.rootService.playerActionService.afterClaimTunnel(route, usedCards2)
             }
         }
         if (networkService.rootService.game.currentState.currentPlayer.name == playerName) {
