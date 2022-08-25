@@ -163,7 +163,7 @@ class NetworkService(val rootService: RootService) : AbstractRefreshingService()
          */
         val colors = Stack(PlayerColor.RED, PlayerColor.WHITE, PlayerColor.PURPLE)
 
-        val cards = (game.openCards + game.wagonCardsStack).map { it.color.maptoMessageColor() }
+        val cards = (game.openCards + game.wagonCardsStack.reversed()).reversed().map { it.color.maptoMessageColor() }
         val players = game.players.map { player ->
             RemotePlayer(isBot = player is AIPlayer,
                 trainCards = player.wagonCards.map { it.color.maptoMessageColor() },

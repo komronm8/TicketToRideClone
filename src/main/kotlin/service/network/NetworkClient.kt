@@ -247,7 +247,7 @@ class NetworkClient(
             claimRouteResult = networkService.rootService.playerActionService.claimRoute(sibling, wagonCards)
             route = sibling
         }
-        require(claimRouteResult == null)
+        require(claimRouteResult == null) { "res: $claimRouteResult" }
         if (route is Tunnel){
             if (message.drawnTunnelCards == null) {
                 networkService.rootService.playerActionService.afterClaimTunnel(route, null)
@@ -320,7 +320,7 @@ class NetworkClient(
                 )
             }
         }
-
+        val trainCards = message.trainCardStack.reversed()
         networkService.rootService.game = Game(
             State(
                 destinationCards = message.destinationTickets.map { card ->
@@ -333,9 +333,9 @@ class NetworkClient(
                 },
                 cities = cities,
                 players = players,
-                openCards = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }.subList(0, 5),
-                wagonCardsStack = message.trainCardStack.map { WagonCard(it.maptoGameColor()) }
-                    .subList(5, message.trainCardStack.size),
+                openCards = trainCards.map { WagonCard(it.maptoGameColor()) }.subList(0, 5),
+                wagonCardsStack = trainCards.map { WagonCard(it.maptoGameColor()) }
+                    .subList(5, message.trainCardStack.size).reversed(),
             )
         )
         networkService.updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
