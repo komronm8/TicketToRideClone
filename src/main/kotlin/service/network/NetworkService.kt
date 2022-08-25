@@ -13,7 +13,11 @@ import tools.aqua.bgw.util.Stack
 import java.io.File
 import java.io.InputStream
 
-
+/**
+ * Handels gamestate for BGW-Net
+ *
+ * @property root Enables access to GUI, Service and Entity
+ */
 class NetworkService(val rootService: RootService): AbstractRefreshingService() {
     companion object {
         /** URL of the BGW net server hosted for SoPra participants */
@@ -193,7 +197,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val numOfTrainCards: MutableList<Int> = mutableListOf()
         rootService.game.currentState.players.forEach {p ->
-            numOfTrainCards.add(p.trainCarsAmount)
+            numOfTrainCards.add(p.wagonCards.size)
         }
 
         val numOfClaimedRoutes: MutableList<Int> = mutableListOf()
@@ -213,6 +217,13 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         client?.sendGameActionMessage(message)
         }
 
+    /**
+     * Send a [DebugResponseMessage]
+     *
+     * @param message The [DebugMessage] it responds to
+     *
+     * @throws IllegalStateException when not connected to a game
+     */
     fun sendDebugResponseMessage(message: DebugMessage) {
         check(connectionState != ConnectionState.DISCONNECTED) { "Not connected to a game" }
         var consistent: Boolean = true
@@ -224,7 +235,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val numOfTrainCards: MutableList<Int> = mutableListOf()
         rootService.game.currentState.players.forEach {p ->
-            numOfTrainCards.add(p.trainCarsAmount)
+            numOfTrainCards.add(p.wagonCards.size)
         }
 
         val numOfClaimedRoutes: MutableList<Int> = mutableListOf()
@@ -234,8 +245,10 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val trainCardStackCount: Int = rootService.game.currentState.wagonCardsStack.size
 
-        if(numOfDestinationCards.toList() != message.numOfDestinationCards || numOfTrainCards.toList() != message.numOfTrainCards
-            || numOfClaimedRoutes.toList() != message.numOfClaimedRoutes || trainCardStackCount != message.trainCardStackCount){
+        if(numOfDestinationCards.toList() != message.numOfDestinationCards
+            || numOfTrainCards.toList() != message.numOfTrainCards
+            || numOfClaimedRoutes.toList() != message.numOfClaimedRoutes
+            || trainCardStackCount != message.trainCardStackCount){
             updateConnectionState(ConnectionState.ERROR)
             consistent = false
         }
@@ -246,6 +259,13 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
     }
 
+    /**
+     * Send a [DrawDestinationTicketMessage]
+     *
+     * @param selectedDestinationTickets The selected [DestinationCard]s
+     *
+     * @throws IllegalStateException If it is not your turn
+     */
     fun sendDrawDestinationTicket(selectedDestinationTickets: List<DestinationCard>){
         check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send GameInitResponse" }
 
@@ -259,8 +279,15 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         client?.sendGameActionMessage(message)
         updateConnectionState(ConnectionState.WAIT_FOR_TURN)
     }
-    fun GameInitResponseMessage(selectedCards: List<DestinationCard>){
-        println(connectionState)
+
+    /**
+     * Send a [gameInitResponseMessage]
+     *
+     * @param selectedCards The [DestinationCard]s selected at the Beginning of the Game
+     *
+     * @throws IllegalStateException If the Game has not been initialised
+     */
+    fun gameInitResponseMessage(selectedCards: List<DestinationCard>){
         check(connectionState == ConnectionState.BUILD_GAMEINIT_RESPONSE) { "Not in a state to send GameInitResponse" }
 
         val tmp: MutableList<DestinationTicket> = mutableListOf()
@@ -274,7 +301,15 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         updateConnectionState(ConnectionState.WAIT_FOR_GAMEINIT_RESPONSE)
     }
 
+    /**
+     * Send a [DrawTrainCardMessage]
+     *
+     * @param selectedTrainCards The selected [DestinationCard]s
+     *
+     * @throws IllegalStateException If it is not your turn
+     */
     fun sendDrawTrainCardMessage(selectedTrainCards: List<WagonCard>,newTrainCardStack: List<WagonCard>?){
+        check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send GameInitResponse" }
         val tmpWC: MutableList<MessageColor> = mutableListOf()
         selectedTrainCards.forEach{
             tmpWC.add(it.color.maptoMessageColor())
@@ -292,8 +327,19 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         }
     }
 
+    /**
+     * Send a [ClaimARouteMessage]
+     *
+     * @param claimedRoute The claimed [Route]
+     * @param newTrainCardStack If the DiscardStack has een shuffled
+     * @param playedTrainCards The [WagonCard]s used to claim the [Route]
+     * @param drawnTunnelCards If the [Route] is a [Tunnel] the additional [WagonCard]
+     *
+     * @throws IllegalStateException If it is not your turn
+     */
     fun sendClaimARounteMessage(claimedRoute: Route,newTrainCardStack: List<WagonCard>?,
                                 playedTrainCards: List<WagonCard>, drawnTunnelCards: List<WagonCard>?){
+        check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send GameInitResponse" }
         val tmpTrainCards: MutableList<MessageColor> = mutableListOf()
         playedTrainCards.forEach {
             tmpTrainCards.add(it.color.maptoMessageColor())
@@ -322,11 +368,9 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
             mapToCityEnum(readIdentifierFromCSV(claimedRoute.cities.first.name,false)),tmpNewTrainCards,tmpTrainCards,
             claimedRoute.color.maptoMessageColor(),tmpTunnelCards)
 
-        println("Here")
-        println(this.connectionState)
         client?.sendGameActionMessage(message)
     }
-    data class CityMapping(
+    private data class CityMapping(
         val identifier: String,
         val cityName: String
     )
@@ -363,7 +407,10 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
     }
 
     /**
+     * Maps the [City] to the [service.network.message.City] and in the other Direktion
      *
+     * @param cityName The [String] to map
+     * @param isIdentifier false -> [City] to the [service.network.message.City]
      */
     fun readIdentifierFromCSV(cityName: String, isIdentifier: Boolean): String{
         var fileName = "/City_Enum_Zuordnung_1.csv"
@@ -375,22 +422,36 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
         }
     }
 
+
+    /**
+     * Ssend a [ChatMessage]
+     *
+     * @param text The Text of the message
+     */
     fun sendChatMessage(text: String){
         client?.sendGameActionMessage(ChatMessage(text))
     }
 
+    /**
+     * Maps a [String] to the [service.network.message.City] enum
+     */
     fun mapToCityEnum(str: String): MessageCity{
         when(str){
-            "ALB" ->return MessageCity.ALB;"AND" ->return MessageCity.AND;"ARH" ->return MessageCity.ARH;"BER"->return MessageCity.BER;"BOD"->return MessageCity.BOD;
+            "ALB" ->return MessageCity.ALB;"AND" ->return MessageCity.AND;"ARH" ->return MessageCity.ARH;
+            "BER"->return MessageCity.BER;"BOD"->return MessageCity.BOD;
             "GOT"->return MessageCity.GOT;
             "HEL"->return MessageCity.HEL;"HON"->return MessageCity.HON;"IMA"->return MessageCity.IMA;
-        "KAJ" ->return MessageCity.KAJ;"KAR"->return MessageCity.KAR;"KIK" ->return MessageCity.KIK;"KIR" ->return MessageCity.KIR;"KOB" ->return MessageCity.KOB;
+        "KAJ" ->return MessageCity.KAJ;"KAR"->return MessageCity.KAR;"KIK" ->return MessageCity.KIK;
+            "KIR" ->return MessageCity.KIR;"KOB" ->return MessageCity.KOB;
             "KRI" ->return MessageCity.KRI;"KUO" ->return MessageCity.KUO;
             "LAU" ->return MessageCity.LAU;"LIE" ->return MessageCity.LIE;
-        "LIL" ->return MessageCity.LIL;"MOR" ->return MessageCity.MOR;"MUR" ->return MessageCity.MUR;"NAR" ->return MessageCity.NAR;"NOR" ->return MessageCity.NOR;
+        "LIL" ->return MessageCity.LIL;"MOR" ->return MessageCity.MOR;"MUR" ->return MessageCity.MUR;
+            "NAR" ->return MessageCity.NAR;"NOR" ->return MessageCity.NOR;
             "ORE"->return MessageCity.ORE;"OSL"->return MessageCity.OSL;
             "OST"->return MessageCity.OST;"OUL"->return MessageCity.OUL;
-        "ROV" ->return MessageCity.ROV;"STA"->return MessageCity.STA;"STO"->return MessageCity.STO;"SUN"->return MessageCity.SUN;"TAL"->return MessageCity.TAL;"TAM"->return MessageCity.TAM;"TOR"->return MessageCity.TOR;
+        "ROV" ->return MessageCity.ROV;"STA"->return MessageCity.STA;"STO"->return MessageCity.STO;
+            "SUN"->return MessageCity.SUN;"TAL"->return MessageCity.TAL;
+            "TAM"->return MessageCity.TAM;"TOR"->return MessageCity.TOR;
             "TRO"->return MessageCity.TRO;"TRH"->return MessageCity.TRH;
         "TUR"->return MessageCity.TUR;"UME"->return MessageCity.UME;"VAA"->return MessageCity.VAA;
             else -> throw IllegalArgumentException("$str not in enum.")

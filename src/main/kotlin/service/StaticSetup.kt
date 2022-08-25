@@ -3,6 +3,9 @@ package service
 import entity.*
 import entity.Color.*
 
+/**
+ * Gets a [City] and the containing [Route]s by city name
+ */
 fun MutableList<City>.city(name: String): Pair<City, MutableList<Route>>{
     val routes = mutableListOf<Route>()
     val city = City(name, routes)

@@ -284,7 +284,7 @@ private inline fun RootService.claimRoutesMoves(
     var uniqueReplacements: LongArray? = null
     var uniqueReplacementsCount = 0
     for (route in unclaimedRoutes) {
-        if (currentPlayer.trainCarsAmount < route.completeLength) continue
+        if (currentPlayer.trainCardsAmount < route.completeLength) continue
         val canClaim = when (route) {
             is Ferry -> {
                 if (route.color == Color.JOKER && count2 == null) {

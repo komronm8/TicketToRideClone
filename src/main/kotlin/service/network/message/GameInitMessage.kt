@@ -4,9 +4,11 @@ import tools.aqua.bgw.net.common.GameAction
 import tools.aqua.bgw.net.common.annotations.GameActionClass
 
 /**
- * Game Initialization Message is a Message containing the trainCardStack, players and destinationTickets the clients need
+ * Game Initialization Message is a Message containing the trainCardStack,
+ * and destinationTickets the clients need
  * to initialize their Game State.
- * Upon receiving the GameInitMessage from the Host, the Client should initialize his Entity layer with the contained Information
+ * Upon receiving the GameInitMessage from the Host, the Client should initialize
+ * his Entity layer with the contained Information
  * @param trainCardStack List of Colors representing TrainCards
  * @param players List of Player-Objects
  * @param destinationTickets List of DestinationTicket-Objects

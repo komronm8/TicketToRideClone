@@ -197,7 +197,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      * Claims the route for the player
      *
      * The [Game.gameState] must be [GameState.DEFAULT]. The [usedCards] must fit exactly to claim the route.
-     * Must have sufficient [Player.trainCarsAmount]. If the route is a tunnel, then the required cards are placed on
+     * Must have sufficient [Player.trainCardsAmount]. If the route is a tunnel, then the required cards are placed on
      * top of the draw stack
      *
      * @param route the route to be claimed. Must either be unclaimed or a double route
@@ -247,13 +247,14 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                     wagonCards = newPlayerCard,
                     points = points + route.pointValue(),
                     claimedRoutes = claimedRoutes + route,
-                    trainCarsAmount = trainCarsAmount - route.completeLength
+                    trainCarsAmount = trainCardsAmount - route.completeLength
                 )
             }
             val newDiscardStack = state.discardStack + usedCards
             root.insert(state.copy(discardStack = newDiscardStack, players = newPlayer))
             onAllRefreshables { refreshAfterClaimRoute(route, usedCards) }
-            if (root.game.currentState.players.any { it.isRemote } && state.currentPlayer.name == root.network.client?.playerName) {
+            if (root.game.currentState.players.any { it.isRemote } &&
+                state.currentPlayer.name == root.network.client?.playerName) {
                 root.network.sendClaimARounteMessage(route, null, usedCards, null)
             }
             root.gameService.nextPlayer()
@@ -272,7 +273,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         currentPlayer: Player, route: Route,
         usedCards: List<WagonCard>, exhaustive: Boolean
     ): ClaimRouteFailure? {
-        if (currentPlayer.trainCarsAmount < route.completeLength) {
+        if (currentPlayer.trainCardsAmount < route.completeLength) {
             return ClaimRouteFailure.NotEnoughTrainCars
         }
         val doubleRoute = state.players.size > 2
@@ -428,7 +429,8 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                     wagonCardsStack = newDraw
                 )
             )
-            if (root.game.currentState.players.any { it.isRemote } && state.currentPlayer.name == root.network.client?.playerName) {
+            if (root.game.currentState.players.any { it.isRemote } &&
+                state.currentPlayer.name == root.network.client?.playerName) {
                 val shuffled = previousState.discardStack.isNotEmpty() && newDiscard.isEmpty()
                 val newCardStack = if (shuffled) state.wagonCardsStack else null
                 root.network.sendClaimARounteMessage(route, newCardStack, usedCards, null)
@@ -444,7 +446,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         val newPlayers = betweenState.updateCurrentPlayer {
             copy(
                 points = points + route.pointValue(),
-                trainCarsAmount = trainCarsAmount - route.completeLength,
+                trainCarsAmount = trainCardsAmount - route.completeLength,
                 claimedRoutes = claimedRoutes + route,
                 wagonCards = newPlayerHand
             )
@@ -459,14 +461,21 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         )
         root.game.gameState = GameState.DEFAULT
         onAllRefreshables { refreshAfterAfterClaimTunnel(route) }
-        if (root.game.currentState.players.any { it.isRemote } && state.currentPlayer.name == root.network.client?.playerName) {
+        if (root.game.currentState.players.any { it.isRemote } &&
+            state.currentPlayer.name == root.network.client?.playerName) {
             val shuffled = previousState.discardStack.isNotEmpty() && newDiscard.isEmpty()
             val newCardStack = if (shuffled) state.wagonCardsStack else null
             root.network.sendClaimARounteMessage(route, newCardStack, usedCards, cards)
         }
         root.gameService.nextPlayer()
     }
-
+    /**
+     * Calculates the Amount and the [Color] of the route that wants to be claimed
+     * Exists for GUI
+     *
+     * @param usedCards the cards that are used to claim the route.
+     * @return The needed amount and color of cards
+     */
     fun tunnelPayAmount(usedCards: List<WagonCard>): Pair<Int, Color?> {
         val required = state.wagonCardsStack.run { subList(max(0, size - 3), size) }
         val colorCard = usedCards.firstOrNull { it.color != Color.JOKER }

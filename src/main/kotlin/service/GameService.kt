@@ -100,12 +100,17 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
 
     }
 
+    /**
+     * Enables asynchronous choosing of [DestinationCard] via List
+     * Calls [chooseDestinationCard]
+     */
     fun chooseDestinationCards(playerName: String, cards: List<Int>){
         chosenCards[playerName] = cards.toList()
 
         if (root.game.currentState.players.any { it.isRemote }) {
             if(playerName == root.network.client?.playerName){
-                root.network.GameInitResponseMessage(cards.map(state.players.first { it.name == playerName }.destinationCards::get))
+                root.network.gameInitResponseMessage(
+                    cards.map(state.players.first { it.name == playerName }.destinationCards::get))
                 BoardGameApplication.runOnGUIThread {onAllRefreshables(Refreshable::refreshAfterOneDestinationCard)}
             }
         }
@@ -135,6 +140,9 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         onAllRefreshables { refreshAfterEndGame(winner) }
     }
 
+    /**
+     * Starts a new [Game] via old [Player] data
+     */
     fun nextGame() {
         startNewGame(state.players.map { PlayerData(it.name, it.isRemote, (it as? AIPlayer)?.strategy) })
     }
@@ -214,7 +222,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         }
         val oldState = state
         root.undo()
-        val endPlayer = if (oldState.currentPlayer.trainCarsAmount <= 2) {
+        val endPlayer = if (oldState.currentPlayer.trainCardsAmount <= 2) {
             oldState.currentPlayer
         } else {
             null

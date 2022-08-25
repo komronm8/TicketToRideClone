@@ -24,6 +24,9 @@ enum class Color {
      */
     RAINBOW;
 
+    /**
+     * Maps message to color
+     */
     fun maptoGameColor(): Color{
         return when (this){
             RAINBOW -> Color.JOKER

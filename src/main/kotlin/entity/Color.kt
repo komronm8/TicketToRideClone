@@ -17,6 +17,9 @@ enum class Color {
     BLACK,
     JOKER;
 
+    /**
+     * Maps message to color
+     */
     fun maptoMessageColor(): Color {
         return when (this){
             JOKER -> Color.RAINBOW

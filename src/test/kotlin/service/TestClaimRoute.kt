@@ -72,7 +72,7 @@ class TestClaimRoute {
         afterClaimTunnel(route as Tunnel, requiredCards)
         root.game.currentState.players[oldIdx].run {
             assertEquals(newPoints, points)
-            assertEquals(newTrainCars, trainCarsAmount)
+            assertEquals(newTrainCars, trainCardsAmount)
             val playerHandCards = IdentityHashMap<WagonCard, Unit>(oldCards.size)
             oldCards.forEach { assert(playerHandCards.put(it, Unit) == null) }
             usedCards.forEach { assert(playerHandCards.remove(it) != null) }
@@ -105,7 +105,7 @@ class TestClaimRoute {
         claim(route, usedCards)
         root.game.currentState.players[oldIdx].run {
             assertEquals(newPoints, points)
-            assertEquals(newTrainCars, trainCarsAmount)
+            assertEquals(newTrainCars, trainCardsAmount)
             val playerHandCards = IdentityHashMap<WagonCard, Unit>(oldCards.size)
             oldCards.forEach { assert(playerHandCards.put(it, Unit) == null) }
             usedCards.forEach { assert(playerHandCards.remove(it) != null) }
@@ -239,7 +239,7 @@ class TestClaimRoute {
     }
 
     /**
-     * Tests whether [PlayerActionService.claimRoute] fails on insufficient [Player.trainCarsAmount]
+     * Tests whether [PlayerActionService.claimRoute] fails on insufficient [Player.trainCardsAmount]
      */
     @Test
     fun testInsufficientTrainCars() {
@@ -300,7 +300,7 @@ class TestClaimRoute {
             root.playerActionService.claimRoute(umeBodRed, state1.currentPlayer.wagonCards)
             root.game.currentState.players[0].run {
                 assertEquals(4, points)
-                assertEquals(37, trainCarsAmount)
+                assertEquals(37, trainCardsAmount)
                 assertEquals(emptyList(), wagonCards)
             }
             root.game.currentState.discardStackContains(state1.currentPlayer.wagonCards, exhaustive = true)
