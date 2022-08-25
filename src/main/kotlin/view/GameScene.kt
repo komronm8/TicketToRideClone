@@ -801,7 +801,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             showCards(root.game.currentState.currentPlayer)
             updateDecks()
             updateRedoUndo()
-            println(root.game.currentState.currentPlayerIndex)
+            //println(root.game.currentState.currentPlayerIndex)
             //TODO
             if (root.game.currentState.currentPlayer is AIPlayer) {
                 val access = Any()

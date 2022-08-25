@@ -109,7 +109,7 @@ private fun State.findMoveMonteCarlo(c: Double, timeLimit: Int): AIMove {
         val selected = checkNotNull(options.selectNext(c, ++operations))
         playoff(c, selected, mainPlayer)
     }
-    println(operations)
+    //println(operations)
     return checkNotNull(options.maxByOrNull { it.wonCount.get() }).move
 }
 

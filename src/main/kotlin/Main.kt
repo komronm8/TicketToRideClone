@@ -14,10 +14,7 @@ fun main() {
         .map { it.split(",") }
         .map { it[0] to it[1] }
     val identToName = mapping.joinToString("\n") { "\"${it.first}\"->\"${it.second}\"" }
-    println(identToName)
-    println("------")
-    val nameToIdent = mapping.joinToString(separator = "\n") { "\"${it.second}\"->\"${it.first}\"" }
-    println(nameToIdent)*/
+    val nameToIdent = mapping.joinToString(separator = "\n") { "\"${it.second}\"->\"${it.first}\"" }*/
 
     println("Application ended. Goodbye")
 }

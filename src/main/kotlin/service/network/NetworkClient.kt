@@ -161,12 +161,12 @@ class NetworkClient(
         }
         val gamePlayer = networkService.rootService.game.currentState.currentPlayerIndex
         message.selectedTrainCards.forEach { color: Color ->
-            val indexOf = networkService.rootService.game.currentState.openCards.indexOf(WagonCard(color.maptoGameColor()))
+            val indexOf = networkService.rootService.game.currentState.openCards.indexOfFirst { color.maptoGameColor() == it.color }
             networkService.rootService.playerActionService.drawWagonCard(indexOf)
         }
         require(
-            networkService.rootService.game.currentState.players[gamePlayer].wagonCards.takeLast(2).toSet() ==
-            message.selectedTrainCards.map { WagonCard(it.maptoGameColor()) }.toSet()
+            networkService.rootService.game.currentState.players[gamePlayer].wagonCards.takeLast(2).sortedBy { it.color.ordinal } ==
+            message.selectedTrainCards.map { WagonCard(it.maptoGameColor()) }.sortedBy { it.color.ordinal }
         ) {
             "expected: ${networkService.rootService.game.currentState.players[gamePlayer].wagonCards.takeLast(2).toSet()}," +
                     " gotten: ${message.selectedTrainCards.map { it.maptoGameColor() }.toSet()}"

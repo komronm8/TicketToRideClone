@@ -95,7 +95,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             else -> throw IllegalStateException("illegal state for draw destination card")
         }
         val drawAmount = min(state.destinationCards.size, 3)
-        println(cards)
+        //println(cards)
         check(drawAmount >= cards.size)
         check(cards.isNotEmpty())
         cards.forEach { check(it in 0 until drawAmount) }
@@ -173,7 +173,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 root.undo()
                 root.insert(newState)
                 root.game.gameState = GameState.DEFAULT
-                println("Reached sending")
+                //println("Reached sending")
                 if (state.players.any { it.isRemote } && state.currentPlayer.name == root.network.client?.playerName) {
                     val prevState = root.game.run { states[currentStateIndex - 1] }
                     val shuffled = prevState.discardStack.isNotEmpty() && state.discardStack.isEmpty()

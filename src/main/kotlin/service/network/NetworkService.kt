@@ -309,7 +309,8 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      * @throws IllegalStateException If it is not your turn
      */
     fun sendDrawTrainCardMessage(selectedTrainCards: List<WagonCard>,newTrainCardStack: List<WagonCard>?){
-        check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send GameInitResponse" }
+        check(connectionState == ConnectionState.PLAY_TURN)
+        { "Expected State: PLAY_TURN, Gotten: $connectionState" }
         val tmpWC: List<MessageColor> = selectedTrainCards.map {
             it.color.maptoMessageColor()
         }
@@ -338,6 +339,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
      */
     fun sendClaimARounteMessage(claimedRoute: Route,newTrainCardStack: List<WagonCard>?,
                                 playedTrainCards: List<WagonCard>, drawnTunnelCards: List<WagonCard>?){
+        println(rootService.game.currentState.currentPlayer.name)
         check(connectionState == ConnectionState.PLAY_TURN) { "Not in a state to send ClaimARounteMessage" }
         val tmpTrainCards: MutableList<MessageColor> = mutableListOf()
         playedTrainCards.forEach {
