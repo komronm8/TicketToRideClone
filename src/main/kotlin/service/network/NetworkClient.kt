@@ -192,7 +192,7 @@ class NetworkClient(
      */
     @GameActionReceiver
     private fun onClaimARouteMessageReceivedAction(message: ClaimARouteMessage, sender: String) {
-        val route = getRoute(message.start.toString(), message.end.toString(), message.railColor)
+        var route = getRoute(message.start.toString(), message.end.toString(), message.railColor)
         val sibling = route.sibling
         val expectedWagonCards = message.playedTrainCards.map { WagonCard(it.maptoGameColor()) }
         val currentState = networkService.rootService.game.currentState
@@ -206,6 +206,18 @@ class NetworkClient(
         ) {
             networkService.rootService.playerActionService.claimRoute(
                 sibling, message.playedTrainCards.map { WagonCard(it.maptoGameColor()) })
+            route = sibling
+        }
+        if (message.drawnTunnelCards != null && route is Tunnel){
+            if (message.drawnTunnelCards.isEmpty()
+                && networkService.rootService.playerActionService.tunnelPayAmount(message.playedTrainCards.map { WagonCard(it.maptoGameColor()) }).first != 0){
+                networkService.rootService.playerActionService.afterClaimTunnel(route, null)
+            }
+            else {
+                networkService.rootService.playerActionService.afterClaimTunnel(
+                    route,
+                    message.drawnTunnelCards.map { WagonCard(it.maptoGameColor()) })
+            }
         }
         if (networkService.rootService.game.currentState.currentPlayer.name == playerName) {
             networkService.updateConnectionState(ConnectionState.PLAY_TURN)
