@@ -316,7 +316,6 @@ class NetworkClient(
         networkService.updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
         networkService.rootService.game.gameState = GameState.CHOOSE_DESTINATION_CARD
 
-        //networkService.sendDebugMessage()
         BoardGameApplication.runOnGUIThread { networkService.onAllRefreshables { refreshAfterStartNewGame() } }
     }
 

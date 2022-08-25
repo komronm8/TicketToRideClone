@@ -13,6 +13,7 @@ version = "1.0"
 
 repositories {
     mavenCentral()
+    maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots/") }
 }
 
 application {
@@ -21,9 +22,9 @@ application {
 
 dependencies {
     testImplementation(kotlin("test-junit5"))
-    implementation(group = "tools.aqua", name = "bgw-gui", version = "0.7.2")
-    implementation(group = "tools.aqua", name = "bgw-net-common", version = "0.7.2")
-    implementation(group = "tools.aqua", name = "bgw-net-client", version = "0.7.2")
+    implementation(group = "tools.aqua", name = "bgw-gui", version = "0.7.2-3-29be5ee-SNAPSHOT")
+    implementation(group = "tools.aqua", name = "bgw-net-common", version = "0.7.2-3-29be5ee-SNAPSHOT")
+    implementation(group = "tools.aqua", name = "bgw-net-client", version = "0.7.2-3-29be5ee-SNAPSHOT")
 }
 
 tasks.distZip {
