@@ -7,14 +7,14 @@ package entity
  * @param name The name of the player
  * @param destinationCards The [DestinationCard]s this player must fulfill
  * @param wagonCards The wagon cards this player has available
- * @param trainCarsAmount The amount of train cars, which are used to mark a route as claimed, left
+ * @param trainCardsAmount The amount of train cars, which are used to mark a route as claimed, left
  */
 open class Player(
     val points: Int = 0,
     val name: String,
     val destinationCards: List<DestinationCard>,
     val wagonCards: List<WagonCard>,
-    val trainCarsAmount: Int = 40,
+    val trainCardsAmount: Int = 40,
     val claimedRoutes: List<Route> = emptyList(),
     val isRemote: Boolean
 ) {
@@ -31,7 +31,7 @@ open class Player(
         if (name != other.name) return false
         if (destinationCards != other.destinationCards) return false
         if (wagonCards != other.wagonCards) return false
-        if (trainCarsAmount != other.trainCarsAmount) return false
+        if (trainCardsAmount != other.trainCardsAmount) return false
         if (claimedRoutes != other.claimedRoutes) return false
 
         return true
@@ -45,7 +45,7 @@ open class Player(
         result = 31 * result + name.hashCode()
         result = 31 * result + destinationCards.hashCode()
         result = 31 * result + wagonCards.hashCode()
-        result = 31 * result + trainCarsAmount
+        result = 31 * result + trainCardsAmount
         result = 31 * result + claimedRoutes.hashCode()
         return result
     }
@@ -57,7 +57,7 @@ open class Player(
         points: Int = this.points,
         destinationCards: List<DestinationCard> = this.destinationCards,
         wagonCards: List<WagonCard> = this.wagonCards,
-        trainCarsAmount: Int = this.trainCarsAmount,
+        trainCarsAmount: Int = this.trainCardsAmount,
         claimedRoutes: List<Route> = this.claimedRoutes
     ): Player = Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, isRemote)
 
@@ -66,7 +66,7 @@ open class Player(
      */
     fun withNotRemote(): Player {
         return if (isRemote) {
-            Player(points, name, destinationCards, wagonCards, trainCarsAmount, claimedRoutes, false)
+            Player(points, name, destinationCards, wagonCards, trainCardsAmount, claimedRoutes, false)
         } else {
             this
         }
@@ -77,7 +77,7 @@ open class Player(
      */
     override fun toString(): String {
         return "Player(points=$points, name='$name', destinationCards=$destinationCards," +
-                " wagonCards=$wagonCards, trainCarsAmount=$trainCarsAmount, claimedRoutes=$claimedRoutes)"
+                " wagonCards=$wagonCards, trainCarsAmount=$trainCardsAmount, claimedRoutes=$claimedRoutes)"
     }
 
 

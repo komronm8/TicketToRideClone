@@ -222,7 +222,7 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         }
         val oldState = state
         root.undo()
-        val endPlayer = if (oldState.currentPlayer.trainCarsAmount <= 2) {
+        val endPlayer = if (oldState.currentPlayer.trainCardsAmount <= 2) {
             oldState.currentPlayer
         } else {
             null

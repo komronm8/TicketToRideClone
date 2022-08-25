@@ -197,7 +197,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      * Claims the route for the player
      *
      * The [Game.gameState] must be [GameState.DEFAULT]. The [usedCards] must fit exactly to claim the route.
-     * Must have sufficient [Player.trainCarsAmount]. If the route is a tunnel, then the required cards are placed on
+     * Must have sufficient [Player.trainCardsAmount]. If the route is a tunnel, then the required cards are placed on
      * top of the draw stack
      *
      * @param route the route to be claimed. Must either be unclaimed or a double route
@@ -247,7 +247,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                     wagonCards = newPlayerCard,
                     points = points + route.pointValue(),
                     claimedRoutes = claimedRoutes + route,
-                    trainCarsAmount = trainCarsAmount - route.completeLength
+                    trainCarsAmount = trainCardsAmount - route.completeLength
                 )
             }
             val newDiscardStack = state.discardStack + usedCards
@@ -273,7 +273,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         currentPlayer: Player, route: Route,
         usedCards: List<WagonCard>, exhaustive: Boolean
     ): ClaimRouteFailure? {
-        if (currentPlayer.trainCarsAmount < route.completeLength) {
+        if (currentPlayer.trainCardsAmount < route.completeLength) {
             return ClaimRouteFailure.NotEnoughTrainCars
         }
         val doubleRoute = state.players.size > 2
@@ -446,7 +446,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         val newPlayers = betweenState.updateCurrentPlayer {
             copy(
                 points = points + route.pointValue(),
-                trainCarsAmount = trainCarsAmount - route.completeLength,
+                trainCarsAmount = trainCardsAmount - route.completeLength,
                 claimedRoutes = claimedRoutes + route,
                 wagonCards = newPlayerHand
             )

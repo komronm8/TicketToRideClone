@@ -9,7 +9,7 @@ package entity
  * @param discardStack The discard stack for wagon cards
  * @param players The players
  * @param currentPlayerIndex The index of the current player
- * @param endPlayer The first player whose [Player.trainCarsAmount] is less than two
+ * @param endPlayer The first player whose [Player.trainCardsAmount] is less than two
  * @param cities The cities involved in the game
  */
 data class State(

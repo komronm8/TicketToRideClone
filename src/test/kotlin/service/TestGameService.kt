@@ -19,7 +19,7 @@ class TestGameService {
     @Test
     fun testNextPlayer() {
         val player1 = Player(
-            0, name = "asdas", emptyList(), List(2) { WagonCard(Color.YELLOW) }, trainCarsAmount = 2, isRemote = false
+            0, name = "asdas", emptyList(), List(2) { WagonCard(Color.YELLOW) }, trainCardsAmount = 2, isRemote = false
         )
         val state = State(
             emptyList(), List(5) { WagonCard(Color.JOKER) },

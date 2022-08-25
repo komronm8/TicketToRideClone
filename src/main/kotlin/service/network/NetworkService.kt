@@ -197,7 +197,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val numOfTrainCards: MutableList<Int> = mutableListOf()
         rootService.game.currentState.players.forEach {p ->
-            numOfTrainCards.add(p.trainCarsAmount)
+            numOfTrainCards.add(p.wagonCards.size)
         }
 
         val numOfClaimedRoutes: MutableList<Int> = mutableListOf()
@@ -235,7 +235,7 @@ class NetworkService(val rootService: RootService): AbstractRefreshingService() 
 
         val numOfTrainCards: MutableList<Int> = mutableListOf()
         rootService.game.currentState.players.forEach {p ->
-            numOfTrainCards.add(p.trainCarsAmount)
+            numOfTrainCards.add(p.wagonCards.size)
         }
 
         val numOfClaimedRoutes: MutableList<Int> = mutableListOf()

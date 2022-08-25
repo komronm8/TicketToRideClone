@@ -494,7 +494,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
 
         //Set current player images
         playerBanner.visual = ImageVisual(getPlayerFolder(currentPlayerIndex) + "dock.png")
-        playerTrainCarLabel.text = root.game.currentState.currentPlayer.trainCarsAmount.toString()
+        playerTrainCarLabel.text = root.game.currentState.currentPlayer.trainCardsAmount.toString()
         currentPlayerImage.visual = ImageVisual(getPlayerFolder(currentPlayerIndex) + "player_profile.png")
         currentPlayerPoints.text = root.game.currentState.currentPlayer.points.toString()
 
@@ -510,7 +510,7 @@ class GameScene(private val root: RootService) : BoardGameScene(1920, 1080), Ref
             (otherPlayers[count].components[0] as Label).visual =
                 ImageVisual(getPlayerFolder(playerIndices[count]) + "train_number.png")
             (otherPlayers[count].components[1] as Label).text =
-                root.game.currentState.players[playerIndices[count]].trainCarsAmount.toString()
+                root.game.currentState.players[playerIndices[count]].trainCardsAmount.toString()
             (otherPlayers[count].components[2] as Label).visual =
                 ImageVisual(getPlayerFolder(playerIndices[count]) + "player_profile.png")
             (otherPlayers[count].components[3] as Label).text =
