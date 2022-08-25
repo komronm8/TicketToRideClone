@@ -18,6 +18,7 @@ data class GameInitResponseMessage (
 
 
     init{
-        require(selectedDestinationTickets.size in 2..5){"invalid amount of DestinationTickets"}
+        require(selectedDestinationTickets.size in 2..5 && isGameInitResponse){"invalid amount of DestinationTickets"}
+        require(isGameInitResponse)
     }
 }

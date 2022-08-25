@@ -9,6 +9,15 @@ fun main() {
     //AIService.minMaxAIGame()
     SopraApplication().show()
     //mainNetwork()
+    /*val file = Path.of("City_Enum_Zuordnung_1.csv").toFile()
+    val mapping = file.readLines()
+        .map { it.split(",") }
+        .map { it[0] to it[1] }
+    val identToName = mapping.joinToString("\n") { "\"${it.first}\"->\"${it.second}\"" }
+    println(identToName)
+    println("------")
+    val nameToIdent = mapping.joinToString(separator = "\n") { "\"${it.second}\"->\"${it.first}\"" }
+    println(nameToIdent)*/
 
     println("Application ended. Goodbye")
 }
