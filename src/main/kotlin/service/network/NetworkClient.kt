@@ -184,7 +184,7 @@ class NetworkClient(
             ))
         }
         val gamePlayer = networkService.rootService.game.currentState.currentPlayerIndex
-        message.selectedTrainCards.forEach { color: Color ->
+        message.selectedTrainCards.reversed().forEach { color: Color ->
             val indexOf = networkService.rootService.game.currentState.openCards.indexOfFirst { color.maptoGameColor() == it.color }
             networkService.rootService.playerActionService.drawWagonCard(indexOf)
         }
@@ -340,6 +340,7 @@ class NetworkClient(
         )
         networkService.updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
         networkService.rootService.game.gameState = GameState.CHOOSE_DESTINATION_CARD
+        networkService.rootService.print = true
 
         BoardGameApplication.runOnGUIThread { networkService.onAllRefreshables { refreshAfterStartNewGame() } }
     }

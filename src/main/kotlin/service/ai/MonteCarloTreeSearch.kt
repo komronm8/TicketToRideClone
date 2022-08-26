@@ -52,7 +52,11 @@ fun RootService.monteCarloMove(c: Double, timeLimit: Int, execute: (() -> Unit) 
     val players = game.currentState.players.map { it.withNotRemote() }
     val move = game.currentState.copy(players = players).findMoveMonteCarlo(c, timeLimit)
     execute {
-        executeMontyMove(move)
+        try {
+            executeMontyMove(move)
+        } catch (e: Exception) {
+            randomNextTurn()
+        }
     }
 }
 
@@ -109,7 +113,7 @@ private fun State.findMoveMonteCarlo(c: Double, timeLimit: Int): AIMove {
         val selected = checkNotNull(options.selectNext(c, ++operations))
         playoff(c, selected, mainPlayer)
     }
-    //println(operations)
+    println(operations)
     return checkNotNull(options.maxByOrNull { it.wonCount.get() }).move
 }
 

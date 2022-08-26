@@ -10,6 +10,7 @@ import view.Refreshable
  */
 class RootService {
     lateinit var game: Game
+    var print: Boolean = false
     val playerActionService: PlayerActionService = PlayerActionService(this)
     val gameService: GameService = GameService(this)
     val network: NetworkService = NetworkService(this)
@@ -59,5 +60,9 @@ class RootService {
      */
     fun addRefreshables(vararg newRefreshables: Refreshable) {
         newRefreshables.forEach(this::addRefreshable)
+    }
+
+    inline fun debug(string: ()->String) {
+        if (print) println(string())
     }
 }

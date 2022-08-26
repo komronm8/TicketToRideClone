@@ -95,7 +95,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             else -> throw IllegalStateException("illegal state for draw destination card")
         }
         val drawAmount = min(state.destinationCards.size, 3)
-        //println(cards)
+        //debug(cards)
         check(drawAmount >= cards.size)
         check(cards.isNotEmpty())
         cards.forEach { check(it in 0 until drawAmount) }
@@ -107,7 +107,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         val (newDestinationStack, drawnCards) =
             state.destinationCards.splitAt(state.destinationCards.size - drawAmount)
         val newDestinationCards = state.currentPlayer.destinationCards + cards.map(drawnCards::get)
-        println("${state.currentPlayer.name}: drew destination cards $cards($newDestinationCards)")
+        debug {"${state.currentPlayer.name}: drew destination cards $cards($newDestinationCards)" }
         val newPlayer = state.updateCurrentPlayer { copy(destinationCards = newDestinationCards) }
         root.insert(state.copy(destinationCards = newDestinationStack, players = newPlayer))
         onAllRefreshables(Refreshable::refreshAfterDrawDestinationCards)
@@ -148,7 +148,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             val oldDrawStack = newDrawStack
             newDrawStack = newDiscardStack.toMutableList().apply { shuffle() }
             shuffledStack = newDrawStack
-            println("${state.currentPlayer.name}: shuffled to: ${newDrawStack.takeLast(2)}")
+            debug{ "${state.currentPlayer.name}: shuffled to: ${newDrawStack.takeLast(2)}"}
             newDiscardStack = oldDrawStack
         }
         var insertCard = newDrawStack.last()
@@ -160,7 +160,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 insertCard = exchanged
             }
         }
-        println("${state.currentPlayer.name}: drew $insertCard(from open: ${cardIndex in openCards.indices})")
+        debug{"${state.currentPlayer.name}: drew $insertCard(from open: ${cardIndex in openCards.indices})"}
         val newPlayers = state.updateCurrentPlayer {
             copy(wagonCards = wagonCards + insertCard)
         }
@@ -172,7 +172,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         )
         when (val gameState = root.game.gameState) {
             GameState.DEFAULT -> {
-                println("abba${texty++}" + root.game.currentState.openCards + "------" + root.game.currentState.wagonCardsStack.takeLast(2))
+                debug{"abba${texty++}" + root.game.currentState.openCards + "------" + root.game.currentState.wagonCardsStack.takeLast(2)}
                 root.insert(newState)
                 root.game.gameState = GameState.DREW_WAGON_CARD(shuffledStack)
             }
@@ -181,12 +181,12 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 root.undo()
                 root.insert(newState)
                 root.game.gameState = GameState.DEFAULT
-                //println("Reached sending")
+                //debug("Reached sending")
                 if (state.players.any { it.isRemote } && state.currentPlayer.name == root.network.client?.playerName) {
                     val prevState = root.game.run { states[currentStateIndex - 1] }
                     val newCardStack = shuffledStack ?: gameState.shuffled
 
-                    if (newCardStack != null) println("${state.currentPlayer.name} ~ detected shuffle: ${newCardStack.takeLast(2)}")
+                    if (newCardStack != null) debug{"${state.currentPlayer.name} ~ detected shuffle: ${newCardStack.takeLast(2)}"}
                     val selected = state.currentPlayer.wagonCards.filter { card ->
                         prevState.currentPlayer.wagonCards.none { card === it }
                     }
@@ -214,7 +214,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      * @param usedCards the cards that are used to claim the route. Must be distinct and in possession of the player
      */
     fun claimRoute(route: Route, usedCards: List<WagonCard>): ClaimRouteFailure? {
-        println("${state.currentPlayer.name}:claimed route($route) with $usedCards")
+        debug{"${state.currentPlayer.name}:claimed route($route) with $usedCards"}
         when (root.game.gameState) {
             GameState.DEFAULT -> {}
             else -> throw IllegalStateException("Illegal state for claim route")
@@ -416,7 +416,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
      * to satisfy the required cards
      */
     fun afterClaimTunnel(route: Tunnel, cards: List<WagonCard>?) {
-        println("${state.currentPlayer.name}: paid tunnel($route) with $cards")
+        debug {"${state.currentPlayer.name}: paid tunnel($route) with $cards"}
         cards?.also {
             check(cards.all { given -> state.currentPlayer.wagonCards.any { it === given } })
             cards.forEachIndexed { index1, card1 ->
@@ -432,6 +432,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         val handDiff = prevPlayerHand.count { oldCard -> betweenPlayerHand.none { newCard -> oldCard === newCard } }
         val (newDiscard, usedCards) = betweenState.discardStack.run { splitAt(size - handDiff) }
         val (newDraw, requiredCards) = betweenState.wagonCardsStack.run { splitAt(max(0, size - 3)) }
+        debug{"${state.currentPlayer.name}: paid tunnel($route) with $cards(req: $requiredCards)"}
 
         if (cards == null) {
             root.undo()
@@ -445,7 +446,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 state.currentPlayer.name == root.network.client?.playerName) {
                 val shuffled = previousState.discardStack.isNotEmpty() && newDiscard.isEmpty()
                 val newCardStack = if (shuffled) betweenState.wagonCardsStack else null
-                root.network.sendClaimARounteMessage(route, newCardStack, usedCards, null)
+                root.network.sendClaimARounteMessage(route, newCardStack, usedCards, emptyList())
             }
             root.game.gameState = GameState.DEFAULT
             root.gameService.nextPlayer()
@@ -515,6 +516,10 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
         root.redo()
         root.game.gameState = GameState.DEFAULT
         onAllRefreshables(Refreshable::refreshAfterUndoRedo)
+    }
+
+    inline fun debug(string: ()->String) {
+        root.debug(string)
     }
 
 }

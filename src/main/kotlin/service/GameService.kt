@@ -235,12 +235,14 @@ class GameService(val root: RootService) : AbstractRefreshingService() {
         if (state.currentPlayer.name == root.network.client?.playerName) {
             root.network.client?.sendIsCorrect()
         }
-        println("${state.currentPlayer.name}:${state.currentPlayer.wagonCards}")
+        debug { "${state.currentPlayer.name}:${state.currentPlayer.wagonCards}" }
         root.insert(newState)
         //println("z" + state.players.joinToString("\nz") { it.wagonCards.toString() })
         //root.network.sendDebugMessage()
 
         onAllRefreshables(Refreshable::refreshAfterNextPlayer)
     }
+
+    inline fun debug(string: ()->String) = root.debug(string)
 
 }

@@ -184,7 +184,7 @@ class NetworkService(val rootService: RootService) : AbstractRefreshingService()
                     mapToCityEnum(readIdentifierFromCSV(it.cities.second.name, false))
                 )
             })
-
+        rootService.print = true
         updateConnectionState(ConnectionState.BUILD_GAMEINIT_RESPONSE)
         client?.sendGameActionMessage(message)
 
@@ -331,7 +331,7 @@ class NetworkService(val rootService: RootService) : AbstractRefreshingService()
     fun sendDrawTrainCardMessage(selectedTrainCards: List<WagonCard>, newTrainCardStack: List<WagonCard>?) {
         check(connectionState == ConnectionState.PLAY_TURN)
         { "Expected State: PLAY_TURN, Gotten: $connectionState" }
-        val tmpWC: List<MessageColor> = selectedTrainCards.map {
+        val tmpWC: List<MessageColor> = selectedTrainCards.reversed().map {
             it.color.maptoMessageColor()
         }
         if (newTrainCardStack != null) {
