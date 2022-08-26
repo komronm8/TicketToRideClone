@@ -446,7 +446,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
                 state.currentPlayer.name == root.network.client?.playerName) {
                 val shuffled = previousState.discardStack.isNotEmpty() && newDiscard.isEmpty()
                 val newCardStack = if (shuffled) betweenState.wagonCardsStack else null
-                root.network.sendClaimARounteMessage(route, newCardStack, usedCards, emptyList())
+                root.network.sendClaimARounteMessage(route, newCardStack, emptyList(), requiredCards)
             }
             root.game.gameState = GameState.DEFAULT
             root.gameService.nextPlayer()
@@ -479,7 +479,7 @@ class PlayerActionService(val root: RootService) : AbstractRefreshingService() {
             state.currentPlayer.name == root.network.client?.playerName) {
             val shuffled = previousState.discardStack.isNotEmpty() && newDiscard.isEmpty()
             val newCardStack = if (shuffled) betweenState.wagonCardsStack else null
-            root.network.sendClaimARounteMessage(route, newCardStack, usedCards, cards)
+            root.network.sendClaimARounteMessage(route, newCardStack, usedCards + cards, requiredCards)
         }
         root.gameService.nextPlayer()
     }

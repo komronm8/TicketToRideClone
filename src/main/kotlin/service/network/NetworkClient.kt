@@ -184,7 +184,7 @@ class NetworkClient(
             ))
         }
         val gamePlayer = networkService.rootService.game.currentState.currentPlayerIndex
-        message.selectedTrainCards.reversed().forEach { color: Color ->
+        message.selectedTrainCards.forEach { color: Color ->
             val indexOf = networkService.rootService.game.currentState.openCards.indexOfFirst { color.maptoGameColor() == it.color }
             networkService.rootService.playerActionService.drawWagonCard(indexOf)
         }
@@ -235,27 +235,30 @@ class NetworkClient(
         var route = getRoute(message.start.toString(), message.end.toString(), message.railColor)
         if (message.newTrainCardStack != null) {
             networkService.rootService.insert(networkService.rootService.game.currentState.copy(
-                wagonCardsStack = message.newTrainCardStack.map { WagonCard(it.maptoGameColor()) },
+                wagonCardsStack = (message.newTrainCardStack + (message.drawnTunnelCards ?: emptyList())).map { WagonCard(it.maptoGameColor()) },
                 discardStack = emptyList()
             ))
         }
         val sibling = route.sibling
         val game = networkService.rootService.game
-        val wagonCards = mapMessageWagonToEntityWagon(message.playedTrainCards, game.currentState.currentPlayer.wagonCards)
-        var claimRouteResult = networkService.rootService.playerActionService.claimRoute(route, wagonCards)
+        val wagonCards0 = mapMessageWagonToEntityWagon(message.playedTrainCards, game.currentState.currentPlayer.wagonCards)
+        val wagonCards = if (route is Tunnel) {
+            wagonCards0.sortedBy { if (it.color != entity.Color.JOKER) -1 else 1 }
+        } else {
+            wagonCards0
+        }
+        val take = if (route is Tunnel) route.length else wagonCards.size
+        var claimRouteResult = networkService.rootService.playerActionService.claimRoute(route, wagonCards.take(take))
         if (claimRouteResult == PlayerActionService.ClaimRouteFailure.RouteAlreadyClaimed && sibling != null) {
-            claimRouteResult = networkService.rootService.playerActionService.claimRoute(sibling, wagonCards)
+            claimRouteResult = networkService.rootService.playerActionService.claimRoute(sibling, wagonCards.take(take))
             route = sibling
         }
         require(claimRouteResult == null) { "res: $claimRouteResult" }
         if (route is Tunnel){
-            if (message.drawnTunnelCards == null) {
+            if (take == wagonCards.size && networkService.rootService.playerActionService.tunnelPayAmount(wagonCards.take(take)).first != 0) {
                 networkService.rootService.playerActionService.afterClaimTunnel(route, null)
-            }
-            else {
-                val usedCards2 = mapMessageWagonToEntityWagon(
-                    message.drawnTunnelCards, game.currentState.currentPlayer.wagonCards
-                )
+            } else {
+                val usedCards2 = wagonCards.takeLast(wagonCards.size - take)
                 networkService.rootService.playerActionService.afterClaimTunnel(route, usedCards2)
             }
         }

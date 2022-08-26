@@ -20,8 +20,8 @@ import service.network.message.Player as RemotePlayer
 class NetworkService(val rootService: RootService) : AbstractRefreshingService() {
     companion object {
         /** URL of the BGW net server hosted for SoPra participants */
-        //const val SERVER_ADDRESS = "sopra.cs.tu-dortmund.de:80/bgw-net-test/connect"
-        const val SERVER_ADDRESS = "sopra.cs.tu-dortmund.de:80/bgw-net/connect"
+        const val SERVER_ADDRESS = "sopra.cs.tu-dortmund.de:80/bgw-net-test/connect"
+        //const val SERVER_ADDRESS = "sopra.cs.tu-dortmund.de:80/bgw-net/connect"
 
         /** Name of the game as registered with the server */
         const val GAME_ID = "TicketToRide"
@@ -331,7 +331,7 @@ class NetworkService(val rootService: RootService) : AbstractRefreshingService()
     fun sendDrawTrainCardMessage(selectedTrainCards: List<WagonCard>, newTrainCardStack: List<WagonCard>?) {
         check(connectionState == ConnectionState.PLAY_TURN)
         { "Expected State: PLAY_TURN, Gotten: $connectionState" }
-        val tmpWC: List<MessageColor> = selectedTrainCards.reversed().map {
+        val tmpWC: List<MessageColor> = selectedTrainCards.map {
             it.color.maptoMessageColor()
         }
         if (newTrainCardStack != null) {
