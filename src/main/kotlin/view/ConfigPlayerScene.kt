@@ -158,7 +158,7 @@ class ConfigPlayerScene(private val rootService: RootService):
     private fun getAIStrategy(label: Label): AIPlayer.Strategy?{
         return when(label.text){
             "RandomAI" -> { AIPlayer.Strategy.Random }
-            "UnfairAI" -> { AIPlayer.Strategy.MonteCarlo(2000) }
+            "UnfairAI" -> { AIPlayer.Strategy.MonteCarlo(8000) }
             else -> { null }
         }
     }
